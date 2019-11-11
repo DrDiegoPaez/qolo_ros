@@ -15,6 +15,9 @@ from logging import handlers
 import mraa
 import signal
 
+import rospy
+from std_msgs.msg import String
+
 conv = converter.AD_DA()
 
 # coefficient for vmax and wmax(outout curve)
@@ -88,6 +91,19 @@ FF = []
 GG = []
 HH = []
 OX = []
+
+
+def talker():
+    pub = rospy.Publisher('chatter', String, queue_size=10)
+    rospy.init_node('talker', anonymous=True)
+    rate = rospy.Rate(10) # 10hz
+    while not rospy.is_shutdown():
+        hello_str = "hello world %s" % rospy.get_time()
+        rospy.loginfo(hello_str)
+        pub.publish(hello_str)
+        rate.sleep()
+
+
 
 level_relations = {
         # 'debug':logging.DEBUG,
@@ -594,3 +610,9 @@ except KeyboardInterrupt:
 end = time.time()  # for calculate frequency
 
 print float(counter1) / float(end - start) # for calculate frequency
+
+if __name__ == '__main__':
+    try:
+        talker()
+    except rospy.ROSInterruptException:
+        pass
