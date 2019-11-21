@@ -7,7 +7,6 @@ from itertools import groupby
 # import threading
 # import RPi.GPIO as GPIO
 import numpy as np
-import array as arr
 # from scipy.signal import butter, lfilter, freqz
 # import matplotlib.pyplot as plt
 import heapq
@@ -41,15 +40,10 @@ MBED_Enable.dir(mraa.DIR_OUT)
 # real zero point of each sensor
 a_zero, b_zero, c_zero, d_zero, e_zero, f_zero, g_zero, h_zero = 305.17, 264.7, 441.57, 336.46, 205.11, 441.57, 336.46, 205.11
 
-# FsrZero = arr.array('d',[200.1 305.17, 264.7, 441.57, 336.46, 205.11, 441.57, 336.46, 205.11 200.1])
-FsrZero = np.array([100.1, 305.17, 264.7, 441.57, 336.46, 205.11, 441.57, 336.46, 205.11, 200.1])
 # default value for pre-configuration
-# k1, k2, k3, k4, k5, k6, k7, k8 =    0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 0.57, 0.63 # 2.48, 0.91, 1.59, 1.75, 1.46
-FsrK = np.array([0.63, 0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 0.57, 0.63, 0.63])
+k1, k2, k3, k4, k5, k6, k7, k8 =    0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 0.57, 0.63 # 2.48, 0.91, 1.59, 1.75, 1.46
 
-# Vector input for all sensor data
-# Xin = np.zeros((10))
-Xin = np.array([0.0, 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+# Setting output message for ROS Node
 
 # # coefficient for calculate center of pressure: ox
 r1 = -3.5
@@ -78,20 +72,14 @@ pl2, pl1, pr1, pr2 = -1.9, -0.5, 0.5, 1.98 # -1.72, 0.075, 1.455, 1.98 # -2.42, 
 # f1.close()
 
 GEAR = 12.64
-DISTANCE = 0.62/2  # distance bettween two wheels
+DISTANCE = 0.62  # distance bettween two wheels
 RADIUS = 0.304/2 # meter
-
-MaxSpeed = 1.0 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
-W_ratio = 2 # Ratio of the maximum angular speed (232 deg/s)
-
-Max_motor_v = (MaxSpeed/ (RADIUS*(2*np.pi))) *60*GEAR # max motor speed: 1200 rpm
+W_ratio = 2
 
 Command_V = 2500
 Command_W = 2500
 Comand_DAC0 = 0
 Comand_DAC1 = 0
-rpm_L = 0;
-rpm_R = 0;
 
 # Global variables for logging
 Out_v = 0;
@@ -113,6 +101,37 @@ HH = []
 OX = []
 
 
+def qolo_node():
+    pub = rospy.Publisher('qolo', String, queue_size=3)
+    rospy.init_node('qolo_control', anonymous=True)
+    rate = rospy.Rate(10) #  20 hz
+    while not rospy.is_shutdown():
+
+        control()
+        RemoteE = conv.ReadChannel(7, conv.data_format.voltage)
+        ComError = conv.ReadChannel(6, conv.data_format.voltage)
+        # print('Comerror', ComError)
+        if ComError<=THRESHOLD_V:
+            enable_mbed()
+        if RemoteE >= THRESHOLD_V:
+            print('RemoteE', RemoteE)
+            FlagEmergency=1
+            while FlagEmergency:
+                conv.SET_DAC2(0, conv.data_format.voltage)
+                conv.SET_DAC0(ZERO_V, conv.data_format.voltage)
+                conv.SET_DAC1(ZERO_V, conv.data_format.voltage)
+                ResetFSR = conv.ReadChannel(5, conv.data_format.voltage)
+                if ResetFSR >= THRESHOLD_V:
+                    print('ResetFSR ', ResetFSR)
+                    FlagEmergency=0
+                    enable_mbed()
+                time.sleep(0.1)
+
+        # hello_str = "hello Qolo %s" % rospy.get_time()
+        RosMassage = "%s %s %s %s" % (Out_v, Out_w, Out_CP, Out_F)
+        rospy.loginfo(RosMassage)
+        pub.publish(RosMassage)
+        rate.sleep()
 
 level_relations = {
         # 'debug':logging.DEBUG,
@@ -163,27 +182,25 @@ signal.signal(signal.SIGTERM, exit)
 
 def transformTo_Lowevel(Command_V, Command_W):
     # print('received ', Command_V, Command_W)
-    global DISTANCE, RADIUS, Out_v, Out_w, MaxSpeed, GEAR, Max_motor_v, rpm_L, rpm_R
+    global DISTANCE, RADIUS, Out_v, Out_w
+    # Command_W = 5000
+    MaxSpeed = 1.44 # 5.44 # max Qolo speed: km/h
+    Max_motor_v = MaxSpeed*1000/3600/RADIUS/(2*np.pi)*60*GEAR # max motor speed: 1200 rpm
+    motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v
+    motor_w = (2*Max_motor_v/(DISTANCE/2)*Command_W/5000 - Max_motor_v/(DISTANCE/2)) / W_ratio
 
-    motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
-    motor_w = (2*Max_motor_v/(DISTANCE)*Command_W/5000 - Max_motor_v/(DISTANCE)) / W_ratio # In [RPM]
-
-    # Out_v = round((motor_v*RADIUS)*(np.pi/30),4)
-    # Out_w = round((motor_w*6),4)
+    Out_v = motor_v;
+    Out_w = motor_w;
 
     # print("left wheel = ",motor_v, "right wheel = ",motor_w)
-    rpm_L = motor_v - DISTANCE*motor_w
-    rpm_R = motor_v + DISTANCE*motor_w
-    
-    Out_v = round( ((rpm_R+rpm_L)*RADIUS*(np.pi/60)), 4)
-    Out_w = round( (((rpm_R-rpm_L)*6)/DISTANCE), 4)
-
+    rpm_L = motor_v - DISTANCE*motor_w/2
+    rpm_R = motor_v + DISTANCE*motor_w/2
     # print("left wheel = ",rpm_L, "right wheel = ",rpm_R)
     Command_L = 5000*rpm_L/2400 + ZERO_V
     Command_R = 5000*rpm_R/2400 + ZERO_V
     # print('transformed ', Command_L, Command_R)
-    Command_L = round(Command_L, 4)
-    Command_R = round(Command_R, 4)
+    Command_L = round(Command_L, 2)
+    Command_R = round(Command_R, 2)
     # print('transformed ', Command_L, Command_R)
     return Command_L, Command_R
 
@@ -223,128 +240,82 @@ def log(a0, b0, c0, d0, e0, f0, g0, h0, a, b, c, d, e, f, g, h, ox, Command_V, C
     logger.removeHandler(th)
 
 # read data from ADDA board
-def read_FSR():
-    # B10 = conv.ReadChannel(7, conv.data_format.voltage)
-    # h = conv.ReadChannel(8, conv.data_format.voltage)
-    # g = conv.ReadChannel(9, conv.data_format.voltage)
-    # f = conv.ReadChannel(10, conv.data_format.voltage)
-    # e = conv.ReadChannel(11, conv.data_format.voltage)
-    # d = conv.ReadChannel(12, conv.data_format.voltage)
-    # c = conv.ReadChannel(13, conv.data_format.voltage)
-    # b = conv.ReadChannel(14, conv.data_format.voltage)
-    # a = conv.ReadChannel(15, conv.data_format.voltage)
-    # B1 = conv.ReadChannel(16, conv.data_format.voltage)
-
-    # B1 = float(B1)
-    # a = float(a)
-    # b = float(b)
-    # c = float(c)
-    # d = float(d)
-    # e = float(e)
-    # f = float(f)
-    # g = float(g)
-    # h = float(h)
-    # B10 - float(B10)
-
-    Xin[0] = float(conv.ReadChannel(5, conv.data_format.voltage))
-    Xin[1] = float(conv.ReadChannel(15, conv.data_format.voltage))
-    Xin[2] = float(conv.ReadChannel(14, conv.data_format.voltage))
-    Xin[3] = float(conv.ReadChannel(13, conv.data_format.voltage))
-    Xin[4] = float(conv.ReadChannel(12, conv.data_format.voltage))
-    Xin[5] = float(conv.ReadChannel(11, conv.data_format.voltage))
-    Xin[6] = float(conv.ReadChannel(10, conv.data_format.voltage))
-    Xin[7] = float(conv.ReadChannel(9, conv.data_format.voltage))
-    Xin[8] = float(conv.ReadChannel(8, conv.data_format.voltage))
-    Xin[9] = float(conv.ReadChannel(4, conv.data_format.voltage))
-
-    # a = round(a, 2)
-    # b = round(b, 2)
-    # c = round(c, 2)
-    # d = round(d, 2)
-    # e = round(e, 2)
-    # f = round(f, 2)
-    # g = round(g, 2)
-    # h = round(h, 2)
+def read():
+    global original
+    h = conv.ReadChannel(8, conv.data_format.voltage)
+    g = conv.ReadChannel(9, conv.data_format.voltage)
+    f = conv.ReadChannel(10, conv.data_format.voltage)
+    e = conv.ReadChannel(11, conv.data_format.voltage)
+    d = conv.ReadChannel(12, conv.data_format.voltage)
+    c = conv.ReadChannel(13, conv.data_format.voltage)
+    b = conv.ReadChannel(14, conv.data_format.voltage)
+    a = conv.ReadChannel(15, conv.data_format.voltage)
+    a = float(a)
+    b = float(b)
+    c = float(c)
+    d = float(d)
+    e = float(e)
+    f = float(f)
+    g = float(g)
+    h = float(h)
+    a = round(a, 2)
+    b = round(b, 2)
+    c = round(c, 2)
+    d = round(d, 2)
+    e = round(e, 2)
+    f = round(f, 2)
+    g = round(g, 2)
+    h = round(h, 2)
     # print("a=", a, "b=", b, "c=", c, "d=", d, "e=", e, "f=", f, "g=", g, "h=", h)
-    # return a,b,c,d,e,f,g,h
+    return a,b,c,d,e,f,g,h
 
-def zeroCalibration():
-    global CZero
-    global Xin
-
-    # Xin[0] = Xin[0] - FsrZero[0]
-    # Xin[1] = Xin[1] - FsrZero[1]
-    # Xin[2] = Xin[2] - FsrZero[2]
-    # Xin[3] = Xin[3] - FsrZero[3]
-    # Xin[4] = Xin[4] - FsrZero[4]
-    # Xin[5] = Xin[5] - FsrZero[5]
-    # Xin[6] = Xin[6] - FsrZero[6]
-    # Xin[7] = Xin[7] - FsrZero[7]
-    # Xin[8] = Xin[8] - FsrZero[8]
-    # Xin[9] = Xin[9] - FsrZero[9]
-
-    Xin = Xin - FsrZero
-    # a = a - a_zero # calibrate zero point for each sensor
-    # b = b - b_zero
-    # c = c - c_zero
-    # d = d - d_zero
-    # e = e - e_zero
-    # f = f - f_zero
-    # g = g - g_zero
-    # h = h - h_zero
-    # # a = round(a, 2)
-    # b = round(b, 2)
-    # c = round(c, 2)
-    # d = round(d, 2)
-    # e = round(e, 2)
-    # f = round(f, 2)
-    # g = round(g, 2)
-    # h = round(h, 2)
+def zeroCalibration(a,b,c,d,e,f,g,h):
+    global a_zero, b_zero, c_zero, d_zero, e_zero, f_zero, g_zero, h_zero
+    a = a - a_zero # calibrate zero point for each sensor
+    b = b - b_zero
+    c = c - c_zero
+    d = d - d_zero
+    e = e - e_zero
+    f = f - f_zero
+    g = g - g_zero
+    h = h - h_zero
+    a = round(a, 2)
+    b = round(b, 2)
+    c = round(c, 2)
+    d = round(d, 2)
+    e = round(e, 2)
+    f = round(f, 2)
+    g = round(g, 2)
+    h = round(h, 2)
     # print("a=", a, "b=", b, "c=", c, "d=", d, "e=", e, "f=", f, "g=", g, "h=", h)
-    # return a,b,c,d,e,f,g,h
+    return a,b,c,d,e,f,g,h
 
 # pre_calibration with default value
-def pre_calibration():
-    # global k0, k1, k2, k3, k4, k5, k6, k7, k8, k9
-    global FsrK
-    global Xin
-
-    # Xin[0] = FsrK[0] * Xin[0]
-    # Xin[1] = FsrK[1] * Xin[1]
-    # Xin[2] = FsrK[2] * Xin[2]
-    # Xin[3] = FsrK[3] * Xin[3]
-    # Xin[4] = FsrK[4] * Xin[4]
-    # Xin[5] = FsrK[5] * Xin[5]
-    # Xin[6] = FsrK[6] * Xin[6]
-    # Xin[7] = FsrK[7] * Xin[7]
-    # Xin[8] = FsrK[8] * Xin[8]
-    # Xin[9] = FsrK[9] * Xin[9]
-
-    Xin = FsrK * Xin
-    # a = k1 * a
-    # b = k2 * b
-    # c = k3 * c
-    # d = k4 * d
-    # e = k5 * e
-    # f = k6 * f
-    # g = k7 * g
-    # h = k8 * h
-
-    # a = round(a, 2)
-    # b = round(b, 2)
-    # c = round(c, 2)
-    # d = round(d, 2)
-    # e = round(e, 2)
-    # f = round(f, 2)
-    # g = round(g, 2)
-    # h = round(h, 2)
+def pre_calibration(a,b,c,d,e,f,g,h):
+    global k1, k2, k3, k4, k5, k6, k7, k8
+    a = k1 * a
+    b = k2 * b
+    c = k3 * c
+    d = k4 * d
+    e = k5 * e
+    f = k6 * f
+    g = k7 * g
+    h = k8 * h
+    a = round(a, 2)
+    b = round(b, 2)
+    c = round(c, 2)
+    d = round(d, 2)
+    e = round(e, 2)
+    f = round(f, 2)
+    g = round(g, 2)
+    h = round(h, 2)
     # print("a=", a, "b=", b, "c=", c, "d=", d, "e=", e, "f=", f, "g=", g, "h=", h)
-    # return a,b,c,d,e,f,g,h
+    return a,b,c,d,e,f,g,h
 
 def collect():
     counter = 0
     while counter < number:
-        read()
+        a, b, c, d, e, f, g, h = read()
 
         AA.append(a)
         BB.append(b)
@@ -523,122 +494,118 @@ def output(a, b, c, d, e, f, g, h, ox):
     return forward, backward, left_angle_for, left_angle_turn, right_angle_for, right_angle_turn, left_around, right_around
 
 # execution command to DAC board based on the output curve
-def execution():
-
+def execution(a, b, c, d, e, f, g, h, ox):
+    treshold  = 800 # avoid unstoppable and undistinguishable
     global pl2, pl1, pr1, pr2
     global Command_V, Command_W, Comand_DAC0, Comand_DAC1
-    global Xin, FsrZero, FsrK, Out_CP
-    a = Xin[1]
-    b = Xin[2]
-    c = Xin[3]
-    d = Xin[4]
-    e = Xin[5]
-    f = Xin[6]
-    g = Xin[7]
-    h = Xin[8]
-    ox = Out_CP
-
-    treshold  = 800 # avoid unstoppable and undistinguishable
-    
     forward, backward, left_angle_for, left_angle_turn, right_angle_for, right_angle_turn, left_around, right_around = output(a, b, c, d, e, f, g, h, ox)
-    # forward = round(forward, 0)
-    # backward = round(backward, 0)
-    # left_angle_for = round(left_angle_for, 0)
-    # left_angle_turn = round(left_angle_turn, 0)
-    # right_angle_for = round(right_angle_for, 0)
-    # right_angle_turn = round(right_angle_turn, 0)
-    # left_around = round(left_around, 0)
-    # right_around = round(right_around, 0)
+    forward = round(forward, 0)
+    backward = round(backward, 0)
+    left_angle_for = round(left_angle_for, 0)
+    left_angle_turn = round(left_angle_turn, 0)
+    right_angle_for = round(right_angle_for, 0)
+    right_angle_turn = round(right_angle_turn, 0)
+    left_around = round(left_around, 0)
+    right_around = round(right_around, 0)
 
-    if ox <= pr1 and ox >= pl1 and d >= treshold and e >= treshold:
+    if ox <= pr1 and ox >= pl1 and d >= 700 and e >= 700:
         Command_V = forward
         Command_W = 2500
         Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Command_V, Command_W)
-
+        conv.SET_DAC0(Comand_DAC0, conv.data_format.voltage)
+        conv.SET_DAC1(Comand_DAC1, conv.data_format.voltage)
+        conv.SET_DAC2(High_DAC, conv.data_format.voltage)
+        # print("forward", Command_V, Command_W, Comand_DAC0, Comand_DAC1)
         # continue
     # turn an angle
     elif (ox <= pl1 and ox >= pl2) and h <= treshold and (c >= treshold or b >= treshold):
         Command_V = left_angle_for
         Command_W = left_angle_turn
         Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Command_V, Command_W)
-
+        conv.SET_DAC0(Comand_DAC0, conv.data_format.voltage)
+        conv.SET_DAC1(Comand_DAC1, conv.data_format.voltage)
+        conv.SET_DAC2(High_DAC, conv.data_format.voltage)
+        # print("Turn right", Command_V, Command_W, Comand_DAC0, Comand_DAC1)
         # continue
     elif (ox >= pr1 and ox <= pr2) and a <= treshold and (f >= treshold or g >= treshold):
         Command_V = right_angle_for
         Command_W = right_angle_turn
         Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Command_V, Command_W)
-
+        conv.SET_DAC0(Comand_DAC0, conv.data_format.voltage)
+        conv.SET_DAC1(Comand_DAC1, conv.data_format.voltage)
+        conv.SET_DAC2(High_DAC, conv.data_format.voltage)
+        # print("Turn left", Command_V, Command_W, Comand_DAC0, Comand_DAC1) 
         # continue
     # turn around
     elif ox <= pl2 and h <= treshold and (a >= treshold or b >= treshold):
         Command_V = 2500
         Command_W = left_around
         Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Command_V, Command_W)
-
+        conv.SET_DAC0(Comand_DAC0, conv.data_format.voltage)
+        conv.SET_DAC1(Comand_DAC1, conv.data_format.voltage)
+        conv.SET_DAC2(High_DAC, conv.data_format.voltage)
+        # print("Turn right around", Command_V, Command_W, Comand_DAC0, Comand_DAC1)
         # continue
     elif ox >= pr2 and a<=treshold and (g >= treshold or h >= treshold):
         Command_V = 2500
         Command_W = right_around
         Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Command_V, Command_W)
-        
+        conv.SET_DAC0(Comand_DAC0, conv.data_format.voltage)
+        conv.SET_DAC1(Comand_DAC1, conv.data_format.voltage)
+        conv.SET_DAC2(High_DAC, conv.data_format.voltage)
+        # print("Turn left around", Command_V, Command_W, Comand_DAC0, Comand_DAC1)
     # backward
     elif a >= treshold and h >= treshold and d < 300 and e < 300:
         Command_V = backward
         Command_W = 2500
         Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Command_V, Command_W)
-        
+        conv.SET_DAC0(Comand_DAC0, conv.data_format.voltage)
+        conv.SET_DAC1(Comand_DAC1, conv.data_format.voltage)
+        conv.SET_DAC2(High_DAC, conv.data_format.voltage)
+        # print("backward", Command_V, Command_W, Comand_DAC0, Comand_DAC1)
     else:
         Command_V = 2500
         Command_W = 2500
         Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Command_V, Command_W)
-        
-
-
-def write_DA():
         conv.SET_DAC0(Comand_DAC0, conv.data_format.voltage)
         conv.SET_DAC1(Comand_DAC1, conv.data_format.voltage)
         conv.SET_DAC2(High_DAC, conv.data_format.voltage)
+        # print("stop", Comand_DAC0, Comand_DAC1)
 
 def control():
     global A1, B1, C1, D1, E1, F1, G1, H1
     global r1, r2, r3, r4, r5, r6, r7, r8
     global Command_V, Command_W, Comand_DAC0, Comand_DAC1
     global counter1
-    global Xin, FsrZero, FsrK, Out_CP
-    
-    read_FSR()
-    # a0, b0, c0, d0, e0, f0, g0, h0 = a, b, c, d, e, f, g, h
+    a, b, c, d, e, f, g, h = read()
+    a0, b0, c0, d0, e0, f0, g0, h0 = a, b, c, d, e, f, g, h
 
     # switch = conv.ReadChannel(7, conv.data_format.voltage)
     # if switch > 1000:
     #     calibration()
-    # zeroCalibration()
-    # pre_calibration()
-    Xin = Xin - FsrZero
-    Xin = FsrK * Xin
+
+    a, b, c, d, e, f, g, h = zeroCalibration(a,b,c,d,e,f,g,h)
+    a, b, c, d, e, f, g, h = pre_calibration(a,b,c,d,e,f,g,h)
 
     # ox is ???
-    ox = (r1*Xin[1] + r2*Xin[2] + r3*Xin[3] + r4*Xin[4] + r5*Xin[5] + r6*Xin[6] + r7*Xin[7] + r8*Xin[8]) / (Xin[1] + Xin[2] + Xin[3] + Xin[4] + Xin[5] + Xin[6] + Xin[7] + Xin[8])
+    ox = (r1*a + r2*b + r3*c + r4*d + r5*e + r6*f + r7*g + r8*h) / (a + b + c + d + e + f + g + h)
     ox = round(ox, 2)
-    Out_CP = ox;
     # print ox
-    execution()
-
-    write_DA()
+    execution(a, b, c, d, e, f, g, h, ox)
 
     counter1 += 1  # for estiamting frequency
 
     # log file
-    # a0, b0, c0, d0, e0, f0, g0, h0 = str(a0),str(b0),str(c0),str(d0),str(e0),str(f0),str(g0),str(h0)
-    # a0, b0, c0, d0, e0, f0, g0, h0 = a0.ljust(8),b0.ljust(8),c0.ljust(8),d0.ljust(8),e0.ljust(8),f0.ljust(8),g0.ljust(8),h0.ljust(8)
-    # a, b, c, d, e, f, g, h, ox, = str(a),str(b),str(c),str(d),str(e),str(f),str(g),str(h),str(ox)
-    # a, b, c, d, e, f, g, h, ox, = a.ljust(8),b.ljust(8),c.ljust(8),d.ljust(8),e.ljust(8),f.ljust(8),g.ljust(8),h.ljust(8),ox.ljust(8)
-    # Command_V, Command_W = str(Command_V),str(Command_W)
-    # Command_V, Command_W = Command_V.ljust(8), Command_W.ljust(8)
-    # Comand_DAC0, Comand_DAC1 = str(Comand_DAC0),str(Comand_DAC1)
-    # Comand_DAC0, Comand_DAC1 = Comand_DAC0.ljust(8), Comand_DAC1.ljust(8)
+    a0, b0, c0, d0, e0, f0, g0, h0 = str(a0),str(b0),str(c0),str(d0),str(e0),str(f0),str(g0),str(h0)
+    a0, b0, c0, d0, e0, f0, g0, h0 = a0.ljust(8),b0.ljust(8),c0.ljust(8),d0.ljust(8),e0.ljust(8),f0.ljust(8),g0.ljust(8),h0.ljust(8)
+    a, b, c, d, e, f, g, h, ox, = str(a),str(b),str(c),str(d),str(e),str(f),str(g),str(h),str(ox)
+    a, b, c, d, e, f, g, h, ox, = a.ljust(8),b.ljust(8),c.ljust(8),d.ljust(8),e.ljust(8),f.ljust(8),g.ljust(8),h.ljust(8),ox.ljust(8)
+    Command_V, Command_W = str(Command_V),str(Command_W)
+    Command_V, Command_W = Command_V.ljust(8), Command_W.ljust(8)
+    Comand_DAC0, Comand_DAC1 = str(Comand_DAC0),str(Comand_DAC1)
+    Comand_DAC0, Comand_DAC1 = Comand_DAC0.ljust(8), Comand_DAC1.ljust(8)
 
-    
+    Out_CP = ox;
 
     # RosMassage = ("%s %s %s %s %s", ox, Command_V, Command_W, Comand_DAC0, Comand_DAC1)
     # return RosMassage
@@ -682,78 +649,6 @@ signal.signal(signal.SIGTERM, exit)
 # end = time.time()  # for calculate frequency
 
 # print float(counter1) / float(end - start) # for calculate frequency
-
-
-def qolo_node():
-    global Comand_DAC0, Comand_DAC1
-    global Xin, FsrZero, FsrK
-    pub = rospy.Publisher('qolo', String, queue_size=3)
-    rospy.init_node('qolo_control', anonymous=True)
-    rate = rospy.Rate(20) #  20 hz
-    while not rospy.is_shutdown():
-
-        control()
-        RemoteE = conv.ReadChannel(7, conv.data_format.voltage)
-        ComError = conv.ReadChannel(6, conv.data_format.voltage)
-        # print('Comerror', ComError)
-        if ComError<=THRESHOLD_V:
-            enable_mbed()
-        if RemoteE >= THRESHOLD_V:
-            print('RemoteE', RemoteE)
-            FlagEmergency=1
-            while FlagEmergency:
-                conv.SET_DAC2(0, conv.data_format.voltage)
-                conv.SET_DAC0(ZERO_V, conv.data_format.voltage)
-                conv.SET_DAC1(ZERO_V, conv.data_format.voltage)
-                ResetFSR = conv.ReadChannel(5, conv.data_format.voltage)
-                if ResetFSR >= THRESHOLD_V:
-                    print('ResetFSR ', ResetFSR)
-                    FlagEmergency=0
-                    enable_mbed()
-                time.sleep(0.1)
-
-        # hello_str = "hello Qolo %s" % rospy.get_time()
-        # RosMassage = "%s %s %s %s %s %s %s %s %s %s" % (Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9])
-        RosMassage = "%s %s %s %s %s" % (Out_v, Out_w, Comand_DAC0, Comand_DAC1, Out_CP)
-        rospy.loginfo(RosMassage)
-        pub.publish(RosMassage)
-        rate.sleep()
-
-
-def qolo_IODATA():
-    pub = rospy.Publisher('qolo', String, queue_size=5)
-    rospy.init_node('qolo_control', anonymous=True)
-    rate = rospy.Rate(100) #  20 hz
-    while not rospy.is_shutdown():
-
-        control()
-        RemoteE = conv.ReadChannel(7, conv.data_format.voltage)
-        ComError = conv.ReadChannel(6, conv.data_format.voltage)
-        # print('Comerror', ComError)
-        if ComError<=THRESHOLD_V:
-            enable_mbed()
-        if RemoteE >= THRESHOLD_V:
-            print('RemoteE', RemoteE)
-            FlagEmergency=1
-            while FlagEmergency:
-                conv.SET_DAC2(0, conv.data_format.voltage)
-                conv.SET_DAC0(ZERO_V, conv.data_format.voltage)
-                conv.SET_DAC1(ZERO_V, conv.data_format.voltage)
-                ResetFSR = conv.ReadChannel(5, conv.data_format.voltage)
-                if ResetFSR >= THRESHOLD_V:
-                    print('ResetFSR ', ResetFSR)
-                    FlagEmergency=0
-                    enable_mbed()
-                time.sleep(0.1)
-
-        # hello_str = "hello Qolo %s" % rospy.get_time()
-        RosMassage = "%s %s %s %s %s %s %s %s %s %s" % (Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9])
-        # RosMassage = "%s %s %s %s" % (Out_v, Out_w, Out_CP, Out_F)
-        rospy.loginfo(RosMassage)
-        pub.publish(RosMassage)
-        rate.sleep()
-
-
 
 if __name__ == '__main__':
     try:
