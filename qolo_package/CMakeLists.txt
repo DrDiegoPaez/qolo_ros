@@ -5,6 +5,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  rds_network_ros
 )
+
 
 catkin_package()

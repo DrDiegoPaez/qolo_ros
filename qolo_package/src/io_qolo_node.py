@@ -18,6 +18,7 @@ import signal
 
 import rospy
 from std_msgs.msg import String
+from rds_network_ros.srv import *
 
 conv = converter.AD_DA()
 
@@ -43,10 +44,27 @@ DISTANCE = 0.62/2  # distance bettween two wheels
 RADIUS = 0.304/2 # meter
 
 MaxSpeed = 1.0 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
+MinSpeed = MaxSpeed*backward_coefficient
+MaxAngular = 4.124
 W_ratio = 3 # Ratio of the maximum angular speed (232 deg/s)
 
 Max_motor_v = (MaxSpeed/ (RADIUS*(2*np.pi))) *60*GEAR # max motor speed: 1200 rpm
 
+# Setting for the RDS service
+max_linear = MaxSpeed;
+min_linear = -MinSpeed;
+absolute_angular_at_min_linear = 0.;
+absolute_angular_at_max_linear = 0.;
+absolute_angular_at_zero_linear = MaxAngular/W_ratio;
+feasible = 0
+In_v = 0.;
+In_w = 0.;
+last_v = 0.;
+last_w = 0.;
+cycle=0.
+
+motor_v = 0
+motor_w = 0
 Command_V = 2500
 Command_W = 2500
 Comand_DAC0 = 0
@@ -57,6 +75,8 @@ rpm_L = 0;
 rpm_R = 0;
 
 # Global variables for logging
+
+
 Out_v = 0;
 Out_w = 0;
 Out_CP = 0;
@@ -147,11 +167,11 @@ signal.signal(signal.SIGTERM, exit)
 
 def transformTo_Lowevel(Command_V, Command_W):
     # print('received ', Command_V, Command_W)
-    global DISTANCE, RADIUS, Out_v, Out_w, MaxSpeed, GEAR, Max_motor_v, rpm_L, rpm_R
+    global DISTANCE, RADIUS, Out_v, Out_w, MaxSpeed, GEAR, Max_motor_v, rpm_L, rpm_R, motor_v, motor_w
 
+    # These lines should be commented to execute the RDS output
     motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
     motor_w = (2*Max_motor_v/(DISTANCE)*Command_W/5000 - Max_motor_v/(DISTANCE)) / W_ratio # In [RPM]
-
     Out_v = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
     Out_w = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
 
@@ -306,49 +326,41 @@ def execution():
     if ox <= pr1 and ox >= pl1 and d >= treshold and e >= treshold:
         Command_V = forward
         Command_W = 2500
-        Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Command_V, Command_W)
-
         # continue
     # turn an angle
     elif (ox <= pl1 and ox >= pl2) and h <= treshold and (c >= treshold or b >= treshold):
         Command_V = left_angle_for
         Command_W = left_angle_turn
-        Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Command_V, Command_W)
-
         # continue
     elif (ox >= pr1 and ox <= pr2) and a <= treshold and (f >= treshold or g >= treshold):
         Command_V = right_angle_for
         Command_W = right_angle_turn
-        Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Command_V, Command_W)
-
         # continue
     # turn around
     elif ox <= pl2 and h <= treshold and (a >= treshold or b >= treshold):
         Command_V = 2500
         Command_W = left_around
-        Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Command_V, Command_W)
-
         # continue
     elif ox >= pr2 and a<=treshold and (g >= treshold or h >= treshold):
         Command_V = 2500
         Command_W = right_around
-        Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Command_V, Command_W)
         
     # backward
     elif a >= treshold and h >= treshold and d < 300 and e < 300:
         Command_V = backward
         Command_W = 2500
-        Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Command_V, Command_W)
         
     else:
         Command_V = 2500
         Command_W = 2500
-        Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Command_V, Command_W)
         
 
 
 def write_DA():
-    global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1
+    global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Command_V, Command_W
+
+    Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Command_V, Command_W)
+
     # Error in the ADC Board connection
     if Comand_DAC0 < 4870:
         Send_DAC0 = Comand_DAC0 +130
@@ -364,11 +376,50 @@ def write_DA():
     conv.SET_DAC1(Send_DAC1, conv.data_format.voltage)
     conv.SET_DAC2(High_DAC, conv.data_format.voltage)
 
+
+def auto_service():
+    global Out_v, Out_w, In_v, In_w, last_v, last_w, cycle, feasible
+    # print "Waiting for RDS Service"
+
+    rospy.wait_for_service('velocity_command_correction_rds')
+    # try:
+    RDS = rospy.ServiceProxy('velocity_command_correction_rds',VelocityCommandCorrectionRDS)
+
+    request = VelocityCommandCorrectionRDSRequest()
+    request.nominal_command.linear = Out_v;
+    request.nominal_command.angular = Out_w;
+
+    request.velocity_limits.max_linear = max_linear;
+    request.velocity_limits.min_linear = min_linear;
+    request.velocity_limits.abs_angular_at_min_linear = absolute_angular_at_min_linear;
+    request.velocity_limits.abs_angular_at_max_linear = absolute_angular_at_max_linear;
+    request.velocity_limits.abs_angular_at_zero_linear = absolute_angular_at_zero_linear;
+
+    request.last_actual_command.linear = last_v;
+    request.last_actual_command.angular = last_w;
+    request.command_cycle_time = time.clock() - cycle;
+    request.abs_linear_acceleration_limit = 1;
+    request.abs_angular_acceleration_limit = 1;
+
+    response = RDS(request)
+    In_v = response.corrected_command.linear
+    In_w = response.corrected_command.angular
+    feasible = response.feasible
+
+    last_v = Out_v
+    last_w = Out_w
+    cycle = time.clock()
+    # print cycle 
+
+# except:
+# print "Service failed"
+
+
 def control():
     global A1, B1, C1, D1, E1, F1, G1, H1
     # global r1, r2, r3, r4, r5, r6, r7, r8
     global Rcenter
-    global Command_V, Command_W, Comand_DAC0, Comand_DAC1
+    global Command_V, Command_W, Comand_DAC0, Comand_DAC1, motor_v, motor_w, Out_v, Out_w
     global counter1
     global Xin, FsrZero, FsrK, Out_CP
     
@@ -389,8 +440,16 @@ def control():
     Out_CP = ox;
     # print ox
     
+    # Runs the user input and returns Command_V and Command_W --> in 0-5k scale
     execution()
     
+    motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
+    motor_w = (2*Max_motor_v/(DISTANCE)*Command_W/5000 - Max_motor_v/(DISTANCE)) / W_ratio # In [RPM]
+    Out_v = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
+    Out_w = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
+
+    auto_service()
+
     # Debugging the speed controller
     # if counter1 < 20:
     #     Comand_DAC0 = 4000
@@ -406,7 +465,6 @@ def control():
 signal.signal(signal.SIGINT, exit)
 signal.signal(signal.SIGTERM, exit)
 
-
 def io_node():
     global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1
     global Xin, FsrZero, FsrK
@@ -418,6 +476,7 @@ def io_node():
     pub = rospy.Publisher('qolo', String, queue_size=3)
     rospy.init_node('qolo_control', anonymous=True)
     rate = rospy.Rate(20) #  20 hz
+
 
     while not rospy.is_shutdown():
 
@@ -443,7 +502,8 @@ def io_node():
                     enable_mbed()
                 time.sleep(0.1)
 
-        RosMassage = "%s %s %s %s%s %s %s %s %s %s %s %s %s %s" % (Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Send_DAC0, Send_DAC1, Out_v, Out_w)
+        # RosMassage = "%s %s %s %s%s %s %s %s %s %s %s %s %s %s" % (Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Send_DAC0, Send_DAC1, Out_v, Out_w)
+        RosMassage = "%s %s %s %s %s" % (Out_v, Out_w, In_v, In_w, feasible)
         rospy.loginfo(RosMassage)
 
         pub.publish(RosMassage)
