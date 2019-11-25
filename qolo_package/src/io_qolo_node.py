@@ -38,34 +38,12 @@ MBED_Enable = mraa.Gpio(36) #11 17
 MBED_Enable.dir(mraa.DIR_OUT)
 
 
-# real zero point of each sensor
-a_zero, b_zero, c_zero, d_zero, e_zero, f_zero, g_zero, h_zero = 305.17, 264.7, 441.57, 336.46, 205.11, 441.57, 336.46, 205.11
-
-# FsrZero = arr.array('d',[200.1 305.17, 264.7, 441.57, 336.46, 205.11, 441.57, 336.46, 205.11 200.1])
-FsrZero = np.array([100.1, 305.17, 264.7, 441.57, 336.46, 205.11, 441.57, 336.46, 205.11, 200.1])
-# default value for pre-configuration
-# k1, k2, k3, k4, k5, k6, k7, k8 =    0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 0.57, 0.63 # 2.48, 0.91, 1.59, 1.75, 1.46
-FsrK = np.array([0.63, 0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 0.57, 0.63, 0.63])
-
-# Vector input for all sensor data
-# Xin = np.zeros((10))
-Xin = np.array([0.0, 0., 0., 0., 0., 0., 0., 0., 0., 0.])
-
-# # coefficient for calculate center of pressure: ox
-Rcenter = np.array([0., -3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5, 0.])
-
-# classification point for center of pressure ox(calibration needed)
-pl2, pl1, pr1, pr2 = -1.9, -0.6, 0.6, 1.9
-# -1.72, 0.075, 1.455, 1.98 
-# -2.42, 0.67, 1.27, 1.82  
-# -0.97, -0.2, 0.2, 1.17
-
 GEAR = 12.64
 DISTANCE = 0.62/2  # distance bettween two wheels
 RADIUS = 0.304/2 # meter
 
 MaxSpeed = 1.0 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
-W_ratio = 2 # Ratio of the maximum angular speed (232 deg/s)
+W_ratio = 3 # Ratio of the maximum angular speed (232 deg/s)
 
 Max_motor_v = (MaxSpeed/ (RADIUS*(2*np.pi))) *60*GEAR # max motor speed: 1200 rpm
 
@@ -86,6 +64,28 @@ Out_F = 0;
 
 counter1 = 0
 number = 100
+
+# real zero point of each sensor
+a_zero, b_zero, c_zero, d_zero, e_zero, f_zero, g_zero, h_zero = 305.17, 264.7, 441.57, 336.46, 205.11, 441.57, 336.46, 205.11
+
+# FsrZero = arr.array('d',[200.1 305.17, 264.7, 441.57, 336.46, 205.11, 441.57, 336.46, 205.11 200.1])
+FsrZero = np.array([100.1, 305.17, 264.7, 441.57, 336.46, 205.11, 441.57, 336.46, 205.11, 200.1])
+# default value for pre-configuration
+# k1, k2, k3, k4, k5, k6, k7, k8 =    0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 0.57, 0.63 # 2.48, 0.91, 1.59, 1.75, 1.46
+FsrK = np.array([0.63, 0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 0.57, 0.63, 0.63])
+
+# Vector input for all sensor data
+# Xin = np.zeros((10))
+Xin = np.array([0.0, 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+
+# # coefficient for calculate center of pressure: ox
+Rcenter = np.array([0., -3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5, 0.])
+
+# classification point for center of pressure ox(calibration needed)
+pl2, pl1, pr1, pr2 = -1.9, -0.7, 0.7, 1.9
+# -1.72, 0.075, 1.455, 1.98 
+# -2.42, 0.67, 1.27, 1.82  
+# -0.97, -0.2, 0.2, 1.17
 
 AA = []
 BB = []
@@ -152,8 +152,8 @@ def transformTo_Lowevel(Command_V, Command_W):
     motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
     motor_w = (2*Max_motor_v/(DISTANCE)*Command_W/5000 - Max_motor_v/(DISTANCE)) / W_ratio # In [RPM]
 
-    Out_v = round((motor_v*RADIUS)*(np.pi/30),4)
-    Out_w = round((motor_w*RADIUS)*(np.pi/30),4)
+    Out_v = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
+    Out_w = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
 
     # print("left wheel = ",motor_v, "right wheel = ",motor_w)
     rpm_L = motor_v - DISTANCE*motor_w

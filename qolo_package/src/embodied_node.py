@@ -39,6 +39,31 @@ MBED_Enable = mraa.Gpio(36) #11 17
 MBED_Enable.dir(mraa.DIR_OUT)
 
 
+GEAR = 12.64
+DISTANCE = 0.62/2  # distance bettween two wheels
+RADIUS = 0.304/2 # meter
+
+MaxSpeed = 1.0 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
+W_ratio = 2 # Ratio of the maximum angular speed (232 deg/s)
+
+Max_motor_v = (MaxSpeed/ (RADIUS*(2*np.pi))) *60*GEAR # max motor speed: 1200 rpm
+
+Command_V = 2500
+Command_W = 2500
+Comand_DAC0 = 0
+Comand_DAC1 = 0
+rpm_L = 0;
+rpm_R = 0;
+
+# Global variables for logging
+Out_v = 0;
+Out_w = 0;
+Out_CP = 0;
+Out_F = 0;
+
+counter1 = 0
+number = 100
+
 # real zero point of each sensor
 a_zero, b_zero, c_zero, d_zero, e_zero, f_zero, g_zero, h_zero = 305.17, 264.7, 441.57, 336.46, 205.11, 441.57, 336.46, 205.11
 
@@ -74,30 +99,6 @@ pl2, pl1, pr1, pr2 = -1.9, -0.6, 0.6, 1.9
 # print(pl2, pl1, pr1, pr2 )
 # f1.close()
 
-GEAR = 12.64
-DISTANCE = 0.62/2  # distance bettween two wheels
-RADIUS = 0.304/2 # meter
-
-MaxSpeed = 1.0 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
-W_ratio = 2 # Ratio of the maximum angular speed (232 deg/s)
-
-Max_motor_v = (MaxSpeed/ (RADIUS*(2*np.pi))) *60*GEAR # max motor speed: 1200 rpm
-
-Command_V = 2500
-Command_W = 2500
-Comand_DAC0 = 0
-Comand_DAC1 = 0
-rpm_L = 0;
-rpm_R = 0;
-
-# Global variables for logging
-Out_v = 0;
-Out_w = 0;
-Out_CP = 0;
-Out_F = 0;
-
-counter1 = 0
-number = 100
 
 AA = []
 BB = []
@@ -158,85 +159,10 @@ def exit(signum, frame):
 signal.signal(signal.SIGINT, exit)
 signal.signal(signal.SIGTERM, exit)
 
-def transformTo_Lowevel(Command_V, Command_W):
-    # print('received ', Command_V, Command_W)
-    global DISTANCE, RADIUS, Out_v, Out_w, MaxSpeed, GEAR, Max_motor_v, rpm_L, rpm_R
-
-    motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
-    motor_w = (2*Max_motor_v/(DISTANCE)*Command_W/5000 - Max_motor_v/(DISTANCE)) / W_ratio # In [RPM]
-
-    # Out_v = round((motor_v*RADIUS)*(np.pi/30),4)
-    # Out_w = round((motor_w*6),4)
-
-    # print("left wheel = ",motor_v, "right wheel = ",motor_w)
-    rpm_L = motor_v - DISTANCE*motor_w
-    rpm_R = motor_v + DISTANCE*motor_w
-    
-    Out_v = round( ((rpm_R+rpm_L)*RADIUS*(np.pi/60)), 4)
-    Out_w = round( (((rpm_R-rpm_L)*6)/DISTANCE), 4)
-
-    # print("left wheel = ",rpm_L, "right wheel = ",rpm_R)
-    Command_L = 5000*rpm_L/2400 + ZERO_V
-    Command_R = 5000*rpm_R/2400 + ZERO_V
-    # print('transformed ', Command_L, Command_R)
-    Command_L = round(Command_L, 4)
-    Command_R = round(Command_R, 4)
-    # print('transformed ', Command_L, Command_R)
-    return Command_L, Command_R
-
-# def transformTo_Lowevel(Command_V, Command_W):
-#     global DISTANCE, RADIUS
-#     # Command_W = 5000
-#     MaxSpeed = 5.44 # max Qolo speed: km/h
-#     Max_motor_v = MaxSpeed*1000/3600/RADIUS/(2*np.pi)*60*GEAR # max motor speed: 1200 rpm
-#     motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v
-#     motor_w = (2*Max_motor_v/(DISTANCE/2)*Command_W/5000 - Max_motor_v/(DISTANCE/2)) / W_ratio
-#     # print("left wheel = ",motor_v, "right wheel = ",motor_w)
-#     rpm_L = motor_v - DISTANCE*motor_w/2
-#     rpm_R = motor_v + DISTANCE*motor_w/2
-#     # print("left wheel = ",rpm_L, "right wheel = ",rpm_R)
-#     Command_L = 5000*rpm_L/2400 + 2500
-#     Command_R = 5000*rpm_R/2400 + 2500
-#     Command_L = round(Command_L, 2)
-#     Command_R = round(Command_R, 2)
-#     # print(Command_L, Command_R)
-#     return Command_L, Command_R
-
-def log(a0, b0, c0, d0, e0, f0, g0, h0, a, b, c, d, e, f, g, h, ox, Command_V, Command_W, Comand_DAC0, Comand_DAC1, filename,level,fmt='%(created).6f %(message)s'):
-    logger = logging.getLogger(filename)
-    # logger.propagate = False
-    format_str = logging.Formatter(fmt)
-    logger.setLevel(level_relations.get(level))
-    sh = logging.StreamHandler()
-    sh.setFormatter(format_str)
-    th = logging.handlers.TimedRotatingFileHandler(filename=filename,encoding='utf-8')
-    th.setFormatter(format_str)
-    logger.addHandler(sh)
-    logger.addHandler(th)
-    # logger.debug("%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s", a0, b0, c0, d0, e0, f0, g0, h0, a, b, c, d, e, f, g, h, ox, Command_V, Command_W, Comand_DAC0, Comand_DAC1)
-    # logger.info("")
-    logger.info("%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s", a0, b0, c0, d0, e0, f0, g0, h0, a, b, c, d, e, f, g, h, ox, Command_V, Command_W, Comand_DAC0, Comand_DAC1)
-    logger.removeHandler(sh)
-    logger.removeHandler(th)
-
-# read data from ADDA board
-def read_FSR():
-    Xin[0] = float(conv.ReadChannel(5, conv.data_format.voltage))
-    Xin[1] = float(conv.ReadChannel(15, conv.data_format.voltage))
-    Xin[2] = float(conv.ReadChannel(14, conv.data_format.voltage))
-    Xin[3] = float(conv.ReadChannel(13, conv.data_format.voltage))
-    Xin[4] = float(conv.ReadChannel(12, conv.data_format.voltage))
-    Xin[5] = float(conv.ReadChannel(11, conv.data_format.voltage))
-    Xin[6] = float(conv.ReadChannel(10, conv.data_format.voltage))
-    Xin[7] = float(conv.ReadChannel(9, conv.data_format.voltage))
-    Xin[8] = float(conv.ReadChannel(8, conv.data_format.voltage))
-    Xin[9] = float(conv.ReadChannel(4, conv.data_format.voltage))
-
 
 def zeroCalibration():
     global CZero
     global Xin
-
     Xin = Xin - FsrZero
 
 # pre_calibration with default value
@@ -244,7 +170,6 @@ def pre_calibration():
     # global k0, k1, k2, k3, k4, k5, k6, k7, k8, k9
     global FsrK
     global Xin
-
     Xin = FsrK * Xin
 
 def collect():
@@ -372,6 +297,32 @@ def calibration():
     print 'online calibration finished'
     time.sleep(3)
 
+    def transformTo_Lowevel(Command_V, Command_W):
+    # print('received ', Command_V, Command_W)
+    global DISTANCE, RADIUS, Out_v, Out_w, MaxSpeed, GEAR, Max_motor_v, rpm_L, rpm_R
+
+    motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
+    motor_w = (2*Max_motor_v/(DISTANCE)*Command_W/5000 - Max_motor_v/(DISTANCE)) / W_ratio # In [RPM]
+
+    Out_v = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
+    Out_w = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
+
+    # print("left wheel = ",motor_v, "right wheel = ",motor_w)
+    rpm_L = motor_v - DISTANCE*motor_w
+    rpm_R = motor_v + DISTANCE*motor_w
+    
+    # Out_v = round( ((rpm_R+rpm_L)*RADIUS*(np.pi/60)), 4)
+    # Out_w = round( (((rpm_R-rpm_L)*6)/DISTANCE), 4)
+
+    # print("left wheel = ",rpm_L, "right wheel = ",rpm_R)
+    Command_L = 5000*rpm_L/2400 + ZERO_V
+    Command_R = 5000*rpm_R/2400 + ZERO_V
+    # print('transformed ', Command_L, Command_R)
+    Command_L = round(Command_L, 4)
+    Command_R = round(Command_R, 4)
+    # print('transformed ', Command_L, Command_R)
+    return Command_L, Command_R
+
 # output curve: Linear/Angular Velocity-Pressure Center
 def output(a, b, c, d, e, f, g, h, ox):
     global forward_coefficient, left_turning_coefficient, right_turning_coefficient, backward_coefficient
@@ -497,13 +448,7 @@ def execution():
         Command_V = 2500
         Command_W = 2500
         Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Command_V, Command_W)
-        
 
-
-def write_DA():
-        conv.SET_DAC0(Comand_DAC0, conv.data_format.voltage)
-        conv.SET_DAC1(Comand_DAC1, conv.data_format.voltage)
-        conv.SET_DAC2(High_DAC, conv.data_format.voltage)
 
 def control():
     global A1, B1, C1, D1, E1, F1, G1, H1
@@ -515,8 +460,8 @@ def control():
     
     read_FSR()
 
-    if Xin[0] > THRESHOLD_V and Xin[10] > THRESHOLD_V:
-         calibration()
+    # if Xin[0] > THRESHOLD_V and Xin[10] > THRESHOLD_V:
+    #      calibration()
 
     # FSR Inputs: 
     Xin = Xin - FsrZero     # Values in [mV]
@@ -590,45 +535,23 @@ signal.signal(signal.SIGTERM, exit)
 # print float(counter1) / float(end - start) # for calculate frequency
 
 
-def qolo_node():
-    global Comand_DAC0, Comand_DAC1
+def qolo_embodied_node():
+    global Comand_DAC0, Comand_DAC1, Command_V, Command_W
     global Xin, FsrZero, FsrK
     # Setting ROS Node
     
     # Call the calibration File
-    load_calibration()
+    # load_calibration()
 
     pub = rospy.Publisher('qolo', String, queue_size=3)
     rospy.init_node('qolo_user', anonymous=True)
-    rate = rospy.Rate(20) #  20 hz
+    rate = rospy.Rate(5) #  5 hz
 
     while not rospy.is_shutdown():
 
         control()   # Function of control for Qolo
         
-        RemoteE = conv.ReadChannel(7, conv.data_format.voltage)
-        
-        ComError = conv.ReadChannel(6, conv.data_format.voltage)
-        # print('Comerror', ComError)
-        if ComError<=THRESHOLD_V:
-            enable_mbed()
-        if RemoteE >= THRESHOLD_V:
-            print('RemoteE', RemoteE)
-            FlagEmergency=1
-            while FlagEmergency:
-                conv.SET_DAC2(0, conv.data_format.voltage)
-                conv.SET_DAC0(ZERO_V, conv.data_format.voltage)
-                conv.SET_DAC1(ZERO_V, conv.data_format.voltage)
-                ResetFSR = conv.ReadChannel(5, conv.data_format.voltage)
-                if ResetFSR >= THRESHOLD_V:
-                    print('ResetFSR ', ResetFSR)
-                    FlagEmergency=0
-                    enable_mbed()
-                time.sleep(0.1)
-
-        # hello_str = "hello Qolo %s" % rospy.get_time()
-        # RosMassage = "%s %s %s %s %s %s %s %s %s %s" % (Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9])
-        RosMassage = "%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s" % (Comand_DAC0, Comand_DAC1, Out_v, Out_w, Out_CP, Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9])
+        RosMassage = "%s %s %s" % (Command_V, Command_W, Out_CP)
         rospy.loginfo(RosMassage)
 
         pub.publish(RosMassage)
@@ -637,6 +560,6 @@ def qolo_node():
 
 if __name__ == '__main__':
     try:
-        qolo_node()
+        qolo_embodied_node()
     except rospy.ROSInterruptException:
         pass
