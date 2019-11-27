@@ -17,7 +17,7 @@ import mraa
 import signal
 
 import rospy
-cd srcfrom std_msgs.msg import String
+from std_msgs.msg import String
 
 
 conv = converter.AD_DA()
@@ -297,31 +297,31 @@ def calibration():
     print 'online calibration finished'
     time.sleep(3)
 
-    def transformTo_Lowevel(Command_V, Command_W):
-    # print('received ', Command_V, Command_W)
-    global DISTANCE, RADIUS, Out_v, Out_w, MaxSpeed, GEAR, Max_motor_v, rpm_L, rpm_R
+# def transformTo_Lowevel(Command_V, Command_W):
+#     # print('received ', Command_V, Command_W)
+#     global DISTANCE, RADIUS, Out_v, Out_w, MaxSpeed, GEAR, Max_motor_v, rpm_L, rpm_R
 
-    motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
-    motor_w = (2*Max_motor_v/(DISTANCE)*Command_W/5000 - Max_motor_v/(DISTANCE)) / W_ratio # In [RPM]
+#     motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
+#     motor_w = (2*Max_motor_v/(DISTANCE)*Command_W/5000 - Max_motor_v/(DISTANCE)) / W_ratio # In [RPM]
 
-    Out_v = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
-    Out_w = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
+#     Out_v = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
+#     Out_w = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
 
-    # print("left wheel = ",motor_v, "right wheel = ",motor_w)
-    rpm_L = motor_v - DISTANCE*motor_w
-    rpm_R = motor_v + DISTANCE*motor_w
+#     # print("left wheel = ",motor_v, "right wheel = ",motor_w)
+#     rpm_L = motor_v - DISTANCE*motor_w
+#     rpm_R = motor_v + DISTANCE*motor_w
     
-    # Out_v = round( ((rpm_R+rpm_L)*RADIUS*(np.pi/60)), 4)
-    # Out_w = round( (((rpm_R-rpm_L)*6)/DISTANCE), 4)
+#     # Out_v = round( ((rpm_R+rpm_L)*RADIUS*(np.pi/60)), 4)
+#     # Out_w = round( (((rpm_R-rpm_L)*6)/DISTANCE), 4)
 
-    # print("left wheel = ",rpm_L, "right wheel = ",rpm_R)
-    Command_L = 5000*rpm_L/2400 + ZERO_V
-    Command_R = 5000*rpm_R/2400 + ZERO_V
-    # print('transformed ', Command_L, Command_R)
-    Command_L = round(Command_L, 4)
-    Command_R = round(Command_R, 4)
-    # print('transformed ', Command_L, Command_R)
-    return Command_L, Command_R
+#     # print("left wheel = ",rpm_L, "right wheel = ",rpm_R)
+#     Command_L = 5000*rpm_L/2400 + ZERO_V
+#     Command_R = 5000*rpm_R/2400 + ZERO_V
+#     # print('transformed ', Command_L, Command_R)
+#     Command_L = round(Command_L, 4)
+#     Command_R = round(Command_R, 4)
+#     # print('transformed ', Command_L, Command_R)
+#     return Command_L, Command_R
 
 # output curve: Linear/Angular Velocity-Pressure Center
 def output(a, b, c, d, e, f, g, h, ox):
