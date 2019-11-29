@@ -56,10 +56,11 @@ rpm_L = 0;
 rpm_R = 0;
 
 # Global variables for logging
-Out_v = 0;
-Out_w = 0;
-Out_CP = 0;
-Out_F = 0;
+Out_v = 0.;
+Out_w = 0.;
+Out_CP = 0.;
+Out_F = 0.;
+prevT=0.
 
 counter1 = 0
 number = 100
@@ -449,6 +450,19 @@ def execution():
         Command_W = 2500
         Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Command_V, Command_W)
 
+# read data from ADDA board
+def read_FSR():
+    Xin[0] = float(conv.ReadChannel(5, conv.data_format.voltage))
+    Xin[1] = float(conv.ReadChannel(15, conv.data_format.voltage))
+    Xin[2] = float(conv.ReadChannel(14, conv.data_format.voltage))
+    Xin[3] = float(conv.ReadChannel(13, conv.data_format.voltage))
+    Xin[4] = float(conv.ReadChannel(12, conv.data_format.voltage))
+    Xin[5] = float(conv.ReadChannel(11, conv.data_format.voltage))
+    Xin[6] = float(conv.ReadChannel(10, conv.data_format.voltage))
+    Xin[7] = float(conv.ReadChannel(9, conv.data_format.voltage))
+    Xin[8] = float(conv.ReadChannel(8, conv.data_format.voltage))
+    Xin[9] = float(conv.ReadChannel(4, conv.data_format.voltage))
+
 
 def control():
     global A1, B1, C1, D1, E1, F1, G1, H1
@@ -537,23 +551,26 @@ signal.signal(signal.SIGTERM, exit)
 
 def qolo_embodied_node():
     global Comand_DAC0, Comand_DAC1, Command_V, Command_W
-    global Xin, FsrZero, FsrK
+    global Xin, FsrZero, FsrK, prevT
+    prevT = 0
     # Setting ROS Node
     
     # Call the calibration File
     # load_calibration()
-
+    print 'starting embodied_control'
     pub = rospy.Publisher('qolo', String, queue_size=3)
-    rospy.init_node('qolo_user', anonymous=True)
+    rospy.init_node('qolo_embodied_node', anonymous=True)
     rate = rospy.Rate(5) #  5 hz
 
     while not rospy.is_shutdown():
 
-        control()   # Function of control for Qolo
+        read_FSR()   # Function of control for Qolo
+        cycle_T = time.clock() - prevT
+        prevT = time.clock()
+        # RosMassage = "%s %s %s" % (Command_V, Command_W, Out_CP)
+        RosMassage = "%s %s %s %s %s %s %s %s %s %s %s" % (cycle_T,Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9])
         
-        RosMassage = "%s %s %s" % (Command_V, Command_W, Out_CP)
         rospy.loginfo(RosMassage)
-
         pub.publish(RosMassage)
         rate.sleep()
 
