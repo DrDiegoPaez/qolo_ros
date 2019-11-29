@@ -1,0 +1,18 @@
+
+Execute in 110
+
+roscore (optional)
+roslaunch qolo qolo.launch
+
+
+Execute in 120:
+
+roslaunch rds_ros rds_test.launch
+roslaunch movidius_ncs_launch ncs_camera.launch cnn_type:=tinyyolo_v1 camera:=realsense
+rosrun kalman_bounding_boxes kalman_bounding_boxes_node
+
+rosbag record /qolo /rds_to_gui /laserscan /camera/color/image_raw /filtered_boxes
+
+
+To see raw image
+roslaunch my_ncs_stream_detection_example.launch camera_topic:="/camera/color/image_raw"
