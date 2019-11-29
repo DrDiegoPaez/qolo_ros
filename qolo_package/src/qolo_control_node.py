@@ -15,6 +15,7 @@ import logging
 from logging import handlers
 import mraa
 import signal
+import datetime
 
 import rospy
 from std_msgs.msg import String
@@ -102,7 +103,8 @@ a_zero, b_zero, c_zero, d_zero, e_zero, f_zero, g_zero, h_zero = 305.17, 264.7, 
 FsrZero = np.array([100.1, 305.17, 264.7, 441.57, 336.46, 205.11, 441.57, 336.46, 205.11, 200.1])
 # default value for pre-configuration
 # k1, k2, k3, k4, k5, k6, k7, k8 =    0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 0.57, 0.63 # 2.48, 0.91, 1.59, 1.75, 1.46
-FsrK = np.array([0.63, 0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 0.57, 0.63, 0.63])
+# FsrK = np.array([0.63, 0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 0.57, 0.63, 0.63])
+FsrK = np.array([0.8, 0.8, 1.0, 0.8, 0.5, 0.5, 0.8, 1.0, 0.8, 0.8])
 
 # Vector input for all sensor data
 # Xin = np.zeros((10))
@@ -501,9 +503,10 @@ def control():
     if FLAG_debug:
         t1 = time.clock()
     
-    # rds_service()
-    Output_V = User_V
-    Output_W = User_W
+    rds_service()
+    
+    # Output_V = User_V
+    # Output_W = User_W
     if FLAG_debug:
         RDS_time = round((time.clock() - t1),4)
 
@@ -552,7 +555,7 @@ def control_node():
     # start input thread
     # thread_user.run(threadLock)
     # thread_user.start()
-    
+
     ########### Starting ROS Node ###########
     pub = rospy.Publisher('qolo', String, queue_size=1)
     rospy.init_node('qolo_control', anonymous=True)
@@ -586,7 +589,9 @@ def control_node():
 
         cycle_T = time.clock() - prevT
         prevT = time.clock()
-        RosMassage = "%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s" % (cycle_T,RDS_time,Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Out_CP,Send_DAC0, Send_DAC1, User_V, User_W, feasible, Output_V, Output_W)
+        now = datetime.datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        RosMassage = "%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s" % (current_time, cycle_T, RDS_time,Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Out_CP,Send_DAC0, Send_DAC1, User_V, User_W, feasible, Output_V, Output_W)
         # RosMassage = "%s %s %s %s %s %s %s %s" % (cycle_T, RDS_time, DA_time, feasible, User_V, User_W, round(Output_V,4), round(Output_W,4) )
         # RosMassage = "%s %s %s %s %s" % (User_V, User_W, Output_V, Output_W, feasible)
         rospy.loginfo(RosMassage)
