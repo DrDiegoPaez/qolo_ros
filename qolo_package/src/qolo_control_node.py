@@ -50,10 +50,10 @@ GEAR = 12.64
 DISTANCE = 0.62/2  # distance bettween two wheels
 RADIUS = 0.304/2 # meter
 
-MaxSpeed = 1.0 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
+MaxSpeed = 0.8 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
 MinSpeed = MaxSpeed*backward_coefficient
 MaxAngular = 4.124
-W_ratio = 3 # Ratio of the maximum angular speed (232 deg/s)
+W_ratio = 4 # Ratio of the maximum angular speed (232 deg/s)
 
 Max_motor_v = (MaxSpeed/ (RADIUS*(2*np.pi))) *60*GEAR # max motor speed: 1200 rpm
 
@@ -63,14 +63,19 @@ min_linear = -MinSpeed;
 absolute_angular_at_min_linear = 0.;
 absolute_angular_at_max_linear = 0.;
 absolute_angular_at_zero_linear = MaxAngular/W_ratio;
-linear_acceleration_limit = 1.
-angular_acceleration_limit = 1.5
+linear_acceleration_limit = 0.5
+angular_acceleration_limit = 2.
 feasible = 0
 Output_V = 0.;
 Output_W = 0.;
 last_v = 0.;
 last_w = 0.;
 cycle=0.
+y_coordinate_of_reference_point_for_command_limits = 0.5;
+weight_scaling_of_reference_point_for_command_limits = 1.;
+tau = 2.;
+delta = 0.05;
+clearance_from_axle_of_final_reference_point = 0.15;
 
 Command_V = 2500
 Command_W = 2500
@@ -100,11 +105,12 @@ number = 100
 a_zero, b_zero, c_zero, d_zero, e_zero, f_zero, g_zero, h_zero = 305.17, 264.7, 441.57, 336.46, 205.11, 441.57, 336.46, 205.11
 
 # FsrZero = arr.array('d',[200.1 305.17, 264.7, 441.57, 336.46, 205.11, 441.57, 336.46, 205.11 200.1])
-FsrZero = np.array([100.1, 305.17, 264.7, 441.57, 336.46, 205.11, 441.57, 336.46, 205.11, 200.1])
+# FsrZero = np.array([100.1, 305.17, 264.7, 441.57, 336.46, 205.11, 150.57, 160.46, 150.11, 200.1])
+FsrZero = np.array([304.5, 298.99, 202.69, 405.66, 294.8, 296.8, 334.01, 282.98, 250.73, 208.32])
 # default value for pre-configuration
 # k1, k2, k3, k4, k5, k6, k7, k8 =    0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 0.57, 0.63 # 2.48, 0.91, 1.59, 1.75, 1.46
-# FsrK = np.array([0.63, 0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 0.57, 0.63, 0.63])
-FsrK = np.array([0.8, 0.8, 1.0, 0.8, 0.5, 0.5, 0.8, 1.0, 0.8, 0.8])
+FsrK = np.array([0.63, 0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 1.04, 0.7, 0.63])
+# FsrK = np.array([0.8, 0.8, 1.0, 0.8, 0.5, 0.5, 0.5, 1.0, 0.8, 0.8])
 
 # Vector input for all sensor data
 # Xin = np.zeros((10))
@@ -117,7 +123,7 @@ RemoteE = 0
 Rcenter = np.array([0., -3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5, 0.])
 
 # classification point for center of pressure ox(calibration needed)
-pl2, pl1, pr1, pr2 = -1.9, -0.7, 0.7, 1.9
+pl2, pl1, pr1, pr2 = -1.7, -0.5, 0.5, 1.7
 # -1.72, 0.075, 1.455, 1.98 
 # -2.42, 0.67, 1.27, 1.82  
 # -0.97, -0.2, 0.2, 1.17
@@ -449,10 +455,26 @@ def rds_service():
     request.velocity_limits.abs_angular_at_min_linear = absolute_angular_at_min_linear;
     request.velocity_limits.abs_angular_at_max_linear = absolute_angular_at_max_linear;
     request.velocity_limits.abs_angular_at_zero_linear = absolute_angular_at_zero_linear;
+    request.abs_linear_acceleration_limit = linear_acceleration_limit;
+    request.abs_angular_acceleration_limit = angular_acceleration_limit;
+
+    request.y_coordinate_of_reference_point_for_command_limits = y_coordinate_of_reference_point_for_command_limits;
+    request.weight_scaling_of_reference_point_for_command_limits = weight_scaling_of_reference_point_for_command_limits;
+    request.clearance_from_axle_of_final_reference_point = clearance_from_axle_of_final_reference_point;
+    request.delta = delta;
+    request.tau = tau;
+    request.y_coordinate_of_reference_biasing_point = 50
+    request.weight_of_reference_biasing_point = 1;
 
     request.last_actual_command.linear = last_v;
     request.last_actual_command.angular = last_w;
-    request.command_cycle_time = time.clock() - cycle;
+
+    if cycle==0:
+        delta_time = 0.005;
+    else:
+        delta_time = time.clock() - cycle;
+
+    request.command_cycle_time = delta_time
     request.abs_linear_acceleration_limit = 4;
     request.abs_angular_acceleration_limit = 2;
 
@@ -504,7 +526,6 @@ def control():
         t1 = time.clock()
     
     rds_service()
-    
     # Output_V = User_V
     # Output_W = User_W
     if FLAG_debug:

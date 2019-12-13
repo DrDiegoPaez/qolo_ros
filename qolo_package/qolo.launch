@@ -1,4 +1,4 @@
 <launch>
-  <node name="qolo_control" pkg="qolo" type="io_qolo_node.py" />
+  <node name="qolo_control" pkg="qolo" type="qolo_control_node.py" />
 
 </launch>
