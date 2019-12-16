@@ -18,7 +18,8 @@ import signal
 import datetime
 
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool, Float32MultiArray, Float32, Int32MultiArray
+from std_msgs.msg import MultiArrayLayout, MultiArrayDimension 
 import threading
 
 from rds_network_ros.srv import *
@@ -52,8 +53,8 @@ RADIUS = 0.304/2 # meter
 
 MaxSpeed = 1.0 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
 MinSpeed = MaxSpeed*backward_coefficient
-MaxAngular = 4.124
 W_ratio = 4 # Ratio of the maximum angular speed (232 deg/s)
+MaxAngular = 4.124 / W_ratio
 
 Max_motor_v = (MaxSpeed/ (RADIUS*(2*np.pi))) *60*GEAR # max motor speed: 1200 rpm
 
@@ -62,19 +63,21 @@ max_linear = MaxSpeed;
 min_linear = -MinSpeed;
 absolute_angular_at_min_linear = 0.;
 absolute_angular_at_max_linear = 0.;
-absolute_angular_at_zero_linear = MaxAngular/W_ratio;
+absolute_angular_at_zero_linear = MaxAngular;
 linear_acceleration_limit = 1.
 angular_acceleration_limit = 1.5
 feasible = 0
 Output_V = 0.;
 Output_W = 0.;
+Remote_V = 0.;
+Remote_W = 0.;
 last_v = 0.;
 last_w = 0.;
 cycle=0.
 y_coordinate_of_reference_point_for_command_limits = 0.5;
-weight_scaling_of_reference_point_for_command_limits = 0.;
+weight_scaling_of_reference_point_for_command_limits = 1.;
 tau = 2.;
-delta = 0.10;
+delta = 0.05;
 clearance_from_axle_of_final_reference_point = 0.15;
 
 Command_V = 2500
@@ -311,7 +314,6 @@ def enable_mbed():
     time.sleep(1)  
     # threadLock.release()
 
-
 # for interruption
 def exit(signum, frame):
     # global Stop_Thread_Flag
@@ -327,7 +329,6 @@ def exit(signum, frame):
 
     print('----> You chose to interrupt')
     quit()
-
 
 
 def transformTo_Lowevel(Desired_V, Desired_W):
@@ -420,16 +421,30 @@ def output(a, b, c, d, e, f, g, h, ox):
 
 def write_DA():
     global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Command_V, Command_W
+    global Output_V, Output_W, User_V, User_W
+
+    Output_V = User_V;
+    Output_W = User_W;
+
+    if Output_V > MaxSpeed:
+        Output_V = MaxSpeed
+
+    if Output_W > MaxAngular:
+        Output_W = MaxAngular
+
     Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Output_V, Output_W)
+    # Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Output_V, Output_W)
     # Error in the ADC Board connection
-    if Comand_DAC0 < 4870:
-        Send_DAC0 = Comand_DAC0 +130
+    if Comand_DAC0 < 4850:
+        Send_DAC0 = Comand_DAC0 +150  # Tested 130
     else:
         Send_DAC0 = 5000
-    if Comand_DAC0 < 4870:
+
+    if Comand_DAC1 < 4850:
         Send_DAC1 = Comand_DAC1
     else:
-        Send_DAC1 = 4870
+        Send_DAC1 = 4850
+
     # threadLock.acquire()
     conv.SET_DAC0(Send_DAC0, conv.data_format.voltage)
     conv.SET_DAC1(Send_DAC1, conv.data_format.voltage)
@@ -454,26 +469,15 @@ def rds_service():
     request.velocity_limits.abs_angular_at_min_linear = absolute_angular_at_min_linear;
     request.velocity_limits.abs_angular_at_max_linear = absolute_angular_at_max_linear;
     request.velocity_limits.abs_angular_at_zero_linear = absolute_angular_at_zero_linear;
-    request.abs_linear_acceleration_limit = linear_acceleration_limit;
-    request.abs_angular_acceleration_limit = angular_acceleration_limit;
-
     request.y_coordinate_of_reference_point_for_command_limits = y_coordinate_of_reference_point_for_command_limits;
     request.weight_scaling_of_reference_point_for_command_limits = weight_scaling_of_reference_point_for_command_limits;
     request.clearance_from_axle_of_final_reference_point = clearance_from_axle_of_final_reference_point;
     request.delta = delta;
     request.tau = tau;
-    request.y_coordinate_of_reference_biasing_point = 1.;
-    request.weight_of_reference_biasing_point = 0.;
 
     request.last_actual_command.linear = last_v;
     request.last_actual_command.angular = last_w;
-
-    if cycle==0:
-        delta_time = 0.005;
-    else:
-        delta_time = time.clock() - cycle;
-
-    request.command_cycle_time = delta_time
+    request.command_cycle_time = time.clock() - cycle;
     request.abs_linear_acceleration_limit = 4;
     request.abs_angular_acceleration_limit = 2;
 
@@ -491,6 +495,36 @@ def rds_service():
     # Output_W = User_W
 # print "RDS Service failed"
 
+def timeout():
+    # print("No Message: Stopping Qolo")
+    Remote_V = 0;
+    Remote_W = 0;
+
+
+def callback(data):
+    global Command_V, Command_W, Output_V, Output_W, Remote_V, Remote_W, timer
+    # temp_dat = Float32MultiArray()
+    # temp_dat.layout.dim.append(MultiArrayDimension())
+    # temp_dat.layout.dim[0].size = 2
+    # temp_dat.data = [0]*2
+    Remote_V = data.data[0]
+    Remote_W =  data.data[1]
+    timer.cancel()
+    timer = threading.Timer(1.5,timeout)
+    timer.start()
+   # rospy.loginfo(rospy.get_name()+"I heard %s",data.data)
+
+def get_remote_command():
+    # rospy.init_node('remote_driving_node', anonymous=True)
+    try:
+        rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback)
+    except rospy.exceptions.ROSException:
+    else:
+        Remote_V = 0;
+        Remote_W = 0;
+
+    # spin() simply keeps python from exiting until this node is stopped
+    # rospy.spin()
 
 def control():
     global A1, B1, C1, D1, E1, F1, G1, H1
@@ -502,6 +536,7 @@ def control():
     
     # Replace with a node subsription
     global Xin, FsrZero, FsrK, Out_CP
+    global timer
     if FLAG_debug:
         t1 = time.clock()
 
@@ -524,9 +559,14 @@ def control():
     if FLAG_debug:
         t1 = time.clock()
     
-    rds_service()
+    # rds_service()
+    
+    get_remote_command()
+    timer = threading.Timer(1.5,timeout)
+    timer.start()
     # Output_V = User_V
     # Output_W = User_W
+
     if FLAG_debug:
         RDS_time = round((time.clock() - t1),4)
 
@@ -551,6 +591,7 @@ def control_node():
     global RemoteE, ComError
     global DA_time, RDS_time, Compute_time, FSR_time, extra_time
     prevT = 0
+    FlagEmergency=False
     # threadLock = threading.Lock()
     # Setting ROS Node
     
@@ -577,11 +618,32 @@ def control_node():
     # thread_user.start()
 
     ########### Starting ROS Node ###########
-    pub = rospy.Publisher('qolo', String, queue_size=1)
-    rospy.init_node('qolo_control', anonymous=True)
-    rate = rospy.Rate(50) #  20 hz
+    dat_user = Float32MultiArray()
+    dat_user.layout.dim.append(MultiArrayDimension())
+    dat_user.layout.dim[0].label = 'FSR_read'
+    dat_user.layout.dim[0].size = 10
+    dat_user.data = [0]*10
+    dat_vel = Float32MultiArray()
+    dat_vel.layout.dim.append(MultiArrayDimension())
+    dat_vel.layout.dim[0].label = 'Velocities: Input - Output'
+    dat_vel.layout.dim[0].size = 4
+    dat_vel.data = [0]*4
+
+    dat_wheels = Float32MultiArray()
+    dat_wheels.layout.dim.append(MultiArrayDimension())
+    dat_wheels.layout.dim[0].label = 'Wheels Output'
+    dat_wheels.layout.dim[0].size = 2
+    dat_wheels.data = [0]*2
+
+    pub_wheels = rospy.Publisher('qolo/wheels', Float32MultiArray, queue_size=1)
+    pub_vel = rospy.Publisher('qolo/velocity', Float32MultiArray, queue_size=1)
+    pub_emg = rospy.Publisher('qolo/emergency', Bool, queue_size=1)
+    pub_user = rospy.Publisher('qolo/user_input', Float32MultiArray, queue_size=1)
+    rospy.init_node('qolo_remote', anonymous=True)
+    rate = rospy.Rate(10) #  20 hz
 
     while not rospy.is_shutdown():
+        
         control()   # Function of control for Qolo
         # # Checking emergency inputs
         # threadLock.acquire()
@@ -593,16 +655,18 @@ def control_node():
             enable_mbed()
         if RemoteE >= THRESHOLD_V:
             print('RemoteE', RemoteE)
-            FlagEmergency=1
+            FlagEmergency=True
             # threadLock.acquire()
             while FlagEmergency:
+                pub_emg.publish(FlagEmergency)
                 conv.SET_DAC2(0, conv.data_format.voltage)
                 conv.SET_DAC0(ZERO_V, conv.data_format.voltage)
                 conv.SET_DAC1(ZERO_V, conv.data_format.voltage)
                 ResetFSR = conv.ReadChannel(5, conv.data_format.voltage)
                 if ResetFSR >= THRESHOLD_V:
                     print('ResetFSR ', ResetFSR)
-                    FlagEmergency=0
+                    FlagEmergency=False
+                    pub_emg.publish(FlagEmergency)
                     enable_mbed()
                 time.sleep(0.1)
                 # threadLock.release()
@@ -614,15 +678,25 @@ def control_node():
         RosMassage = "%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s" % (current_time, cycle_T, RDS_time,Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Out_CP,Send_DAC0, Send_DAC1, User_V, User_W, feasible, Output_V, Output_W)
         # RosMassage = "%s %s %s %s %s %s %s %s" % (cycle_T, RDS_time, DA_time, feasible, User_V, User_W, round(Output_V,4), round(Output_W,4) )
         # RosMassage = "%s %s %s %s %s" % (User_V, User_W, Output_V, Output_W, feasible)
-        rospy.loginfo(RosMassage)
-        pub.publish(RosMassage)
+        dat_wheels.data = [Send_DAC0, Send_DAC1]
+        dat_vel.data = [Remote_V, Remote_W, Output_V, Output_W]
+        dat_user.data = [Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9]]
+        
+        # rospy.loginfo(RosMassage)
+        pub_emg.publish(FlagEmergency)
+        pub_vel.publish(dat_vel)
+        pub_wheels.publish(dat_wheels)
+        pub_user.publish(dat_user)
+        rospy.loginfo(dat_user)
+        rospy.loginfo(dat_vel)
+        rospy.loginfo(dat_wheels)
         rate.sleep()
 
     # Stop_Thread_Flag = True
     # thread_user.raise_exception()
     # thread_user.join()
 
-# for interruption
+        # for interruption
 signal.signal(signal.SIGINT, exit)
 signal.signal(signal.SIGTERM, exit)
 if __name__ == '__main__':
@@ -630,3 +704,5 @@ if __name__ == '__main__':
         control_node()
     except rospy.ROSInterruptException:
         pass
+
+
