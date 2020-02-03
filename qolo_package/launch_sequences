@@ -20,7 +20,6 @@ roslaunch rds_ros rds_test.launch
 roslaunch movidius_ncs_launch ncs_camera.launch cnn_type:=tinyyolo_v1 camera:=realsense
 rosrun kalman_bounding_boxes kalman_bounding_boxes_node
 
-
 rosbag record /qolo /velodyne_packets /rds_to_gui
 
 rosbag record /qolo /velodyne_packets /rds_to_gui /camera/color/image_raw /filtered_boxes

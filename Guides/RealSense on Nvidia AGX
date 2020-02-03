@@ -1,0 +1,25 @@
+
+###############################################
+## Installing RealSense on Nvidia Jetson AGX ## 
+###############################################
+
+Package for building and patching the Kernel:
+https://www.jetsonhacks.com/2019/01/21/intel-realsense-d435i-on-nvidia-jetson-agx-xavier/
+
+ cd $HOME
+$ git clone https://github.com/jetsonhacks/buildLibrealsense2Xavier
+$ cd buildLibrealsense2Xavier
+
+$ ./buildPatchedKernel.sh
+
+Flash the kernel
+$ sudo ./flash.sh -k kernel jetson-xavier mmcblk0p1
+The machine has just rebooted. Open a terminal and go back to the repository directory.
+
+
+$ cd buildLibrealsense2Xavier
+
+Make sure there are no RealSense cameras attached to the Xavier. Now build librealsense 2, and install the libraries and applications:
+
+$ ./installLibrealsense.sh
+

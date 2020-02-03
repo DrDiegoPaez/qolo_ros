@@ -46,7 +46,6 @@ High_DAC = 5000;
 MBED_Enable = mraa.Gpio(36) #11 17
 MBED_Enable.dir(mraa.DIR_OUT)
 
-
 GEAR = 12.64
 DISTANCE = 0.62/2  # distance bettween two wheels
 RADIUS = 0.304/2 # meter
@@ -80,6 +79,8 @@ tau = 2.;
 delta = 0.05;
 clearance_from_axle_of_final_reference_point = 0.15;
 
+FlagRemote = False
+last_msg = 0.
 Command_V = 2500
 Command_W = 2500
 Comand_DAC0 = 0
@@ -421,10 +422,7 @@ def output(a, b, c, d, e, f, g, h, ox):
 
 def write_DA():
     global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Command_V, Command_W
-    global Output_V, Output_W, User_V, User_W
-
-    Output_V = User_V;
-    Output_W = User_W;
+    global Output_V, Output_W, User_V, User_W, Remote_V, Remote_W
 
     if Output_V > MaxSpeed:
         Output_V = MaxSpeed
@@ -495,36 +493,39 @@ def rds_service():
     # Output_W = User_W
 # print "RDS Service failed"
 
-def timeout():
+# def timeout():
+    # global Remote_V, Remote_W
     # print("No Message: Stopping Qolo")
-    Remote_V = 0;
-    Remote_W = 0;
+    # Remote_V = 0;
+    # Remote_W = 0;
 
 
-def callback(data):
-    global Command_V, Command_W, Output_V, Output_W, Remote_V, Remote_W, timer
+def callback_remote(data):
+    global Remote_V, Remote_W, FlagRemote, last_msg
     # temp_dat = Float32MultiArray()
     # temp_dat.layout.dim.append(MultiArrayDimension())
     # temp_dat.layout.dim[0].size = 2
     # temp_dat.data = [0]*2
-    Remote_V = data.data[0]
-    Remote_W =  data.data[1]
-    timer.cancel()
-    timer = threading.Timer(1.5,timeout)
-    timer.start()
-   # rospy.loginfo(rospy.get_name()+"I heard %s",data.data)
+    # print(last_msg)
+    if last_msg != 0:
+        Remote_V = data.data[1]
+        Remote_W =  data.data[2]
+        FlagRemote = True
+        last_msg = data.data[0]
+    last_msg = data.data[0]
+    # print('Callback Hello')
 
-def get_remote_command():
-    # rospy.init_node('remote_driving_node', anonymous=True)
-    try:
-        rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback)
-    except rospy.exceptions.ROSException:
-    else:
-        Remote_V = 0;
-        Remote_W = 0;
-
-    # spin() simply keeps python from exiting until this node is stopped
-    # rospy.spin()
+# def get_remote_command():
+#     # rospy.init_node('remote_driving_node', anonymous=True)
+#     # try:
+#     rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote)
+#     # except rospy.exceptions.ROSException:
+#         # pass
+#     # else:
+#          # Remote_V = 0;
+#          # Remote_W = 0;
+#     # spin() simply keeps python from exiting until this node is stopped
+#     # rospy.spin()
 
 def control():
     global A1, B1, C1, D1, E1, F1, G1, H1
@@ -532,11 +533,11 @@ def control():
     global Rcenter
     global Command_V, Command_W, Comand_DAC0, Comand_DAC1, User_V, User_W, Output_V, Output_W
     global counter1
-    global DA_time, RDS_time, Compute_time, FSR_time
+    global DA_time, RDS_time, Compute_time, FSR_time, Remote_V, Remote_W
     
     # Replace with a node subsription
     global Xin, FsrZero, FsrK, Out_CP
-    global timer
+    global timer, FlagRemote
     if FLAG_debug:
         t1 = time.clock()
 
@@ -560,12 +561,17 @@ def control():
         t1 = time.clock()
     
     # rds_service()
-    
-    get_remote_command()
-    timer = threading.Timer(1.5,timeout)
-    timer.start()
-    # Output_V = User_V
-    # Output_W = User_W
+    if FlagRemote:
+        FlagRemote = False
+        Output_V = Remote_V;
+        Output_W = Remote_W;
+    else:
+        Output_V = 0;
+        Output_W = 0;
+
+    # get_remote_command()
+    # timer = threading.Timer(1.5,timeout)
+    # timer.start()
 
     if FLAG_debug:
         RDS_time = round((time.clock() - t1),4)
@@ -580,6 +586,7 @@ def control():
     if FLAG_debug:
         t1 = time.clock()
     write_DA()
+    FlagRemote = False
     if FLAG_debug:
         DA_time = round((time.clock() - t1),4)
     # print ('FSR_read: %s, FSR_read: %s, FSR_read: %s, FSR_read: %s,')
@@ -589,7 +596,7 @@ def control():
 def control_node():
     global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1
     global RemoteE, ComError
-    global DA_time, RDS_time, Compute_time, FSR_time, extra_time
+    global DA_time, RDS_time, Compute_time, FSR_time, extra_time,last_msg
     prevT = 0
     FlagEmergency=False
     # threadLock = threading.Lock()
@@ -640,10 +647,11 @@ def control_node():
     pub_emg = rospy.Publisher('qolo/emergency', Bool, queue_size=1)
     pub_user = rospy.Publisher('qolo/user_input', Float32MultiArray, queue_size=1)
     rospy.init_node('qolo_remote', anonymous=True)
+    
+    sub = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
     rate = rospy.Rate(10) #  20 hz
 
     while not rospy.is_shutdown():
-        
         control()   # Function of control for Qolo
         # # Checking emergency inputs
         # threadLock.acquire()
@@ -656,6 +664,7 @@ def control_node():
         if RemoteE >= THRESHOLD_V:
             print('RemoteE', RemoteE)
             FlagEmergency=True
+            last_msg=0.
             # threadLock.acquire()
             while FlagEmergency:
                 pub_emg.publish(FlagEmergency)
@@ -668,6 +677,7 @@ def control_node():
                     FlagEmergency=False
                     pub_emg.publish(FlagEmergency)
                     enable_mbed()
+                    last_msg=0.
                 time.sleep(0.1)
                 # threadLock.release()
 
@@ -679,7 +689,7 @@ def control_node():
         # RosMassage = "%s %s %s %s %s %s %s %s" % (cycle_T, RDS_time, DA_time, feasible, User_V, User_W, round(Output_V,4), round(Output_W,4) )
         # RosMassage = "%s %s %s %s %s" % (User_V, User_W, Output_V, Output_W, feasible)
         dat_wheels.data = [Send_DAC0, Send_DAC1]
-        dat_vel.data = [Remote_V, Remote_W, Output_V, Output_W]
+        dat_vel.data = [last_msg, Remote_V, Remote_W, Output_V, Output_W]
         dat_user.data = [Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9]]
         
         # rospy.loginfo(RosMassage)
@@ -687,7 +697,7 @@ def control_node():
         pub_vel.publish(dat_vel)
         pub_wheels.publish(dat_wheels)
         pub_user.publish(dat_user)
-        rospy.loginfo(dat_user)
+        # rospy.loginfo(dat_user)
         rospy.loginfo(dat_vel)
         rospy.loginfo(dat_wheels)
         rate.sleep()

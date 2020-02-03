@@ -50,7 +50,7 @@ GEAR = 12.64
 DISTANCE = 0.62/2  # distance bettween two wheels
 RADIUS = 0.304/2 # meter
 
-MaxSpeed = 1.2 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
+MaxSpeed = 0.8 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
 MinSpeed = MaxSpeed*backward_coefficient
 MaxAngular = 4.124
 W_ratio = 4 # Ratio of the maximum angular speed (232 deg/s)
@@ -63,8 +63,8 @@ min_linear = -MinSpeed;
 absolute_angular_at_min_linear = 0.;
 absolute_angular_at_max_linear = 0.;
 absolute_angular_at_zero_linear = MaxAngular/W_ratio;
-linear_acceleration_limit = 1.1
-angular_acceleration_limit = 1.5
+linear_acceleration_limit = 0.5
+angular_acceleration_limit = 2.
 feasible = 0
 Output_V = 0.;
 Output_W = 0.;
@@ -72,9 +72,9 @@ last_v = 0.;
 last_w = 0.;
 cycle=0.
 y_coordinate_of_reference_point_for_command_limits = 0.5;
-weight_scaling_of_reference_point_for_command_limits = 0.;
+weight_scaling_of_reference_point_for_command_limits = 1.;
 tau = 2.;
-delta = 0.10;
+delta = 0.05;
 clearance_from_axle_of_final_reference_point = 0.15;
 
 Command_V = 2500
@@ -106,12 +106,10 @@ a_zero, b_zero, c_zero, d_zero, e_zero, f_zero, g_zero, h_zero = 305.17, 264.7, 
 
 # FsrZero = arr.array('d',[200.1 305.17, 264.7, 441.57, 336.46, 205.11, 441.57, 336.46, 205.11 200.1])
 # FsrZero = np.array([100.1, 305.17, 264.7, 441.57, 336.46, 205.11, 150.57, 160.46, 150.11, 200.1])
-# FsrZero = np.array([304.5, 298.99, 202.69, 405.66, 294.8, 296.8, 334.01, 282.98, 250.73, 208.32])
-# Calibration Diego
 FsrZero = np.array([304.5, 298.99, 268.69, 441.66, 416.8, 305.8, 334.01, 202.98, 250.73, 220.32])
 # default value for pre-configuration
 # k1, k2, k3, k4, k5, k6, k7, k8 =    0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 0.57, 0.63 # 2.48, 0.91, 1.59, 1.75, 1.46
-FsrK = np.array([0., 0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 1.04, 0.7, 0.])
+FsrK = np.array([0.63, 0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 1.04, 0.7, 0.63])
 # FsrK = np.array([0.8, 0.8, 1.0, 0.8, 0.5, 0.5, 0.5, 1.0, 0.8, 0.8])
 
 # Vector input for all sensor data
@@ -122,6 +120,7 @@ ComError = 0
 RemoteE = 0
 
 # # coefficient for calculate center of pressure: ox
+# Rcenter = np.array([0., -2., -1.5, -1.0, -0.5, 0.5, 1.0, 1.5, 2.0, 0.])
 Rcenter = np.array([0., -2.5, -1.875, -1.25, -0.625, 0.625, 1.25, 1.875, 2.5, 0.])
 
 # classification point for center of pressure ox(calibration needed)
@@ -262,29 +261,32 @@ def execution():
         Command_V = 2500
         Command_W = 2500
         
-def user_input_thread():
-    global FSR_time, t2, Xin, Xin_temp, FsrZero, FsrK, Out_CP, User_V, User_W, Command_V, Command_W, Read_Flag
+# def user_input_thread():
+#     global FSR_time, t2, Xin, Xin_temp, FsrZero, FsrK, Out_CP, User_V, User_W, Command_V, Command_W, Read_Flag
 
-    # read_FSR()
-    Xin = FsrK* (Xin_temp - FsrZero)     # Values in [mV]
+#     # read_FSR()
+#     Xin = FsrK* (Xin_temp - FsrZero)     # Values in [mV]
+#     for i in range (0,10):
+#         if Xin[i] < 0:
+#             Xin[i] = 0
 
-    # Calculating the Center of pressure
-    ox = np.sum(Rcenter*Xin) / (Xin[1] + Xin[2] + Xin[3] + Xin[4] + Xin[5] + Xin[6] + Xin[7] + Xin[8])
-    Out_CP = round(ox, 4);
-    # Runs the user input and returns Command_V and Command_W --> in 0-5k scale
-    execution()
-    motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
-    motor_w = (2*Max_motor_v/(DISTANCE)*Command_W/5000 - Max_motor_v/(DISTANCE)) / W_ratio # In [RPM]
+#     # Calculating the Center of pressure
+#     ox = np.sum(Rcenter*Xin) / (Xin[1] + Xin[2] + Xin[3] + Xin[4] + Xin[5] + Xin[6] + Xin[7] + Xin[8])
+#     Out_CP = round(ox, 4);
+#     # Runs the user input and returns Command_V and Command_W --> in 0-5k scale
+#     execution()
+#     motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
+#     motor_w = (2*Max_motor_v/(DISTANCE)*Command_W/5000 - Max_motor_v/(DISTANCE)) / W_ratio # In [RPM]
 
-    # Start lock
-    User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
-    User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
-    # if Stop_Thread_Flag:
-    #     break
+#     # Start lock
+#     User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
+#     User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
+#     # if Stop_Thread_Flag:
+#     #     break
     
-    if FLAG_debug:
-        FSR_time = round((time.clock() - t2),4)
-        t2 = time.clock()
+#     if FLAG_debug:
+#         FSR_time = round((time.clock() - t2),4)
+#         t2 = time.clock()
 
 
 def enable_mbed():
@@ -313,7 +315,6 @@ def enable_mbed():
     time.sleep(1)  
     # threadLock.release()
 
-
 # for interruption
 def exit(signum, frame):
     # global Stop_Thread_Flag
@@ -329,7 +330,6 @@ def exit(signum, frame):
 
     print('----> You chose to interrupt')
     quit()
-
 
 
 def transformTo_Lowevel(Desired_V, Desired_W):
@@ -425,7 +425,7 @@ def write_DA():
     Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Output_V, Output_W)
     # Error in the ADC Board connection
     if Comand_DAC0 < 4870:
-        Send_DAC0 = Comand_DAC0 +140
+        Send_DAC0 = Comand_DAC0 +150
     else:
         Send_DAC0 = 5000
     if Comand_DAC0 < 4870:
@@ -464,8 +464,8 @@ def rds_service():
     request.clearance_from_axle_of_final_reference_point = clearance_from_axle_of_final_reference_point;
     request.delta = delta;
     request.tau = tau;
-    request.y_coordinate_of_reference_biasing_point = 1.;
-    request.weight_of_reference_biasing_point = 0.;
+    request.y_coordinate_of_reference_biasing_point = 50
+    request.weight_of_reference_biasing_point = 1;
 
     request.last_actual_command.linear = last_v;
     request.last_actual_command.angular = last_w;
@@ -493,60 +493,6 @@ def rds_service():
     # Output_W = User_W
 # print "RDS Service failed"
 
-def mds_service():
-    global User_V, User_W, Output_V, Output_W, last_v, last_w, cycle, feasible
-    # print "Waiting for RDS Service"
-
-    rospy.wait_for_service('rds_velocity_command_correction')
-    # try:
-    RDS = rospy.ServiceProxy('rds_velocity_command_correction',VelocityCommandCorrectionRDS)
-
-    request = VelocityCommandCorrectionRDSRequest()
-
-    request.nominal_command.linear = User_V;
-    request.nominal_command.angular = User_W;
-
-    request.velocity_limits.max_linear = max_linear;
-    request.velocity_limits.min_linear = min_linear;
-    request.velocity_limits.abs_angular_at_min_linear = absolute_angular_at_min_linear;
-    request.velocity_limits.abs_angular_at_max_linear = absolute_angular_at_max_linear;
-    request.velocity_limits.abs_angular_at_zero_linear = absolute_angular_at_zero_linear;
-    request.abs_linear_acceleration_limit = linear_acceleration_limit;
-    request.abs_angular_acceleration_limit = angular_acceleration_limit;
-
-    request.y_coordinate_of_reference_point_for_command_limits = y_coordinate_of_reference_point_for_command_limits;
-    request.weight_scaling_of_reference_point_for_command_limits = weight_scaling_of_reference_point_for_command_limits;
-    request.clearance_from_axle_of_final_reference_point = clearance_from_axle_of_final_reference_point;
-    request.delta = delta;
-    request.tau = tau;
-    request.y_coordinate_of_reference_biasing_point = 1.;
-    request.weight_of_reference_biasing_point = 0.;
-
-    request.last_actual_command.linear = last_v;
-    request.last_actual_command.angular = last_w;
-
-    if cycle==0:
-        delta_time = 0.005;
-    else:
-        delta_time = time.clock() - cycle;
-
-    request.command_cycle_time = delta_time
-    request.abs_linear_acceleration_limit = 4;
-    request.abs_angular_acceleration_limit = 2;
-
-    response = RDS(request)
-    Output_V = round(response.corrected_command.linear,4)
-    Output_W = round(response.corrected_command.angular,4)
-    feasible = response.feasible
-
-    last_v = Output_V
-    last_w = Output_W
-    cycle = time.clock()
-# print cycle 
-# except:
-    # Output_V = User_V
-    # Output_W = User_W
-# print "RDS Service failed"
 
 def control():
     global A1, B1, C1, D1, E1, F1, G1, H1
@@ -568,14 +514,15 @@ def control():
         t1 = time.clock()
     # FSR Inputs calibration: 
     Xin = FsrK* (Xin_temp - FsrZero)     # Values in [mV]
-    # for i in range (0,10):
-    #     if Xin[i] < 0:
-    #         Xin[i] = 0
+    for i in range (0,10):
+        if Xin[i] < 0.:
+            Xin[i] = 0.
 
     # Calculating the Center of pressure
     ox = np.sum(Rcenter*Xin) / (Xin[1] + Xin[2] + Xin[3] + Xin[4] + Xin[5] + Xin[6] + Xin[7] + Xin[8])
     if math.isnan(ox):
         ox = 0.
+
     Out_CP = round(ox, 4);
     execution()  # Runs the user input with Out_CP and returns Command_V and Command_W --> in 0-5k scale
     motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
@@ -587,8 +534,8 @@ def control():
         t1 = time.clock()
     
     # rds_service()
-    Output_V = User_V
-    Output_W = User_W
+    Output_V = 0
+    Output_W = 0
     if FLAG_debug:
         RDS_time = round((time.clock() - t1),4)
 
@@ -687,6 +634,7 @@ def control_node():
 # for interruption
 signal.signal(signal.SIGINT, exit)
 signal.signal(signal.SIGTERM, exit)
+
 if __name__ == '__main__':
     try:
         control_node()
