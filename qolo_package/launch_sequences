@@ -11,19 +11,34 @@ roslaunch qolo qolo.launch
 
 
 Execute in 120:
+--- If building is necesary:
+	cd ~/autonomy_ws/
+	. make_rds.bash 
+
 --> take time from Main Qolo CPU
 sudo ntpdate 192.168.13.110
 Restart chrony synchronisation:
 service chrony restart
 
 roslaunch rds_ros rds_test.launch
+
+	roslaunch rds_ros rds_velodyne.launch
+	rosrun rds_ros two_lidar_to_lrf_node
+
 roslaunch movidius_ncs_launch ncs_camera.launch cnn_type:=tinyyolo_v1 camera:=realsense
 rosrun kalman_bounding_boxes kalman_bounding_boxes_node
+
 
 rosbag record /qolo /velodyne_packets /rds_to_gui
 
 rosbag record /qolo /velodyne_packets /rds_to_gui /camera/color/image_raw /filtered_boxes
 
 
-To see raw image
+------------- Velodyne points and LRF transformation ------------------
+roslaunch velodyne_pointcloud VLP16_points.launch 
+rosrun rds_ros rds_ros_lidar_to_lrf_node 
+rosbag record /laserscan /velodyne_points
+
+
+------------ To see raw image ---------------
 roslaunch my_ncs_stream_detection_example.launch camera_topic:="/camera/color/image_raw"
