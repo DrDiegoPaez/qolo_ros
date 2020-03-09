@@ -18,11 +18,14 @@ import signal
 import datetime
 
 import rospy
-from std_msgs.msg import String
 import threading
+
+from std_msgs.msg import String, Bool, Float32MultiArray, Float32, Int32MultiArray
+from std_msgs.msg import MultiArrayLayout, MultiArrayDimension 
 
 from rds_network_ros.srv import *
 
+MANUAL_MODE = False
 threadLock = threading.Lock()
 FLAG_debug = True
 Stop_Thread_Flag = False
@@ -44,7 +47,6 @@ ZERO_V = 2610;
 High_DAC = 5000;
 MBED_Enable = mraa.Gpio(36) #11 17
 MBED_Enable.dir(mraa.DIR_OUT)
-
 
 GEAR = 12.64
 DISTANCE = 0.62/2  # distance bettween two wheels
@@ -77,6 +79,7 @@ tau = 2.;
 delta = 0.10;
 clearance_from_axle_of_final_reference_point = 0.15;
 
+last_msg = 0.
 Command_V = 2500
 Command_W = 2500
 Comand_DAC0 = 0
@@ -108,7 +111,8 @@ a_zero, b_zero, c_zero, d_zero, e_zero, f_zero, g_zero, h_zero = 305.17, 264.7, 
 # FsrZero = np.array([100.1, 305.17, 264.7, 441.57, 336.46, 205.11, 150.57, 160.46, 150.11, 200.1])
 # FsrZero = np.array([304.5, 298.99, 202.69, 405.66, 294.8, 296.8, 334.01, 282.98, 250.73, 208.32])
 # Calibration Diego
-FsrZero = np.array([304.5, 298.99, 268.69, 441.66, 416.8, 305.8, 334.01, 202.98, 250.73, 220.32])
+# FsrZero = np.array([304.5, 298.99, 268.69, 441.66, 416.8, 305.8, 334.01, 202.98, 250.73, 220.32])
+FsrZero = np.array([280.0, 1328.0, 793.0, 491.0, 976.0, 859.0, 1058.0, 195.0, 409.0, 161.0])
 # default value for pre-configuration
 # k1, k2, k3, k4, k5, k6, k7, k8 =    0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 0.57, 0.63 # 2.48, 0.91, 1.59, 1.75, 1.46
 FsrK = np.array([0., 0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 1.04, 0.7, 0.])
@@ -470,7 +474,7 @@ def rds_service():
     request.last_actual_command.linear = last_v;
     request.last_actual_command.angular = last_w;
 
-    if cycle==0:
+    if cycle<=0.001:
         delta_time = 0.005;
     else:
         delta_time = time.clock() - cycle;
@@ -586,9 +590,14 @@ def control():
     if FLAG_debug:
         t1 = time.clock()
     
-    # rds_service()
-    Output_V = User_V
-    Output_W = User_W
+    
+    if MANUAL_MODE:
+        Output_V = User_V
+        Output_W = User_W
+    else:
+        rds_service()
+
+
     if FLAG_debug:
         RDS_time = round((time.clock() - t1),4)
 
@@ -611,8 +620,9 @@ def control():
 def control_node():
     global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1
     global RemoteE, ComError
-    global DA_time, RDS_time, Compute_time, FSR_time, extra_time
+    global DA_time, RDS_time, Compute_time, FSR_time, extra_time, MANUAL_MODE,last_msg
     prevT = 0
+    FlagEmergency=False
     # threadLock = threading.Lock()
     # Setting ROS Node
     
@@ -639,9 +649,43 @@ def control_node():
     # thread_user.start()
 
     ########### Starting ROS Node ###########
+    # pub = rospy.Publisher('qolo', String, queue_size=1)
+    # rospy.init_node('qolo_control', anonymous=True)
+    # rate = rospy.Rate(50) #  20 hz
+
+    ########### Starting ROS Node ###########
+    dat_user = Float32MultiArray()
+    dat_user.layout.dim.append(MultiArrayDimension())
+    dat_user.layout.dim[0].label = 'FSR_read'
+    dat_user.layout.dim[0].size = 11
+    dat_user.data = [0]*11
+    dat_vel = Float32MultiArray()
+    dat_vel.layout.dim.append(MultiArrayDimension())
+    dat_vel.layout.dim[0].label = 'Velocities: Input - Output'
+    dat_vel.layout.dim[0].size = 4
+    dat_vel.data = [0]*4
+
+    dat_wheels = Float32MultiArray()
+    dat_wheels.layout.dim.append(MultiArrayDimension())
+    dat_wheels.layout.dim[0].label = 'Wheels Output'
+    dat_wheels.layout.dim[0].size = 2
+    dat_wheels.data = [0]*2
+
+    pub_wheels = rospy.Publisher('qolo/wheels', Float32MultiArray, queue_size=1)
+    pub_vel = rospy.Publisher('qolo/velocity', Float32MultiArray, queue_size=1)
+    pub_emg = rospy.Publisher('qolo/emergency', Bool, queue_size=1)
+    pub_user = rospy.Publisher('qolo/user_input', Float32MultiArray, queue_size=1)
+    
     pub = rospy.Publisher('qolo', String, queue_size=1)
     rospy.init_node('qolo_control', anonymous=True)
     rate = rospy.Rate(50) #  20 hz
+
+    
+    if MANUAL_MODE:
+        print('STARTING MANUAL MODE')
+    else:
+        print('STARTING SHARED CONTROL MODE')
+
 
     while not rospy.is_shutdown():
         control()   # Function of control for Qolo
@@ -655,17 +699,21 @@ def control_node():
             enable_mbed()
         if RemoteE >= THRESHOLD_V:
             print('RemoteE', RemoteE)
-            FlagEmergency=1
+            FlagEmergency=True
+            last_msg=0.
             # threadLock.acquire()
             while FlagEmergency:
+                pub_emg.publish(FlagEmergency)
                 conv.SET_DAC2(0, conv.data_format.voltage)
                 conv.SET_DAC0(ZERO_V, conv.data_format.voltage)
                 conv.SET_DAC1(ZERO_V, conv.data_format.voltage)
                 ResetFSR = conv.ReadChannel(5, conv.data_format.voltage)
                 if ResetFSR >= THRESHOLD_V:
                     print('ResetFSR ', ResetFSR)
-                    FlagEmergency=0
+                    FlagEmergency=False
+                    pub_emg.publish(FlagEmergency)
                     enable_mbed()
+                    last_msg=0.
                 time.sleep(0.1)
                 # threadLock.release()
 
@@ -676,6 +724,17 @@ def control_node():
         RosMassage = "%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s" % (current_time, cycle_T, RDS_time,Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Out_CP,Send_DAC0, Send_DAC1, User_V, User_W, feasible, Output_V, Output_W)
         # RosMassage = "%s %s %s %s %s %s %s %s" % (cycle_T, RDS_time, DA_time, feasible, User_V, User_W, round(Output_V,4), round(Output_W,4) )
         # RosMassage = "%s %s %s %s %s" % (User_V, User_W, Output_V, Output_W, feasible)
+        dat_wheels.data = [Send_DAC0, Send_DAC1]
+        dat_vel.data = [last_msg, User_V, User_W, Output_V, Output_W]
+        dat_user.data = [Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Out_CP]
+        
+        # rospy.loginfo(RosMassage)
+        pub_emg.publish(FlagEmergency)
+        pub_vel.publish(dat_vel)
+        pub_wheels.publish(dat_wheels)
+        pub_user.publish(dat_user)
+
+        # rospy.loginfo(dat_user)
         rospy.loginfo(RosMassage)
         pub.publish(RosMassage)
         rate.sleep()

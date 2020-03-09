@@ -70,7 +70,7 @@ Check again with date, time should be synchronized.
 ## Check the ~/.bashrc file ##
 ##############################
 
-sudo nano ~/.bashrc
+sudo nano ~/.bashrc 
 
 At the end you should have:
 

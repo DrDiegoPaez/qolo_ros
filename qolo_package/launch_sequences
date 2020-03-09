@@ -20,14 +20,18 @@ sudo ntpdate 192.168.13.110
 Restart chrony synchronisation:
 service chrony restart
 
-roslaunch rds_ros rds_test.launch
-
+Ruuning only 1 LIDAR (Frontal)
+	roslaunch rds_ros rds_test.launch
+or
 	roslaunch rds_ros rds_velodyne.launch
-	rosrun rds_ros two_lidar_to_lrf_node
+	rds_ros_lidar_to_lrf_node
+
+Ruuning only 2 LIDARs (Frontal and rear)
+	roslaunch rds_ros rds_velodyne.launch
+	rosrun rds_ros rds_ros_two_lidar_to_lrf_node
 
 roslaunch movidius_ncs_launch ncs_camera.launch cnn_type:=tinyyolo_v1 camera:=realsense
 rosrun kalman_bounding_boxes kalman_bounding_boxes_node
-
 
 rosbag record /qolo /velodyne_packets /rds_to_gui
 
