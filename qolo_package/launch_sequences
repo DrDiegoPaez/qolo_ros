@@ -24,7 +24,7 @@ Ruuning only 1 LIDAR (Frontal)
 	roslaunch rds_ros rds_test.launch
 or
 	roslaunch rds_ros rds_velodyne.launch
-	rds_ros_lidar_to_lrf_node
+	rosrun rds_ros_lidar_to_lrf_node
 
 Ruuning only 2 LIDARs (Frontal and rear)
 	roslaunch rds_ros rds_velodyne.launch

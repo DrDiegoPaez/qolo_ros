@@ -47,7 +47,7 @@ MBED_Enable.dir(mraa.DIR_OUT)
 
 
 GEAR = 12.64
-DISTANCE = 0.62/2  # distance bettween two wheels
+CR_RADIUS = 0.62/2  # distance bettween two wheels
 RADIUS = 0.304/2 # meter
 
 MaxSpeed = 0.8 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
@@ -276,7 +276,7 @@ def execution():
 #     # Runs the user input and returns Command_V and Command_W --> in 0-5k scale
 #     execution()
 #     motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
-#     motor_w = (2*Max_motor_v/(DISTANCE)*Command_W/5000 - Max_motor_v/(DISTANCE)) / W_ratio # In [RPM]
+#     motor_w = (2*Max_motor_v/(CR_RADIUS)*Command_W/5000 - Max_motor_v/(CR_RADIUS)) / W_ratio # In [RPM]
 
 #     # Start lock
 #     User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
@@ -333,33 +333,36 @@ def exit(signum, frame):
 
 
 def transformTo_Lowevel(Desired_V, Desired_W):
+    # A function to transform linear and angular velocities to output commands
     # print('received ', Command_V, Command_W)
-    global DISTANCE, RADIUS, User_V, User_W, MaxSpeed, GEAR, Max_motor_v
+    global CR_RADIUS, RADIUS, User_V, User_W, MaxSpeed, GEAR, Max_motor_v
 
     # These lines should be commented to execute the RDS output
     # motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
-    # motor_w = (2*Max_motor_v/(DISTANCE)*Command_W/5000 - Max_motor_v/(DISTANCE)) / W_ratio # In [RPM]
+    # motor_w = (2*Max_motor_v/(CR_RADIUS)*Command_W/5000 - Max_motor_v/(CR_RADIUS)) / W_ratio # In [RPM]
     # User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
     # User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
 
-    # Using the returned velocity from the SRD constraints
-    motor_v = round(((Desired_V*GEAR)/RADIUS)/(np.pi/30),4) 
-    motor_w = round(((Desired_W*GEAR)/RADIUS)/(np.pi/30),4) 
+    # Using the desired velocity (linearn adn angular) --> transform to motor speed
 
-    # print("left wheel = ",motor_v, "right wheel = ",motor_w)
-    rpm_L = motor_v - DISTANCE*motor_w
-    rpm_R = motor_v + DISTANCE*motor_w
+    wheel_L = Desired_V - (CR_RADIUS * Desired_W)    # Output in [m/s]
+    wheel_R = Desired_V + (CR_RADIUS * Desired_W)    # Output in [m/s]
+    # print ('Wheels Vel =', wheel_L, wheel_R)
+
+    # motor_v = round(((Desired_V*GEAR)/RADIUS)/(np.pi/30),8) 
+    # motor_w = round(((Desired_W*GEAR)/RADIUS)/(np.pi/30),8) 
+
+    # rpm_L = motor_v - CR_RADIUS*motor_w
+    # rpm_R = motor_v + CR_RADIUS*motor_w
+    # Transforming from rad/s to [RPM]
+    motor_l = (wheel_L/RADIUS) * GEAR *(30/np.pi)
+    motor_r = (wheel_R/RADIUS) * GEAR *(30/np.pi)
+    # print ('Motor Vel =', motor_l, motor_r)    
+    # Transforming velocities to mV [0-5000]
+    Command_L = round( (ZERO_V + 5000*motor_l/2400), 4)
+    Command_R = round ( (ZERO_V + 5000*motor_r/2400), 4)
     
-    # User_V = round( ((rpm_R+rpm_L)*RADIUS*(np.pi/60)), 4)
-    # User_W = round( (((rpm_R-rpm_L)*6)/DISTANCE), 4)
 
-    # print("left wheel = ",rpm_L, "right wheel = ",rpm_R)
-    Command_L = 5000*rpm_L/2400 + ZERO_V
-    Command_R = 5000*rpm_R/2400 + ZERO_V
-    # print('transformed ', Command_L, Command_R)
-    Command_L = round(Command_L, 4)
-    Command_R = round(Command_R, 4)
-    # print('transformed ', Command_L, Command_R)
     return Command_L, Command_R
 
 
@@ -526,7 +529,7 @@ def control():
     Out_CP = round(ox, 4);
     execution()  # Runs the user input with Out_CP and returns Command_V and Command_W --> in 0-5k scale
     motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
-    motor_w = (2*Max_motor_v/(DISTANCE)*Command_W/5000 - Max_motor_v/(DISTANCE)) / W_ratio # In [RPM]
+    motor_w = (2*Max_motor_v/(CR_RADIUS)*Command_W/5000 - Max_motor_v/(CR_RADIUS)) / W_ratio # In [RPM]
     User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
     User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
     

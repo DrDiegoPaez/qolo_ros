@@ -56,7 +56,7 @@ class AD_DA:
             print "Error, ASD1256 Chip ID =", id
         else:
             print "Ok, ASD1256 Chip ID =", id
-        self._CfgADC(self._GAIN.GAIN_1, self._DRATE_E.SPS_10)  # drate 15
+        self._CfgADC(self._GAIN.GAIN_1, self._DRATE_E.SPS_100)  # drate 100
 
     def _start_adc1(self):
         id = self._ReadChipID1()
@@ -64,7 +64,7 @@ class AD_DA:
             print "Error, ASD1256 Chip ID =", id
         else:
             print "Ok, ASD1256 Chip ID =", id
-        self._CfgADC1(self._GAIN.GAIN_1, self._DRATE_E.SPS_10)  # drate 15
+        self._CfgADC1(self._GAIN.GAIN_1, self._DRATE_E.SPS_100)  # drate 100
 
     class _GAIN(IntEnum):
         GAIN_1 = 0

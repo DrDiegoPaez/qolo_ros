@@ -25,7 +25,20 @@ from std_msgs.msg import MultiArrayLayout, MultiArrayDimension
 
 from rds_network_ros.srv import *
 
-MANUAL_MODE = False
+# IMporting libraries for remote web control
+import re
+import os.path
+import tornado.httpserver
+import tornado.websocket
+import tornado.ioloop
+import tornado.web
+
+# FLAG for fully manual control (TRUE) or shared control (FALSE)
+#Tonado server port
+PORT = 8080
+
+JOYSTICK_MODE = True
+MANUAL_MODE = True
 threadLock = threading.Lock()
 FLAG_debug = True
 Stop_Thread_Flag = False
@@ -43,16 +56,16 @@ backward_coefficient = 0.5
 # DAC1 --> Right Wheel Velocity
 # DAC2 --> Enable Qolo Motion
 THRESHOLD_V = 1500;
-ZERO_V = 2610;
+ZERO_V = 2650;
 High_DAC = 5000;
 MBED_Enable = mraa.Gpio(36) #11 17
 MBED_Enable.dir(mraa.DIR_OUT)
 
 GEAR = 12.64
-DISTANCE = 0.62/2  # distance bettween two wheels
+CR_RADIUS = 0.62/2  # CR_RADIUS bettween two wheels
 RADIUS = 0.304/2 # meter
 
-MaxSpeed = 1.2 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
+MaxSpeed = 1.0 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
 MinSpeed = MaxSpeed*backward_coefficient
 MaxAngular = 4.124
 W_ratio = 4 # Ratio of the maximum angular speed (232 deg/s)
@@ -112,12 +125,11 @@ a_zero, b_zero, c_zero, d_zero, e_zero, f_zero, g_zero, h_zero = 305.17, 264.7, 
 # FsrZero = np.array([304.5, 298.99, 202.69, 405.66, 294.8, 296.8, 334.01, 282.98, 250.73, 208.32])
 # Calibration Diego
 # FsrZero = np.array([304.5, 298.99, 268.69, 441.66, 416.8, 305.8, 334.01, 202.98, 250.73, 220.32])
-FsrZero = np.array([280.0, 1328.0, 793.0, 491.0, 976.0, 859.0, 1058.0, 195.0, 409.0, 161.0])
+FsrZero = np.array([433.0, 1227.0, 803.0, 314.0, 906.0, 930.0, 1047.0, 195.0, 237.0, 159.0])
 # default value for pre-configuration
 # k1, k2, k3, k4, k5, k6, k7, k8 =    0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 0.57, 0.63 # 2.48, 0.91, 1.59, 1.75, 1.46
-FsrK = np.array([0., 0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 1.04, 0.7, 0.])
-# FsrK = np.array([0.8, 0.8, 1.0, 0.8, 0.5, 0.5, 0.5, 1.0, 0.8, 0.8])
-
+# FsrK = np.array([0., 0.63, 1.04, 0.8, 0.57, 0.63, 0.8, 1.04, 0.7, 0.])
+FsrK = np.array([0.0, 1.03, 1.07, 1.0, 1.0, 1.0, 1.0, 1.2, 1.35, 0.0])
 # Vector input for all sensor data
 # Xin = np.zeros((10))
 Xin = np.array([0.0, 0., 0., 0., 0., 0., 0., 0., 0., 0.])
@@ -129,7 +141,7 @@ RemoteE = 0
 Rcenter = np.array([0., -2.5, -1.875, -1.25, -0.625, 0.625, 1.25, 1.875, 2.5, 0.])
 
 # classification point for center of pressure ox(calibration needed)
-pl2, pl1, pr1, pr2 = -1.7, -0.5, 0.5, 1.7
+pl2, pl1, pr1, pr2 = -1.5, -0.7, 0.7, 1.5
 # -1.72, 0.075, 1.455, 1.98 
 # -2.42, 0.67, 1.27, 1.82  
 # -0.97, -0.2, 0.2, 1.17
@@ -152,6 +164,85 @@ level_relations = {
         # 'error':logging.ERROR,
         # 'crit':logging.CRITICAL
     }
+
+# Tornado Folder Paths
+settings = dict(
+    template_path = os.path.join(os.path.dirname(__file__), "templates"),
+    static_path = os.path.join(os.path.dirname(__file__), "static")
+    )
+
+
+class MainHandler(tornado.web.RequestHandler):
+  def get(self):
+     print ("[HTTP](MainHandler) User Connected.")
+     self.render("joy.html")
+
+    
+class WSHandler(tornado.websocket.WebSocketHandler):
+  def open(self):
+    print ('[WS] Connection was opened.')
+ 
+  def on_message(self, message):
+    print ('[WS] Incoming message:'), message
+    print (type(message)) # result = re.findall(r"[-+]?\d*\.\d+|\d+", message)
+    result = re.findall(r"[-\d]+", message) 
+    # print (result)
+    Output = [((float(i)/100)) for i in result]
+    Comand_DAC0, Comand_DAC1 = transformTo_Lowevel((Output[1]*0.5), (Output[0]*0.5))
+
+    print ('Joystick =', Output[0]*2, Output[1]*0.5)
+    write_DA(Comand_DAC0, Comand_DAC1)
+    # # Comand_DAC0 = Output[0]
+    # # Comand_DAC1 = Output[1]
+    # if Comand_DAC0 < 4500:
+    #     Send_DAC0 = Comand_DAC0
+    # else:
+    #     Send_DAC0 = 4500
+    # if Comand_DAC0 < 4500:
+    #     Send_DAC1 = Comand_DAC1
+    # else:
+    #     Send_DAC1 = 4500
+    # conv.SET_DAC0(Send_DAC0, conv.data_format.voltage)
+    # conv.SET_DAC1(Send_DAC1, conv.data_format.voltage)
+    # conv.SET_DAC2(High_DAC, conv.data_format.voltage)
+    RemoteE = conv.ReadChannel(7, conv.data_format.voltage)
+    ComError = conv.ReadChannel(6, conv.data_format.voltage)
+    if ComError<=THRESHOLD_V:
+        write_DA(ZERO_V, ZERO_V)
+        enable_mbed()
+    if RemoteE >= THRESHOLD_V:
+        print('RemoteE', RemoteE)
+        FlagEmergency=True
+        last_msg=0.
+        # threadLock.acquire()
+        while FlagEmergency:
+            pub_emg.publish(FlagEmergency)
+            conv.SET_DAC2(0, conv.data_format.voltage)
+            conv.SET_DAC0(ZERO_V, conv.data_format.voltage)
+            conv.SET_DAC1(ZERO_V, conv.data_format.voltage)
+            ResetFSR = conv.ReadChannel(5, conv.data_format.voltage)
+            if ResetFSR >= THRESHOLD_V:
+                print('ResetFSR ', ResetFSR)
+                FlagEmergency=False
+                pub_emg.publish(FlagEmergency)
+                enable_mbed()
+                last_msg=0.
+            time.sleep(0.1)
+    print ('Output =', Comand_DAC0, Comand_DAC1)
+
+  def on_close(self):
+    conv.SET_DAC2(0, conv.data_format.voltage)
+    conv.SET_DAC0(ZERO_V, conv.data_format.voltage)
+    conv.SET_DAC1(ZERO_V, conv.data_format.voltage)
+    print ('[WS] Connection was closed.')
+
+application = tornado.web.Application([
+  (r'/', MainHandler),
+  (r'/ws', WSHandler),
+  # (r"/(.*)", tornado.web.StaticFileHandler,
+  #            {"path": r"{0}".format(os.path.join(os.path.dirname(__file__), "static"))}),
+  ], **settings)
+
 
 class FSR_thread (threading.Thread):
     def __init__(self, name, counter):
@@ -270,15 +361,14 @@ def user_input_thread():
     global FSR_time, t2, Xin, Xin_temp, FsrZero, FsrK, Out_CP, User_V, User_W, Command_V, Command_W, Read_Flag
 
     # read_FSR()
-    Xin = FsrK* (Xin_temp - FsrZero)     # Values in [mV]
-
+    Xin = FsrK* (round(Xin_temp,4) - FsrZero)     # Values in [mV]
     # Calculating the Center of pressure
     ox = np.sum(Rcenter*Xin) / (Xin[1] + Xin[2] + Xin[3] + Xin[4] + Xin[5] + Xin[6] + Xin[7] + Xin[8])
-    Out_CP = round(ox, 4);
+    Out_CP = round(ox, 4)
     # Runs the user input and returns Command_V and Command_W --> in 0-5k scale
     execution()
     motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
-    motor_w = (2*Max_motor_v/(DISTANCE)*Command_W/5000 - Max_motor_v/(DISTANCE)) / W_ratio # In [RPM]
+    motor_w = (2*Max_motor_v/(CR_RADIUS)*Command_W/5000 - Max_motor_v/(CR_RADIUS)) / W_ratio # In [RPM]
 
     # Start lock
     User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
@@ -336,36 +426,81 @@ def exit(signum, frame):
 
 
 
+### Previous version:
+        # MaxSpeed = 5.44 # max Qolo speed: km/h
+        # MaxAngularVlocity = MaxSpeed*1000/3600/(CR_RADIUS/2)
+        # Max_motor_v = MaxSpeed*1000/3600/RADIUS/(2*np.pi)*60*GEAR # max motor speed: 1200 rpm
+
+        # speed_L = linear_speed - CR_RADIUS*angular_speed/2
+        # speed_R = linear_speed + CR_RADIUS*angular_speed/2
+
+        # motor_L = Max_motor_v*speed_L / (MaxSpeed*1000/3600)
+        # motor_R = Max_motor_v*speed_R / (MaxSpeed*1000/3600)
+        # # print("left wheel = ",motor_v, "right wheel = ",motor_w)
+
+        # # print("left wheel = ",rpm_L, "right wheel = ",rpm_R)
+        # Command_L = 5000*motor_L/(2*Max_motor_v) + 2500
+        # Command_R = 5000*motor_R/(2*Max_motor_v) + 2500
+        # Command_L = round(Command_L, 2)
+        # Command_R = round(Command_R, 2)
+
 def transformTo_Lowevel(Desired_V, Desired_W):
+    # A function to transform linear and angular velocities to output commands
     # print('received ', Command_V, Command_W)
-    global DISTANCE, RADIUS, User_V, User_W, MaxSpeed, GEAR, Max_motor_v
+    global CR_RADIUS, RADIUS, User_V, User_W, MaxSpeed, GEAR, Max_motor_v
 
     # These lines should be commented to execute the RDS output
     # motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
-    # motor_w = (2*Max_motor_v/(DISTANCE)*Command_W/5000 - Max_motor_v/(DISTANCE)) / W_ratio # In [RPM]
+    # motor_w = (2*Max_motor_v/(CR_RADIUS)*Command_W/5000 - Max_motor_v/(CR_RADIUS)) / W_ratio # In [RPM]
     # User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
     # User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
 
-    # Using the returned velocity from the SRD constraints
-    motor_v = round(((Desired_V*GEAR)/RADIUS)/(np.pi/30),4) 
-    motor_w = round(((Desired_W*GEAR)/RADIUS)/(np.pi/30),4) 
+    # Using the desired velocity (linearn adn angular) --> transform to motor speed
 
-    # print("left wheel = ",motor_v, "right wheel = ",motor_w)
-    rpm_L = motor_v - DISTANCE*motor_w
-    rpm_R = motor_v + DISTANCE*motor_w
+    wheel_L = Desired_V - (CR_RADIUS * Desired_W)    # Output in [m/s]
+    wheel_R = Desired_V + (CR_RADIUS * Desired_W)    # Output in [m/s]
+    # print ('Wheels Vel =', wheel_L, wheel_R)
+
+    # motor_v = round(((Desired_V*GEAR)/RADIUS)/(np.pi/30),8) 
+    # motor_w = round(((Desired_W*GEAR)/RADIUS)/(np.pi/30),8) 
+
+    # rpm_L = motor_v - CR_RADIUS*motor_w
+    # rpm_R = motor_v + CR_RADIUS*motor_w
+    # Transforming from rad/s to [RPM]
+    motor_l = (wheel_L/RADIUS) * GEAR *(30/np.pi)
+    motor_r = (wheel_R/RADIUS) * GEAR *(30/np.pi)
+    # print ('Motor Vel =', motor_l, motor_r)    
+    # Transforming velocities to mV [0-5000]
+    Command_L = round( (ZERO_V + 5000*motor_l/2400), 4)
+    Command_R = round ( (ZERO_V + 5000*motor_r/2400), 4)
     
-    # User_V = round( ((rpm_R+rpm_L)*RADIUS*(np.pi/60)), 4)
-    # User_W = round( (((rpm_R-rpm_L)*6)/DISTANCE), 4)
 
-    # print("left wheel = ",rpm_L, "right wheel = ",rpm_R)
-    Command_L = 5000*rpm_L/2400 + ZERO_V
-    Command_R = 5000*rpm_R/2400 + ZERO_V
-    # print('transformed ', Command_L, Command_R)
-    Command_L = round(Command_L, 4)
-    Command_R = round(Command_R, 4)
-    # print('transformed ', Command_L, Command_R)
     return Command_L, Command_R
 
+
+def write_DA(Write_DAC0,Write_DAC1):
+    global Send_DAC0, Send_DAC1
+
+    # ADC Board output in mV [0-5000]
+    if Write_DAC0 > 4500:
+        Send_DAC0 = 4500
+    elif Write_DAC0 < 500:
+        Send_DAC0 = 500
+    else:
+        Send_DAC0 = Write_DAC0
+
+    if Write_DAC1 > 4500:
+        Send_DAC1 = 4500
+    elif Write_DAC1 < 500:
+        Send_DAC1 = 500
+    else:
+        Send_DAC1 = Write_DAC1
+
+    # threadLock.acquire()
+    conv.SET_DAC0(Send_DAC0, conv.data_format.voltage)
+    conv.SET_DAC1(Send_DAC1, conv.data_format.voltage)
+    conv.SET_DAC2(High_DAC, conv.data_format.voltage)
+    # threadLock.release()
 
 
 # output curve: Linear/Angular Velocity-Pressure Center
@@ -423,24 +558,6 @@ def output(a, b, c, d, e, f, g, h, ox):
         backward = 800
 
     return forward, backward, left_angle_for, left_angle_turn, right_angle_for, right_angle_turn, left_around, right_around
-
-def write_DA():
-    global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Command_V, Command_W
-    Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Output_V, Output_W)
-    # Error in the ADC Board connection
-    if Comand_DAC0 < 4870:
-        Send_DAC0 = Comand_DAC0 +140
-    else:
-        Send_DAC0 = 5000
-    if Comand_DAC0 < 4870:
-        Send_DAC1 = Comand_DAC1
-    else:
-        Send_DAC1 = 4870
-    # threadLock.acquire()
-    conv.SET_DAC0(Send_DAC0, conv.data_format.voltage)
-    conv.SET_DAC1(Send_DAC1, conv.data_format.voltage)
-    conv.SET_DAC2(High_DAC, conv.data_format.voltage)
-    # threadLock.release()
 
 def rds_service():
     global User_V, User_W, Output_V, Output_W, last_v, last_w, cycle, feasible
@@ -552,6 +669,20 @@ def mds_service():
     # Output_W = User_W
 # print "RDS Service failed"
 
+
+def joystick_control():
+    try:
+        http_server = tornado.httpserver.HTTPServer(application)
+        http_server.listen(PORT)
+        main_loop = tornado.ioloop.IOLoop.instance()
+
+        print ("Tornado Server started")
+        main_loop.start()
+
+    except:
+        print ("Exception triggered - Tornado Server stopped.")
+        # GPIO.cleanup()
+
 def control():
     global A1, B1, C1, D1, E1, F1, G1, H1
     # global r1, r2, r3, r4, r5, r6, r7, r8
@@ -561,20 +692,23 @@ def control():
     global DA_time, RDS_time, Compute_time, FSR_time
     
     # Replace with a node subsription
-    global Xin, FsrZero, FsrK, Out_CP
+    global Xin, Xin_temp, FsrZero, FsrK, Out_CP
     if FLAG_debug:
         t1 = time.clock()
 
-    read_FSR()
+    if JOYSTICK_MODE:
+        read_Joystick()
+    else:
+        read_FSR()
 
     if FLAG_debug:
         FSR_time = round((time.clock() - t1),4)
         t1 = time.clock()
     # FSR Inputs calibration: 
-    Xin = FsrK* (Xin_temp - FsrZero)     # Values in [mV]
-    # for i in range (0,10):
-    #     if Xin[i] < 0:
-    #         Xin[i] = 0
+    Xin = FsrK * (Xin_temp - FsrZero)     # Values in [mV]
+    for i in range (0,10):
+        if Xin[i] < 0.:
+            Xin[i] = 0.
 
     # Calculating the Center of pressure
     ox = np.sum(Rcenter*Xin) / (Xin[1] + Xin[2] + Xin[3] + Xin[4] + Xin[5] + Xin[6] + Xin[7] + Xin[8])
@@ -583,7 +717,7 @@ def control():
     Out_CP = round(ox, 4);
     execution()  # Runs the user input with Out_CP and returns Command_V and Command_W --> in 0-5k scale
     motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
-    motor_w = (2*Max_motor_v/(DISTANCE)*Command_W/5000 - Max_motor_v/(DISTANCE)) / W_ratio # In [RPM]
+    motor_w = (2*Max_motor_v/(CR_RADIUS)*Command_W/5000 - Max_motor_v/(CR_RADIUS)) / W_ratio # In [RPM]
     User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
     User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
     
@@ -610,7 +744,19 @@ def control():
     #     Comand_DAC1 = ZERO_V
     if FLAG_debug:
         t1 = time.clock()
-    write_DA()
+
+    if Output_V > MaxSpeed:
+        Output_V = MaxSpeed
+    elif Output_V < -MinSpeed:
+        Output_V = -MinSpeed
+
+    if Output_W > MaxAngular:
+        Output_W = MaxAngular
+    elif Output_W < -MaxAngular:
+        Output_W = -MaxAngular
+
+    Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Output_V, Output_W)
+    write_DA(Comand_DAC0, Comand_DAC1)
     if FLAG_debug:
         DA_time = round((time.clock() - t1),4)
     # print ('FSR_read: %s, FSR_read: %s, FSR_read: %s, FSR_read: %s,')
@@ -618,7 +764,7 @@ def control():
     counter1 += 1  # for estiamting frequency
 
 def control_node():
-    global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1
+    global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Xin
     global RemoteE, ComError
     global DA_time, RDS_time, Compute_time, FSR_time, extra_time, MANUAL_MODE,last_msg
     prevT = 0
@@ -678,7 +824,7 @@ def control_node():
     
     pub = rospy.Publisher('qolo', String, queue_size=1)
     rospy.init_node('qolo_control', anonymous=True)
-    rate = rospy.Rate(50) #  20 hz
+    rate = rospy.Rate(100) #  20 hz
 
     
     if MANUAL_MODE:
@@ -688,7 +834,11 @@ def control_node():
 
 
     while not rospy.is_shutdown():
-        control()   # Function of control for Qolo
+        if JOYSTICK_MODE:
+            joystick_control()
+            break
+        else:
+            control()   # Function of control for Qolo
         # # Checking emergency inputs
         # threadLock.acquire()
         RemoteE = conv.ReadChannel(7, conv.data_format.voltage)
