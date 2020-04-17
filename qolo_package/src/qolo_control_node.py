@@ -38,7 +38,7 @@ import tornado.web
 PORT = 8080
 
 JOYSTICK_MODE = True
-MANUAL_MODE = True
+MANUAL_MODE = False
 threadLock = threading.Lock()
 FLAG_debug = True
 Stop_Thread_Flag = False
@@ -62,10 +62,10 @@ MBED_Enable = mraa.Gpio(36) #11 17
 MBED_Enable.dir(mraa.DIR_OUT)
 
 GEAR = 12.64
-CR_RADIUS = 0.62/2  # CR_RADIUS bettween two wheels
+DSITANCE_CW = 0.548/2  # DSITANCE_CW bettween two wheels
 RADIUS = 0.304/2 # meter
 
-MaxSpeed = 1.0 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
+MaxSpeed = 1.5 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
 MinSpeed = MaxSpeed*backward_coefficient
 MaxAngular = 4.124
 W_ratio = 4 # Ratio of the maximum angular speed (232 deg/s)
@@ -210,6 +210,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
     if ComError<=THRESHOLD_V:
         write_DA(ZERO_V, ZERO_V)
         enable_mbed()
+        
     if RemoteE >= THRESHOLD_V:
         print('RemoteE', RemoteE)
         FlagEmergency=True
@@ -368,7 +369,7 @@ def user_input_thread():
     # Runs the user input and returns Command_V and Command_W --> in 0-5k scale
     execution()
     motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
-    motor_w = (2*Max_motor_v/(CR_RADIUS)*Command_W/5000 - Max_motor_v/(CR_RADIUS)) / W_ratio # In [RPM]
+    motor_w = (2*Max_motor_v/(DSITANCE_CW)*Command_W/5000 - Max_motor_v/(DSITANCE_CW)) / W_ratio # In [RPM]
 
     # Start lock
     User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
@@ -428,11 +429,11 @@ def exit(signum, frame):
 
 ### Previous version:
         # MaxSpeed = 5.44 # max Qolo speed: km/h
-        # MaxAngularVlocity = MaxSpeed*1000/3600/(CR_RADIUS/2)
+        # MaxAngularVlocity = MaxSpeed*1000/3600/(DSITANCE_CW/2)
         # Max_motor_v = MaxSpeed*1000/3600/RADIUS/(2*np.pi)*60*GEAR # max motor speed: 1200 rpm
 
-        # speed_L = linear_speed - CR_RADIUS*angular_speed/2
-        # speed_R = linear_speed + CR_RADIUS*angular_speed/2
+        # speed_L = linear_speed - DSITANCE_CW*angular_speed/2
+        # speed_R = linear_speed + DSITANCE_CW*angular_speed/2
 
         # motor_L = Max_motor_v*speed_L / (MaxSpeed*1000/3600)
         # motor_R = Max_motor_v*speed_R / (MaxSpeed*1000/3600)
@@ -447,25 +448,25 @@ def exit(signum, frame):
 def transformTo_Lowevel(Desired_V, Desired_W):
     # A function to transform linear and angular velocities to output commands
     # print('received ', Command_V, Command_W)
-    global CR_RADIUS, RADIUS, User_V, User_W, MaxSpeed, GEAR, Max_motor_v
+    global DSITANCE_CW, RADIUS, User_V, User_W, MaxSpeed, GEAR, Max_motor_v
 
     # These lines should be commented to execute the RDS output
     # motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
-    # motor_w = (2*Max_motor_v/(CR_RADIUS)*Command_W/5000 - Max_motor_v/(CR_RADIUS)) / W_ratio # In [RPM]
+    # motor_w = (2*Max_motor_v/(DSITANCE_CW)*Command_W/5000 - Max_motor_v/(DSITANCE_CW)) / W_ratio # In [RPM]
     # User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
     # User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
 
     # Using the desired velocity (linearn adn angular) --> transform to motor speed
 
-    wheel_L = Desired_V - (CR_RADIUS * Desired_W)    # Output in [m/s]
-    wheel_R = Desired_V + (CR_RADIUS * Desired_W)    # Output in [m/s]
+    wheel_L = Desired_V - (DSITANCE_CW * Desired_W)    # Output in [m/s]
+    wheel_R = Desired_V + (DSITANCE_CW * Desired_W)    # Output in [m/s]
     # print ('Wheels Vel =', wheel_L, wheel_R)
 
     # motor_v = round(((Desired_V*GEAR)/RADIUS)/(np.pi/30),8) 
     # motor_w = round(((Desired_W*GEAR)/RADIUS)/(np.pi/30),8) 
 
-    # rpm_L = motor_v - CR_RADIUS*motor_w
-    # rpm_R = motor_v + CR_RADIUS*motor_w
+    # rpm_L = motor_v - DSITANCE_CW*motor_w
+    # rpm_R = motor_v + DSITANCE_CW*motor_w
     # Transforming from rad/s to [RPM]
     motor_l = (wheel_L/RADIUS) * GEAR *(30/np.pi)
     motor_r = (wheel_R/RADIUS) * GEAR *(30/np.pi)
@@ -717,7 +718,7 @@ def control():
     Out_CP = round(ox, 4);
     execution()  # Runs the user input with Out_CP and returns Command_V and Command_W --> in 0-5k scale
     motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
-    motor_w = (2*Max_motor_v/(CR_RADIUS)*Command_W/5000 - Max_motor_v/(CR_RADIUS)) / W_ratio # In [RPM]
+    motor_w = (2*Max_motor_v/(DSITANCE_CW)*Command_W/5000 - Max_motor_v/(DSITANCE_CW)) / W_ratio # In [RPM]
     User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
     User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
     

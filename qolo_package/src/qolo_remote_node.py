@@ -49,7 +49,7 @@ MBED_Enable = mraa.Gpio(36) #11 17
 MBED_Enable.dir(mraa.DIR_OUT)
 
 GEAR = 12.64
-CR_RADIUS = 0.62/2  # distance bettween two wheels
+DSITANCE_CW = 0.62/2  # distance bettween two wheels
 RADIUS = 0.304/2 # meter
 
 MaxSpeed = 1.0 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
@@ -278,7 +278,7 @@ def user_input_thread():
     # Runs the user input and returns Command_V and Command_W --> in 0-5k scale
     execution()
     motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
-    motor_w = (2*Max_motor_v/(CR_RADIUS)*Command_W/5000 - Max_motor_v/(CR_RADIUS)) / W_ratio # In [RPM]
+    motor_w = (2*Max_motor_v/(DSITANCE_CW)*Command_W/5000 - Max_motor_v/(DSITANCE_CW)) / W_ratio # In [RPM]
 
     # Start lock
     User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
@@ -336,10 +336,10 @@ def exit(signum, frame):
 
 def transformTo_Lowevel(Desired_V, Desired_W):
     # print('received ', Command_V, Command_W)
-    global CR_RADIUS, RADIUS, User_V, User_W, MaxSpeed, MaxAngular, GEAR, Max_motor_v
+    global DSITANCE_CW, RADIUS, User_V, User_W, MaxSpeed, MaxAngular, GEAR, Max_motor_v
     
-    wheel_L = Desired_V - (CR_RADIUS * Desired_W)    # Output in [m/s]
-    wheel_R = Desired_V + (CR_RADIUS * Desired_W)    # Output in [m/s]
+    wheel_L = Desired_V - (DSITANCE_CW * Desired_W)    # Output in [m/s]
+    wheel_R = Desired_V + (DSITANCE_CW * Desired_W)    # Output in [m/s]
     # print ('Wheels Vel =', wheel_L, wheel_R)
     # Transforming from rad/s to [RPM]
     motor_l = (wheel_L/RADIUS) * GEAR *(30/np.pi)
@@ -571,7 +571,7 @@ def control():
     Out_CP = round(ox, 4);
     execution()  # Runs the user input with Out_CP and returns Command_V and Command_W --> in 0-5k scale
     motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
-    motor_w = (2*Max_motor_v/(CR_RADIUS)*Command_W/5000 - Max_motor_v/(CR_RADIUS)) / W_ratio # In [RPM]
+    motor_w = (2*Max_motor_v/(DSITANCE_CW)*Command_W/5000 - Max_motor_v/(DSITANCE_CW)) / W_ratio # In [RPM]
     User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
     User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
     
