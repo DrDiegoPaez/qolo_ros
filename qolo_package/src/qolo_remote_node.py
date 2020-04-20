@@ -1,4 +1,8 @@
 #! /usr/bin/env python
+#########  TEMPORAL Program only for HASLER Project ##########
+##### Author: Diego F. Paez G.
+##### Data: 2019/10/01
+##### To be Deleted
 
 import HighPrecision_ADDA_Double as converter
 import time
@@ -430,7 +434,7 @@ def output(a, b, c, d, e, f, g, h, ox):
 
 def write_DA():
     global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Command_V, Command_W
-    global Output_V, Output_W, User_V, User_W, Remote_V, Remote_W
+    global Output_V, Output_W, User_V, User_W
 
     if Output_V > MaxSpeed:
         Output_V = MaxSpeed
@@ -532,18 +536,6 @@ def callback_remote(data):
         last_msg = data.data[0]
     last_msg = data.data[0]
     # print('Callback Hello')
-
-# def get_remote_command():
-#     # rospy.init_node('remote_driving_node', anonymous=True)
-#     # try:
-#     rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote)
-#     # except rospy.exceptions.ROSException:
-#         # pass
-#     # else:
-#          # Remote_V = 0;
-#          # Remote_W = 0;
-#     # spin() simply keeps python from exiting until this node is stopped
-#     # rospy.spin()
 
 def control():
     global A1, B1, C1, D1, E1, F1, G1, H1
@@ -651,7 +643,7 @@ def control_node():
     dat_vel = Float32MultiArray()
     dat_vel.layout.dim.append(MultiArrayDimension())
     dat_vel.layout.dim[0].label = 'Velocities: Input - Output'
-    dat_vel.layout.dim[0].size = 4
+    dat_vel.layout.dim[0].size = 5
     dat_vel.data = [0]*4
 
     dat_wheels = Float32MultiArray()
@@ -666,7 +658,7 @@ def control_node():
     pub_user = rospy.Publisher('qolo/user_input', Float32MultiArray, queue_size=1)
     rospy.init_node('qolo_remote', anonymous=True)
     
-    sub = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
+    sub_remote = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
     rate = rospy.Rate(10) #  20 hz
 
     while not rospy.is_shutdown():

@@ -17,6 +17,8 @@ cd catkin_ws/
 	# This includes the rear LIDAR
 	OR
  	roslaunch rds_ros rds_rear_lrf.launch
+ 	OR
+ 	./src/qolo_ros/run_scripts/run_all_sensors.sh
 
 Execute in 120:
 
@@ -29,7 +31,7 @@ Execute in 120:
 	
 
 ------------- RGBD Detection and Visualization -----------------
-
+	
 roslaunch movidius_ncs_launch ncs_camera.launch cnn_type:=tinyyolo_v1 camera:=realsense
 rosrun kalman_bounding_boxes kalman_bounding_boxes_node
 
@@ -84,14 +86,20 @@ rosrun kalman_bounding_boxes kalman_bounding_boxes_node
 	rosbag record /qolo /velodyne_packets /rds_to_gui
 
 Velodyne New package isntallation:
-
-	cd ~/catkin_ws/src/
-	git clone https://github.com/ros-drivers/velodyne.git
+	sudo rm -r src/velodyne build/velodyne devel/include/velodyne_* devel/lib/velodyne_* devel/lib/libvelodyne_* devel/lib/libdriver_nodelet.so devel/share/velodyne_*
 		Known Working version with RDS: git checkout 7f52b3586a2833b4a48bd2539a862adedb161baf
-	rosdep install --from-paths src --ignore-src --rosdistro kinetic -y
-	cd ~/catkin_ws/
+	sudo apt-get install ros-kinetic-velodyne 
+	catkin_make clean
 	catkin_make
 
+	sudo apt-get remove ros-kinetic-velodyne ros-kinetic-velodyne-driver ros-kinetic-velodyne-laserscan ros-kinetic-velodyne-msgs ros-kinetic-velodyne-pointcloud 
+	cd ~/autonomy_ws/src/velodyne
+	git clone https://github.com/ros-drivers/velodyne.git
+	cd ~/catkin_ws/
+	rosdep install --from-paths src --ignore-src --rosdistro kinetic -y
+	catkin_make clean
+	catkin_make
+	
 ------------ To see raw image ---------------
 roslaunch my_ncs_stream_detection_example.launch camera_topic:="/camera/color/image_raw"
 

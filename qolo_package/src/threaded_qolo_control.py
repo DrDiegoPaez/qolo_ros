@@ -1,4 +1,9 @@
 #! /usr/bin/env python
+#########  TEMPORAL Program only for testing multi-thread in QOLO ##########
+##### Author: Diego F. Paez G.
+##### Data: 2019/10/01
+##### To be Deleted
+
 
 import HighPrecision_ADDA_Double as converter
 import time
