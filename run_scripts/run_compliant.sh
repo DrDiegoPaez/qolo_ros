@@ -1,5 +1,4 @@
 #!/bin/bash
-
 #----- Ctrl-C stop -----
 trap "exit" INT TERM ERR
 trap "kill -INT 0" EXIT
@@ -10,23 +9,45 @@ while [ -d "csv_logs/test${TEST_NO}" ]; do
    TEST_NO=$(( $TEST_NO + 1 ))
 done
 LOG_FOLDER="$(pwd)/csv_logs/test${TEST_NO}"
-eval "mkdir -p ${LOG_FOLDER}"
+eval "mkdir -p ${LOG_FOLDER}/imu"
 echo "Current Test Number : ${TEST_NO}"
+
 eval ". devel/setup.bash" 
 
-
-# #----- Launch and record realsense camera -----
-# echo "Launching RealSense Camera..."
-# eval "roslaunch realsense2_camera rs_qolo_rear.launch \
-#     &> /dev/null &"
+#----- Launch and record realsense camera -----
+echo "Launching RealSense Camera..."
+eval "roslaunch realsense2_camera rs_qolo_rear.launch \
+    &> /dev/null &"
+PID_LIST+="$! "
+sleep 1
+#eval "rosbag record -q \
+#    -O ${LOG_FOLDER}/camera \
+#    -e '/camera_rear/(.*)' \
+#    &> /dev/null &"
 # PID_LIST+="$! "
-# sleep 1
+
+eval "rostopic echo -p /camera/accel/sample \
+    &> ${LOG_FOLDER}/imu/accel.csv &"
+PID_LIST+="$! "
+eval "rostopic echo -p /camera/gyro/sample \
+    &> ${LOG_FOLDER}/imu/gyro.csv &"
+PID_LIST+="$! "
+sleep 5
+
+
+# # --------- Launching node for remote control access ------- # #
+# eval "python /home/qolo/catkin_ws/src/qolo_ros/qolo_package/src/remote_joystick.py"
+# echo "Launching Remote Joystick..."
+# eval "roslaunch qolo qolo_joystick.launch &"
+# sleep 2
+# PID_LIST+="$! "
+
 
 #----- Launch and record force sensors -----
+echo "Launching FT Sensors..."
 eval "/home/qolo/collision_test/src/rokubimini_interface/run_rokubimini_ros.sh -f ${LOG_FOLDER}&"
 sleep 5
 PID_LIST+="$! "
-
 
 # eval "rosbag record -a \
     # -O ${LOG_FOLDER}/compliant_test \

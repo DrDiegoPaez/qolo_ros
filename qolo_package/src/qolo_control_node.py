@@ -3,7 +3,6 @@
 ##### Author: Diego F. Paez G.
 ##### Preliminar version: Chen Yang
 ##### Data: 2019/10/01
-##### To be Deleted
 
 import HighPrecision_ADDA_Double as converter
 import time
@@ -22,15 +21,17 @@ from logging import handlers
 import mraa
 import signal
 import datetime
-
+# from scipy import signal
 import rospy
 import threading
+from prediction_model import BumperModel
 
-from geometry_msgs.msg import Wrench, WrenchStamped, Vector3, PoseStamped, Quaternion
+from geometry_msgs.msg import Wrench, WrenchStamped, Vector3, PoseStamped, Quaternion, Twist
 from std_msgs.msg import String, Bool, Float32MultiArray, Float32, Int32MultiArray
 from std_msgs.msg import MultiArrayLayout, MultiArrayDimension 
 
 from rds_network_ros.srv import *
+# from builtins import PermissionError
 
 # FLAG for fully manual control (TRUE) or shared control (FALSE)
 #Tonado server port
@@ -40,18 +41,13 @@ except PermissionError:
     # Need to run via sudo for high priority
     rospy.logerr("Cannot set niceness for the process...")
     rospy.logerr("Run the script as sudo...")
-PORT = 8080
 
 SHARED_MODE = False
 COMPLIANCE_FLAG = False
 JOYSTICK_MODE = True
 REMOTE_MODE = False
-
+PORT = 8080
 control_type ='embodied'
-
-compliant_V =0.
-compliant_W =0.
-
 threadLock = threading.Lock()
 FLAG_debug = True
 Stop_Thread_Flag = False
@@ -69,7 +65,8 @@ backward_coefficient = 0.5
 # DAC1 --> Right Wheel Velocity
 # DAC2 --> Enable Qolo Motion
 THRESHOLD_V = 1500;
-ZERO_V = 2650;
+ZERO_LW = 2500 #2750;
+ZERO_RW = 2500 #2650;
 High_DAC = 5000;
 MBED_Enable = mraa.Gpio(36) #11 17
 MBED_Enable.dir(mraa.DIR_OUT)
@@ -86,6 +83,16 @@ W_ratio = 4 # Ratio of the maximum angular speed (232 deg/s)
 Max_motor_v = (MaxSpeed/ (RADIUS*(2*np.pi))) *60*GEAR # max motor speed: 1200 rpm
 
 # Setting for the RDS service
+# Some reference for controlling the non-holonomic base
+y_coordinate_of_reference_point_for_command_limits = 0.5;
+# Gain to this point
+weight_scaling_of_reference_point_for_command_limits = 0.;
+# Some gain for velocity after proximity reaches limits
+tau = 2.;
+# Minimal distance to obstacles
+delta = 0.08;
+clearance_from_axle_of_final_reference_point = 0.15;
+
 max_linear = MaxSpeed;
 min_linear = -MinSpeed;
 absolute_angular_at_min_linear = 0.;
@@ -108,11 +115,6 @@ Count_msg_lost = 0
 last_v = 0.;
 last_w = 0.;
 cycle=0.
-y_coordinate_of_reference_point_for_command_limits = 0.5;
-weight_scaling_of_reference_point_for_command_limits = 0.;
-tau = 2.;
-delta = 0.10;
-clearance_from_axle_of_final_reference_point = 0.15;
 
 Command_V = 2500
 Command_W = 2500
@@ -178,15 +180,32 @@ HH = []
 OX = []
 
 # Parameters for compliant control
+compliant_V =0.
+compliant_W =0.
+
 bumper_l = 0.2425      # (210+32.5) mm
 bumper_R = 0.33 # 330 mm
 Ts = 1.0/100    # 100 Hz
-Damping_gain = 10           # 1 N-s/m 
-robot_mass = 120         # 120 kg
+Damping_gain = 100           # 1 N-s/m 
+robot_mass = 50         # 120 kg
 
-# Global Variables
+# Global Variables for Compliant mode
+offset_ft_data = np.zeros((6,))
 raw_ft_data  = np.zeros((6,))
+filtered_ft_data  = np.zeros((6,))
 ft_data =  np.zeros((6,))
+initialising_ft=True
+init_ft_data = {
+    'Fx': [],
+    'Fy': [],
+    'Fz': [],
+    'Mx': [],
+    'My': [],
+    'Mz': [],
+    }
+
+# Prediction Models
+bumperModel = None
 
 level_relations = {
         # 'debug':logging.DEBUG,
@@ -195,6 +214,21 @@ level_relations = {
         # 'error':logging.ERROR,
         # 'crit':logging.CRITICAL
     }
+
+# for interruption
+def exit(signum, frame):
+    # global Stop_Thread_Flag
+    # MBED_Enable = mraa.Gpio(36) #11 17
+    # MBED_Enable.dir(mraa.DIR_OUT)
+    MBED_Enable.write(0)
+    conv.SET_DAC2(0, conv.data_format.voltage)
+    conv.SET_DAC3(0, conv.data_format.voltage)
+    conv.SET_DAC0(0, conv.data_format.voltage)
+    conv.SET_DAC1(0, conv.data_format.voltage)
+    # Stop_Thread_Flag = True
+    # cleanup_stop_thread()
+    print('----> You chose to interrupt')
+    quit()
 
 class FSR_thread (threading.Thread):
     def __init__(self, name, counter):
@@ -239,6 +273,7 @@ class FSR_thread (threading.Thread):
             ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0) 
             print('Exception raised: Stopped User_input_thread')
 
+
 def callback_remote(data):
     global Remote_V, Remote_W, FlagRemote, time_msg
     # temp_dat = Float32MultiArray()
@@ -247,8 +282,8 @@ def callback_remote(data):
     # temp_dat.data = [0]*2
     # print(time_msg)
     if time_msg != 0:
-        Remote_V = data.data[1]
-        Remote_W =  data.data[2]
+        Remote_V = round(data.data[1],6)
+        Remote_W =  round(data.data[2],6)
         FlagRemote = True
         time_msg = data.data[0]
     time_msg = data.data[0]
@@ -256,7 +291,7 @@ def callback_remote(data):
 ## Compliant control functions
 def ft_sensor_callback(data):
     # data.wrench.serialize_numpy(raw_ft_data, np)
-    global raw_ft_data
+    global raw_ft_data, filtered_ft_data, init_ft_data, initialising_ft
     _x = data.wrench
     raw_ft_data = np.array([
         _x.force.x,
@@ -267,12 +302,49 @@ def ft_sensor_callback(data):
         _x.torque.z,
     ])
 
+    if initialising_ft:
+        init_ft_data['Fx'] = np.append(init_ft_data['Fx'], _x.force.x)
+        init_ft_data['Fy'] = np.append(init_ft_data['Fy'], _x.force.y)
+        init_ft_data['Fz'] = np.append(init_ft_data['Fz'], _x.force.z)
+        init_ft_data['Mx'] = np.append(init_ft_data['Mx'], _x.torque.x)
+        init_ft_data['My'] = np.append(init_ft_data['My'], _x.torque.y)
+        init_ft_data['Mz'] = np.append(init_ft_data['Mz'], _x.torque.z)
+    # else:
+    #     filter_data['Fx'] = np.append(filter_data['Fx'], _x.force.x)
+    #     filter_data['Fy'] = np.append(filter_data['Fy'], _x.force.y)
+    #     filter_data['Fz'] = np.append(filter_data['Fz'], _x.force.z)
+    #     filter_data['Mx'] = np.append(filter_data['Mx'], _x.torque.x)
+    #     filter_data['My'] = np.append(filter_data['My'], _x.torque.y)
+    #     filter_data['Mz'] = np.append(filter_data['Mz'], _x.torque.z)
+
+    #     fs = 400 #sampling frequency
+    #     fc = 30 # Cut-off frequency of the filter
+    #     w = fc / (fs / 2) # Normalize the frequency
+    #     b, a = signal.butter(5, w, 'low')
+    #     fx_low = signal.lfilter(b, a, filter_data['Fx']) #Forward filter
+    #     fy_low = signal.lfilter(b, a, filter_data['Fy']) #Forward filter
+    #     fz_low = signal.lfilter(b, a, filter_data['Fz']) #Forward filter
+    #     tx_low = signal.lfilter(b, a, filter_data['Mx']) #Forward filter
+    #     ty_low = signal.lfilter(b, a, filter_data['My']) #Forward filter
+    #     tz_low = signal.lfilter(b, a, filter_data['Mz']) #Forward filter
+    #     filtered_ft_data = np.array([
+    #         fx_low,
+    #         fy_low,
+    #         fz_low,
+    #         tx_low,
+    #         ty_low,
+    #         tz_low,
+    #         ])
 
 def damper_correction(ft_data):
-    # Dummy function for future
+    # Correcting based on trained SVR damping model
+    global bumperModel
+    # corr_ft_data = bumperModel.predict(ft_data)
+    # ft_data_temp = ft_data
+    corr_ft_data = bumperModel.predict(np.reshape(ft_data, (1,-1)))
     h = 0.1
-    theta = np.pi/6
-    return (ft_data, h, theta)
+    theta = 30 #np.pi/6
+    return (corr_ft_data, h, theta)
 
 
 def transform_to_bumper_surface(ft_data, h, theta):
@@ -347,23 +419,25 @@ def compliance_control(v_prev, omega_prev, Fmag, h, theta):
     v = t * v_prev + (1-t) * (v_eff - b*omega_prev) / a
     omega = t * (v_eff - a*v_prev) / b + (1-t) * omega_prev
     return (v, omega)
+    
 
 # read data from ADDA board
 def read_FSR():
     global Xin_temp, RemoteE, ComError
     # Checking emergency inputs
-    RemoteE = conv.ReadChannel(7, conv.data_format.voltage)
-    ComError = conv.ReadChannel(6, conv.data_format.voltage)
-    Xin_temp[0] = float(conv.ReadChannel(5, conv.data_format.voltage))
-    Xin_temp[1] = float(conv.ReadChannel(15, conv.data_format.voltage))
-    Xin_temp[2] = float(conv.ReadChannel(14, conv.data_format.voltage))
-    Xin_temp[3] = float(conv.ReadChannel(13, conv.data_format.voltage))
-    Xin_temp[4] = float(conv.ReadChannel(12, conv.data_format.voltage))
-    Xin_temp[5] = float(conv.ReadChannel(11, conv.data_format.voltage))
-    Xin_temp[6] = float(conv.ReadChannel(10, conv.data_format.voltage))
-    Xin_temp[7] = float(conv.ReadChannel(9, conv.data_format.voltage))
-    Xin_temp[8] = float(conv.ReadChannel(8, conv.data_format.voltage))
-    Xin_temp[9] = float(conv.ReadChannel(4, conv.data_format.voltage))
+    # RemoteE = conv.ReadChannel(7, conv.data_format.voltage)
+    # ComError = conv.ReadChannel(6, conv.data_format.voltage)
+     # ADC_Value[0]*5.0/0x7fffff
+    Xin_temp[0] = round(conv.ReadChannel(5, conv.data_format.voltage),4)
+    Xin_temp[1] = round(conv.ReadChannel(15, conv.data_format.voltage),4)
+    Xin_temp[2] = round(conv.ReadChannel(14, conv.data_format.voltage),4)
+    Xin_temp[3] = round(conv.ReadChannel(13, conv.data_format.voltage),4)
+    Xin_temp[4] = round(conv.ReadChannel(12, conv.data_format.voltage),4)
+    Xin_temp[5] = round(conv.ReadChannel(11, conv.data_format.voltage),4)
+    Xin_temp[6] = round(conv.ReadChannel(10, conv.data_format.voltage),4)
+    Xin_temp[7] = round(conv.ReadChannel(9, conv.data_format.voltage),4)
+    Xin_temp[8] = round(conv.ReadChannel(8, conv.data_format.voltage),4)
+    Xin_temp[9] = round(conv.ReadChannel(4, conv.data_format.voltage),4)
 
     # return Xin_temp
 # execution command to DAC board based on the output curve
@@ -453,8 +527,8 @@ def enable_mbed():
 
     StartFlag = 1
     conv.SET_DAC2(High_DAC, conv.data_format.voltage)
-    conv.SET_DAC0(ZERO_V, conv.data_format.voltage)
-    conv.SET_DAC1(ZERO_V, conv.data_format.voltage)
+    conv.SET_DAC0(ZERO_LW, conv.data_format.voltage)
+    conv.SET_DAC1(ZERO_RW, conv.data_format.voltage)
 
     ComError = conv.ReadChannel(6, conv.data_format.voltage)    
     while StartFlag:
@@ -495,8 +569,8 @@ def transformTo_Lowevel(Desired_V, Desired_W):
     motor_r = (wheel_R/RADIUS) * GEAR *(30/np.pi)
     # print ('Motor Vel =', motor_l, motor_r)    
     # Transforming velocities to mV [0-5000]
-    Command_L = round( (ZERO_V + 5000*motor_l/2400), 4)
-    Command_R = round ( (ZERO_V + 5000*motor_r/2400), 4)
+    Command_L = round( (ZERO_LW + 5000*motor_l/2400), 6)
+    Command_R = round ( (ZERO_RW + 5000*motor_r/2400), 6)
     
 
     return Command_L, Command_R
@@ -506,17 +580,17 @@ def write_DA(Write_DAC0,Write_DAC1):
     global Send_DAC0, Send_DAC1
 
     # ADC Board output in mV [0-5000]
-    if Write_DAC0 > 4500:
-        Send_DAC0 = 4500
-    elif Write_DAC0 < 500:
-        Send_DAC0 = 500
+    if Write_DAC0 > 4800:
+        Send_DAC0 = 4800
+    elif Write_DAC0 < 200:
+        Send_DAC0 = 200
     else:
         Send_DAC0 = Write_DAC0
 
-    if Write_DAC1 > 4500:
-        Send_DAC1 = 4500
-    elif Write_DAC1 < 500:
-        Send_DAC1 = 500
+    if Write_DAC1 > 4800:
+        Send_DAC1 = 4800
+    elif Write_DAC1 < 200:
+        Send_DAC1 = 200
     else:
         Send_DAC1 = Write_DAC1
 
@@ -625,8 +699,8 @@ def rds_service():
     request.abs_angular_acceleration_limit = 2;
 
     response = RDS(request)
-    Corrected_V = round(response.corrected_command.linear,4)
-    Corrected_W = round(response.corrected_command.angular,4)
+    Corrected_V = round(response.corrected_command.linear,6)
+    Corrected_W = round(response.corrected_command.angular,6)
     feasible = response.feasible
 
     cycle = time.clock()
@@ -678,8 +752,8 @@ def mds_service():
     request.abs_angular_acceleration_limit = 2;
 
     response = RDS(request)
-    Corrected_V = round(response.corrected_command.linear,4)
-    Corrected_W = round(response.corrected_command.angular,4)
+    Corrected_V = round(response.corrected_command.linear,6)
+    Corrected_W = round(response.corrected_command.angular,6)
     feasible = response.feasible
 
     # last_v = Output_V
@@ -711,7 +785,7 @@ def control():
     # global r1, r2, r3, r4, r5, r6, r7, r8
     global Rcenter, Count_msg_lost, time_msg, last_msg
     global Command_V, Command_W, Comand_DAC0, Comand_DAC1, User_V, User_W, Output_V, Output_W, last_w, last_v, Corrected_V, Corrected_W
-    global counter1, compliant_V, compliant_W, raw_ft_data, ft_data
+    global counter1, compliant_V, compliant_W, raw_ft_data, ft_data, offset_ft_data
     global DA_time, RDS_time, Compute_time, FSR_time
     
     # Replace with a node subsription
@@ -730,7 +804,6 @@ def control():
             User_V = Remote_V
             User_W = Remote_W
         else:
-
             User_V = 0.
             User_W = 0.
 
@@ -745,12 +818,12 @@ def control():
         ox = np.sum(Rcenter*Xin) / (Xin[1] + Xin[2] + Xin[3] + Xin[4] + Xin[5] + Xin[6] + Xin[7] + Xin[8])
         if math.isnan(ox):
             ox = 0.
-        Out_CP = round(ox, 4);
+        Out_CP = round(ox, 6);
         FSR_execution()  # Runs the user input with Out_CP and returns Command_V and Command_W --> in 0-5k scale
         motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
         motor_w = (2*Max_motor_v/(DSITANCE_CW)*Command_W/5000 - Max_motor_v/(DSITANCE_CW)) / W_ratio # In [RPM]
-        User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
-        User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
+        User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),6)
+        User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),6)
 
 
     if FLAG_debug:
@@ -764,11 +837,11 @@ def control():
         Corrected_W = User_W
 
     if COMPLIANCE_FLAG:
-        [ft_data, h, theta] = damper_correction(raw_ft_data)
+        [ft_data, h, theta] = damper_correction(raw_ft_data - offset_ft_data)
         ft_data = transform_to_bumper_surface(ft_data, h, theta)
         [compliant_V, compliant_W] = compliance_control(Corrected_V, Corrected_W, ft_data[2], h, theta)
-        Output_V = round(compliant_V,4)
-        Output_W = round(compliant_W,4)
+        Output_V = round(compliant_V,6)
+        Output_W = round(compliant_W,6)
     else:
         Output_V = Corrected_V
         Output_W = Corrected_W
@@ -783,8 +856,8 @@ def control():
     #     Comand_DAC0 = 4000
     #     Comand_DAC1 = 4000
     # else:
-    #     Comand_DAC0 = ZERO_V
-    #     Comand_DAC1 = ZERO_V
+    #     Comand_DAC0 = ZERO_LW
+    #     Comand_DAC1 = ZERO_RW
 
     if Output_V > MaxSpeed:
         Output_V = MaxSpeed
@@ -811,7 +884,7 @@ def control_node():
     global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Xin
     global RemoteE, ComError
     global DA_time, RDS_time, Compute_time, FSR_time, extra_time,last_msg, time_msg
-    global compliant_V, compliant_W
+    global compliant_V, compliant_W, offset_ft_data, bumperModel
     prevT = 0
     FlagEmergency=False
     # threadLock = threading.Lock()
@@ -819,7 +892,9 @@ def control_node():
     
     # Call the calibration File
     # load_calibration()
-    
+    if COMPLIANCE_FLAG:
+        print("loading SVR models")
+        bumperModel = BumperModel()
 
     ########### Starting Communication and MBED Board ###########
 
@@ -850,6 +925,14 @@ def control_node():
     dat_user.layout.dim[0].label = 'FSR_read'
     dat_user.layout.dim[0].size = 11
     dat_user.data = [0]*11
+
+    qolo_twist = Twist()
+    qolo_twist.linear.x = 0
+    qolo_twist.linear.y = 0
+    qolo_twist.linear.z = 0
+    qolo_twist.angular.x = 0
+    qolo_twist.angular.y = 0
+    qolo_twist.angular.z = 0
     dat_vel = Float32MultiArray()
     dat_vel.layout.dim.append(MultiArrayDimension())
     dat_vel.layout.dim[0].label = 'Velocities: last message, Input[2], Output[2]'
@@ -858,9 +941,9 @@ def control_node():
 
     dat_cor_vel = Float32MultiArray()
     dat_cor_vel.layout.dim.append(MultiArrayDimension())
-    dat_cor_vel.layout.dim[0].label = 'Velocities: Corrected_OA[2], Corrected_Compliance[2]'
-    dat_cor_vel.layout.dim[0].size = 4
-    dat_cor_vel.data = [0]*4
+    dat_cor_vel.layout.dim[0].label = 'Velocities: User[2], Corrected_OA[2], Corrected_Compliance[2]'
+    dat_cor_vel.layout.dim[0].size = 6
+    dat_cor_vel.data = [0]*6
 
     dat_wheels = Float32MultiArray()
     dat_wheels.layout.dim.append(MultiArrayDimension())
@@ -871,19 +954,37 @@ def control_node():
     dat_compliance = Wrench()
 
     pub_wheels = rospy.Publisher('qolo/wheels', Float32MultiArray, queue_size=1)
+    pub_twist = rospy.Publisher('qolo/twist', Twist, queue_size=1)
     pub_vel = rospy.Publisher('qolo/velocity', Float32MultiArray, queue_size=1)
     pub_cor_vel = rospy.Publisher('qolo/corrected_velocity', Float32MultiArray, queue_size=1)
     pub_emg = rospy.Publisher('qolo/emergency', Bool, queue_size=1)
     pub_user = rospy.Publisher('qolo/user_input', Float32MultiArray, queue_size=1)
     pub_compliance = rospy.Publisher('qolo/compliance', Wrench, queue_size=10)
     
-    pub = rospy.Publisher('qolo', String, queue_size=1)
+    pub_mess = rospy.Publisher('qolo/message', String, queue_size=1)
     rospy.init_node('qolo_control', anonymous=True)
     rate = rospy.Rate(100) #  100 hz
 
+
     if COMPLIANCE_FLAG:
         ftsub = rospy.Subscriber("/rokubi_node_front/ft_sensor_measurements",WrenchStamped,ft_sensor_callback)
-        print('STARTING COMPLIANT MODE')
+        start_time = time.time()
+        initialising_ft = True
+        print('Waiting for FT Sensor Offset: 4 sec')
+        # while (time.time() - start_time > 4): # 4 s for initialising ft sensor
+        time.sleep(4)
+        initialising_ft = False
+        offset_ft_data = np.array([
+            np.mean(init_ft_data['Fx']),
+            np.mean(init_ft_data['Fy']),
+            np.mean(init_ft_data['Fz']),
+            np.mean(init_ft_data['Mx']),
+            np.mean(init_ft_data['My']),
+            np.mean(init_ft_data['Mz']),
+        ])
+        print('Starting Compliant Mode')
+    else:
+        print('Starting WITHOUT FT Sensing')
     
     if JOYSTICK_MODE:
         sub_remote = rospy.Subscriber("qolo/remote_joystick", Float32MultiArray, callback_remote, queue_size=1)
@@ -900,6 +1001,7 @@ def control_node():
         print('STARTING MANUAL MODE')
 
     while not rospy.is_shutdown():
+
         control()   # Function of control for Qolo
         # # Checking emergency inputs
         # threadLock.acquire()
@@ -917,8 +1019,8 @@ def control_node():
             while FlagEmergency:
                 pub_emg.publish(FlagEmergency)
                 conv.SET_DAC2(0, conv.data_format.voltage)
-                conv.SET_DAC0(ZERO_V, conv.data_format.voltage)
-                conv.SET_DAC1(ZERO_V, conv.data_format.voltage)
+                conv.SET_DAC0(ZERO_LW, conv.data_format.voltage)
+                conv.SET_DAC1(ZERO_RW, conv.data_format.voltage)
                 ResetFSR = conv.ReadChannel(5, conv.data_format.voltage)
                 if ResetFSR >= THRESHOLD_V:
                     print('ResetFSR ', ResetFSR)
@@ -938,7 +1040,9 @@ def control_node():
         RosMassage = "%s %s %s %s %s %s" % (User_V, User_W, compliant_V, compliant_W, Output_V, Output_W)
         dat_wheels.data = [Send_DAC0, Send_DAC1]
         dat_vel.data = [time_msg, User_V, User_W, Output_V, Output_W]
-        dat_cor_vel.data = [Corrected_V, Corrected_W, compliant_V, compliant_W]
+        qolo_twist.linear.x = Output_V
+        qolo_twist.angular.z = Output_W
+        dat_cor_vel.data = [User_V, User_W, Corrected_V, Corrected_W, compliant_V, compliant_W]
         dat_user.data = [Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Out_CP]
         
 
@@ -949,38 +1053,25 @@ def control_node():
         # rospy.loginfo(RosMassage)
         pub_emg.publish(FlagEmergency)
         pub_vel.publish(dat_vel)
+        pub_twist.publish(qolo_twist)
+        pub_cor_vel.publish(dat_cor_vel)
         pub_wheels.publish(dat_wheels)
         pub_user.publish(dat_user)
         pub_compliance.publish(dat_compliance)
 
         # rospy.loginfo(dat_user)
         rospy.loginfo(RosMassage)
-        pub.publish(RosMassage)
+        pub_mess.publish(RosMassage)
         rate.sleep()
 
     # Stop_Thread_Flag = True
     # thread_user.raise_exception()
     # thread_user.join()
 
-
-# for interruption
-def exit(signum, frame):
-    # global Stop_Thread_Flag
-    # MBED_Enable = mraa.Gpio(36) #11 17
-    # MBED_Enable.dir(mraa.DIR_OUT)
-    MBED_Enable.write(0)
-    conv.SET_DAC2(0, conv.data_format.voltage)
-    conv.SET_DAC3(0, conv.data_format.voltage)
-    conv.SET_DAC0(0, conv.data_format.voltage)
-    conv.SET_DAC1(0, conv.data_format.voltage)
-    # Stop_Thread_Flag = True
-    # cleanup_stop_thread()
-    print('----> You chose to interrupt')
-    quit()
-
 # for interruption
 signal.signal(signal.SIGINT, exit)
 signal.signal(signal.SIGTERM, exit)
+
 if __name__ == '__main__':
     try:
         control_node()

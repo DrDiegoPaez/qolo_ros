@@ -1,0 +1,4 @@
+<launch>
+  <node name="qolo_joystick" pkg="qolo" type="qolo_joystick.py" />
+
+</launch>

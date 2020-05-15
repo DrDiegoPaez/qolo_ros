@@ -3,6 +3,10 @@ import spidev
 import mraa
 from enum import IntEnum
 
+DAC_Value_MAX = 65535
+DAC_VREF = 5000.
+CONV_K = DAC_Value_MAX/DAC_VREF
+
 class AD_DA:
     class data_format(IntEnum):
         voltage = 0
@@ -265,20 +269,20 @@ class AD_DA:
 
 
     def ReadChannel(self,ch,format):
-        if ch<8:
-            D = self._WaitDRDY()
-            if D == 0:
-                Data = self._LoadChannel(ch)
         if ch>=8:
             D1 = self._WaitDRDY1()
             if D1 == 0:
-                Data = self._LoadChannel_board2(ch-8)
-        if format ==0: #voltage
-            Data = int(Data / 1677.72)
-        if format ==1: # 8bits
-            Data = int(Data / 32767.5)
-        if format ==2: #16bits
-            Data = int(Data / 127)
+                Data = self._LoadChannel_board1(ch-8)
+        else:
+            D = self._WaitDRDY()
+            if D == 0:
+                Data = self._LoadChannel(ch)
+        # if format ==0: #voltage
+        Data = (Data / 1677.72)
+        # if format ==1: # 8bits
+        #     Data = int(Data / 32767.5)
+        # if format ==2: #16bits
+        #     Data = int(Data / 127)
         return Data
         #return 0
 
@@ -291,7 +295,7 @@ class AD_DA:
         time.sleep(0.00005)  # bsp_DelayUS(25)
         return self._ReadData()
 
-    def _LoadChannel_board2(self,ch):
+    def _LoadChannel_board1(self,ch):
         self._SetChannel_1(ch)
         time.sleep(0.00005)  # bsp_DelayUS(5)
         self._WriteCmd1(self._CMD.SYNC)
@@ -356,61 +360,79 @@ class AD_DA:
             self._CS_ADC1_1()
             time.sleep(0.05)
 
-###################################DAC8552 (DAC)##############################
+################################### DAC8532 (DAC)##############################
 
     def SET_DAC0(self,Data,format):
-        if format==0:
-            Data = int(Data * 13.1)
-        if format==1:
-            Data = Data * 257
-        MSB = (Data >> 8)
-        LSB = (Data & 0xff)
+
+        # voltage in [mV]
+        # if format==0:
+        if((Data <= DAC_VREF) and (Data >= 0)):
+            Temp = int(Data * CONV_K)
+        else:
+            Temp = 0
+        # 8 Bits
+        # else: # format==1
+            # Data = Data * 257
+        MSB = (Temp >> 8)
+        LSB = (Temp & 0xff)
         self._CS_DAC_0()
         self._spi.writebytes([0x10]) #0x10
         self._spi.writebytes([MSB])
         self._spi.writebytes([LSB])
         self._CS_DAC_1()
-        time.sleep(0.001)
+        # time.sleep(0.001)
 
     def SET_DAC1(self,Data,format):
-        if format==0:
-            Data = int(Data * 13.1)
-        if format==1:
-            Data = Data * 257
-        MSB = (Data >> 8)
-        LSB = (Data & 0xff)
+        # voltage
+        # if format==0:
+        if((Data <= DAC_VREF) and (Data >= 0)):
+            Temp = int(Data * CONV_K)
+        else:
+            Temp = 0
+        # 8 Bits
+        # else: # format==1
+        MSB = (Temp >> 8)
+        LSB = (Temp & 0xff)
         self._CS_DAC_0()
         self._spi.xfer([0x24])    #0x24
         self._spi.xfer([MSB])
         self._spi.xfer([LSB])
         self._CS_DAC_1()
-        time.sleep(0.001)
+        # time.sleep(0.001)
 
     def SET_DAC2(self,Data,format):
-        if format==0:
-            Data = int(Data * 13.1)
-        if format==1:
-            Data = Data * 257
-        MSB = (Data >> 8)
-        LSB = (Data & 0xff)
+        # voltage
+        # if format==0:
+        if((Data <= DAC_VREF) and (Data >= 0)):
+            Temp = int(Data * CONV_K)
+        else:
+            Temp = 0
+        # 8 Bits
+        # else: # format==1
+        MSB = (Temp >> 8)
+        LSB = (Temp & 0xff)
         self._CS_DAC1_0()
         self._spi.writebytes([0x10]) #0x10
         self._spi.writebytes([MSB])
         self._spi.writebytes([LSB])
         self._CS_DAC1_1()
-        time.sleep(0.001)
+        # time.sleep(0.001)
 
     def SET_DAC3(self,Data,format):
-        if format==0:
-            Data = int(Data * 13.1)
-        if format==1:
-            Data = Data * 257
-        MSB = (Data >> 8)
-        LSB = (Data & 0xff)
+        # voltage
+        # if format==0:
+        if((Data <= DAC_VREF) and (Data >= 0)):
+            Temp = int(Data * CONV_K)
+        else:
+            Temp = 0
+        # 8 Bits
+        # else: # format==1
+        MSB = (Temp >> 8)
+        LSB = (Temp & 0xff)
         self._CS_DAC1_0()
         self._spi.xfer([0x24])    #0x24
         self._spi.xfer([MSB])
         self._spi.xfer([LSB])
         self._CS_DAC1_1()
-        time.sleep(0.001)
+        # time.sleep(0.001)
 

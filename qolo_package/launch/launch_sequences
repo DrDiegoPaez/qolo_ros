@@ -1,0 +1,82 @@
+
+Execute in 110
+--> take time from laptop Mac address
+sudo ntpdate 192.168.13.100 
+Restart chrony synchronisation:
+service chrony restart
+
+cd catkin_ws/
+. devel/setup.bash
+
+1 terminal
+	rosocre
+2 terminal:
+	roslaunch qolo qolo.launch
+3 terminal:
+	# This rear LIDAR + rear camera
+	./src/qolo_ros/run_scripts/run_rear_camera.sh
+	OR only RDS in the rear lindar
+ 	roslaunch rds_ros rds_rear_lrf.launch
+ 	OR for all combined
+ 	./src/qolo_ros/run_scripts/run_all_sensors.sh
+ 	OR for compiant mode
+ 	./src/qolo_ros/run_scripts/run_compliant.sh
+
+Execute in 120:
+
+1 terminal
+		only LIDAR:
+	roslaunch rds_ros rds_front_lrf.launch
+	
+	OR LIDAR + RGBD front
+		# This includes the frontal LIDAR
+	./src/rds/rds_ros/launch/run_front_camera.sh
+	
+	OR LIDAR with SLAM + Camera
+	./src/rds/rds_ros/launch/run_camera_slam.sh
+
+	OR LIDAR with 3d pointcloud
+		# This includes the frontal LIDAR
+	./src/rds/rds_ros/launch/run_front_cloud.sh
+
+------------- RGBD Detection and Visualization -----------------
+	
+roslaunch movidius_ncs_launch ncs_camera.launch cnn_type:=tinyyolo_v1 camera:=realsense
+rosrun kalman_bounding_boxes kalman_bounding_boxes_node
+
+------------- ROSBAG recording  -----------------
+###### ROSbag with RGBD and 3D points ######
+	rosbag record -a
+
+	rosbag record /tf /tf_static /front_lidar/velodyne_packets /front_lidar/velodyne_points /front_lidar/laserscan /rear_lidar/velodyne_packets /rear_lidar/velodyne_points /rear_lidar/laserscan /camera_front/color/image_raw /camera_front/color/camera_info /camera_front/depth/camera_info /camera_front/depth/image_rect_raw /camera_front/depth/color/points /camera_front/aligned_depth_to_color/camera_info /camera_front/aligned_depth_to_color/image_raw /camera_rear/color/image_raw /camera_rear/color/camera_info /camera_rear/depth/camera_info /camera_rear/depth/image_rect_raw /camera_rear/depth/color/points /camera_rear/aligned_depth_to_color/camera_info /camera_rear/aligned_depth_to_color/image_raw /rds_to_gui /qolo
+
+###### ROSbag with Frontal RGBD and 3D points ######
+	rosbag record -O baby_6.bag /tf /tf_static /front_lidar/velodyne_packets /front_lidar/velodyne_points /front_lidar/laserscan front_lidar/scan /camera_front/color/image_raw /camera_front/color/camera_info /camera_front/depth/camera_info /camera_front/depth/image_rect_raw /camera_front/depth/color/points /camera_front/aligned_depth_to_color/camera_info /camera_front/aligned_depth_to_color/image_raw /qolo
+
+###### ROSbag with Frontal RGBD and 2LRF ######
+	rosbag record -O 1person_2lrf.bag /tf /tf_static /front_lidar/velodyne_packets /front_lidar/laserscan /rear_lidar/velodyne_packets /rear_lidar/laserscan /camera_front/color/image_raw /camera_front/color/camera_info /camera_front/depth/camera_info /camera_front/depth/image_rect_raw /camera_front/depth/color/points /camera_front/aligned_depth_to_color/camera_info /camera_front/aligned_depth_to_color/image_raw /qolo
+
+###### ROSbag with FT sensors ######
+	rosbag record /rokubi_node_front/ft_sensor_measurements /rokubi_node_back/ft_sensor_measurements
+
+------------- RDS  -----------------
+	
+	--- If building is necesary:
+	cd ~/autonomy_ws/
+	. make_rds.bash 
+
+	--> take time from Main Qolo CPU
+	sudo ntpdate 192.168.13.110
+	Restart chrony synchronisation:
+	service chrony restart
+
+	rosrun rds_gui_ros rds_gui_ros_node
+
+------------- Velodyne points and LRF transformation ------------------
+	roslaunch velodyne_pointcloud VLP16_points.launch 
+	rosrun rds_ros rds_ros_lidar_to_lrf_node 
+	rosbag record /laserscan /velodyne_points
+	rosbag record /qolo /velodyne_packets /rds_to_gui
+
+------------ To see raw image ---------------
+roslaunch my_ncs_stream_detection_example.launch camera_topic:="/camera/color/image_raw"

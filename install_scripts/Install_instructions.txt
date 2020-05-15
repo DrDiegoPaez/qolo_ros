@@ -1,0 +1,124 @@
+
+
+============= ROS Setup for Multiple PCs ========================
+
+Main PC (110):
+Setup on ~.basrch
+	export ROS_IP=192.168.13.110
+	export ROS_MASTER_URI=http://192.168.13.110:11311
+
+Others:
+	export ROS_IP=192.168.13.120
+	export ROS_MASTER_URI=http://192.168.13.110:11311
+
+Nvidia Board:
+	export ROS_IP=192.168.13.200
+	export ROS_MASTER_URI=http://192.168.13.110:11311
+
+=== Main PC Installation Guide =====
+Copy precompile image or
+
+Install Ubuntu Kernel for Upboard: https://wiki.up-community.org/Ubuntu
+	sudo add-apt-repository ppa:ubilinux/up
+	sudo apt update
+	sudo apt-get autoremove --purge 'linux-.*generic'
+	sudo apt-get install linux-image-generic-hwe-16.04-upboard
+	sudo update-grub
+	sudo reboot
+
+if any issue:
+list of kernels:
+	grep gnulinux /boot/grub/grub.cfg 
+	Desired kernel:
+		'gnulinux-4.15.0-37-generic-advanced-b97a8611-ce0d-4cd4-b420-8f5e3e3725a1'
+	Find the number in listing: 3
+	sudo nano /etc/default/grub
+		GRUB_DEFAULT=3
+
+
+install pip
+	sudo apt install python-pip
+install spidev
+		pip install spidev 
+		#Alternative if problems with pip 
+	sudo python -m pip install spidev
+
+	add missing firmware from
+		https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/tree/i915
+
+enablel spi port on UP board
+	https://wiki.up-community.org/Pinout_UP2#SPI_Ports
+
+Enable the HAT functionality from userspace
+	https://wiki.up-community.org/Ubuntu
+
+Install MRAA library: https://github.com/intel-iot-devkit/mraa
+	sudo add-apt-repository ppa:mraa/mraa
+	sudo apt-get update
+	sudo apt-get install libmraa2 libmraa-dev libmraa-java python-mraa python3-mraa node-mraa mraa-tools
+	sudo apt-get install git build-essential swig3.0 python-dev nodejs-dev cmake libjson-c-dev
+
+PYYAML: For FT model
+	sudo apt-get install python-yaml
+		## Need Pyaml 5.1
+	python -m pip install --upgrade pyyaml
+
+
+ ########################### RDS Compile and Install Instructions ###########################
+
+	rosrun rds_gui_ros rds_gui_ros_node
+
+
+	To build it, go to the rds/rds folder and type
+			make gui
+			make rds_wrap
+	go to --> catkin/src/rds 
+		*Optionally for other pc: delete the package rds_ros
+	And then use catkin_make in the top folder
+
+	### Perhaps needed:
+	Modify /usr/lib/x86_64-linux-gnu/cmake/SDL2/sdl2-config.cmake (White space at the end)
+		BEFORE:    set(SDL2_LIBRARIES "-L${SDL2_LIBDIR}  -lSDL2 ")
+		AFTER :    set(SDL2_LIBRARIES "-L${SDL2_LIBDIR}  -lSDL2")
+
+
+
+################## Velodyne points and LRF transformation ###########################
+
+======================== Setup network for LIDAR ========================
+sudo nano /etc/network/interface
+	
+	# LIDAR NETWORK
+	auto enp2s0
+	allow-hotplug enp2s0
+	iface enp2s0 inet static
+	        address 192.168.1.110
+	        netmask 255.255.255.0
+
+Velodyne system isntallation:
+	sudo rm -r src/velodyne build/velodyne devel/include/velodyne_* devel/lib/velodyne_* devel/lib/libvelodyne_* devel/lib/libdriver_nodelet.so devel/share/velodyne_*
+		Known Working version with RDS: git checkout 7f52b3586a2833b4a48bd2539a862adedb161baf
+	sudo apt-get install ros-kinetic-velodyne 
+	catkin_make clean
+	catkin_make
+
+Newest Velodyne Driver (recommended for tracker)
+	sudo apt-get remove ros-kinetic-velodyne ros-kinetic-velodyne-driver ros-kinetic-velodyne-laserscan ros-kinetic-velodyne-msgs ros-kinetic-velodyne-pointcloud 
+	cd ~/autonomy_ws/src/velodyne
+	git clone https://github.com/ros-drivers/velodyne.git
+	cd ~/catkin_ws/
+	rosdep install --from-paths src --ignore-src --rosdistro kinetic -y
+	catkin_make clean
+	catkin_make
+
+################## FT Sensor ROS node setup ###########################
+	if not installed
+		sudo apt-get install ros-kinetic-catkin python-catkin-tools 
+
+	cd collision_ws/src
+	###git clone https://bitbucket.org/leggedrobotics/rokubimini_interface
+	cd ../
+	catkin build rokubimini_ros
+  	catkin build rokubimini_cosmo	
+	
+	

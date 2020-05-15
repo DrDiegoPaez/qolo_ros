@@ -41,12 +41,12 @@ PID_LIST+="$! "
 ​
 sleep 5
 ​
-#----- Launch Rear Lidar  -----
-echo "Launching Velodyne Rear LIDAR..."
-eval "roslaunch rds_ros rds_rear_lrf.launch"
-PID_LIST+="$! "
-​
-sleep 5
+# #----- Launch Rear Lidar  -----
+# echo "Launching Velodyne Rear LIDAR..."
+# eval "roslaunch rds_ros rds_rear_lrf.launch"
+# PID_LIST+="$! "
+# ​
+# sleep 5
 ​
 # Wait till all pids to be finished or killed
 echo "All PIDs : ${PID_LIST}"
