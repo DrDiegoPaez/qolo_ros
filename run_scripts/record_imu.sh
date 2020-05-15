@@ -22,7 +22,7 @@ eval ". devel/setup.bash"
 ​
 #----- Launch and record realsense camera -----
 echo "Launching RealSense Camera..."
-eval "roslaunch realsense2_camera rs_minimum.launch \
+eval "roslaunch realsense2_camera rs_qolo_front.launch \
     &> /dev/null &"
 PID_LIST+="$! "
 ​

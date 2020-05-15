@@ -1,10 +1,5 @@
 
-Execute in 110
---> take time from laptop Mac address
-sudo ntpdate 192.168.13.100 
-Restart chrony synchronisation:
-service chrony restart
-
+============== Execute in main UpBoard 110 ==========================
 cd catkin_ws/
 . devel/setup.bash
 
@@ -13,31 +8,54 @@ cd catkin_ws/
 2 terminal:
 	roslaunch qolo qolo.launch
 3 terminal:
-	# This rear LIDAR + rear camera
-	./src/qolo_ros/run_scripts/run_rear_camera.sh
 	OR only RDS in the rear lindar
- 	roslaunch rds_ros rds_rear_lrf.launch
+ 	roslaunch rds_ros rds_rear_lrf_cloud.launch
+ 	# This rear LIDAR + rear camera
+	./src/qolo_ros/run_scripts/run_rear_camera.sh
  	OR for all combined
  	./src/qolo_ros/run_scripts/run_all_sensors.sh
  	OR for compiant mode
+ 	sudo -s
  	./src/qolo_ros/run_scripts/run_compliant.sh
 
-Execute in 120:
+============== Execute in Fron UpBoard 120 ==========================
 
-1 terminal
-		only LIDAR:
+cd autonomy_ws
+. devel/setup.bash
+
+	only LIDAR:
 	roslaunch rds_ros rds_front_lrf.launch
 	
 	OR LIDAR + RGBD front
 		# This includes the frontal LIDAR
 	./src/rds/rds_ros/launch/run_front_camera.sh
 	
-	OR LIDAR with SLAM + Camera
-	./src/rds/rds_ros/launch/run_camera_slam.sh
+	OR LIDAR with SLAM
+		# This includes the frontal LIDAR
+	./src/rds/rds_ros/launch/run_slam.sh
+	roslaunch rds_ros rds_slam.launch
 
 	OR LIDAR with 3d pointcloud
 		# This includes the frontal LIDAR
 	./src/rds/rds_ros/launch/run_front_cloud.sh
+
+============== Execute in Nvidia Board 200 ==========================
+
+Activate virtual environment
+	
+Terminal 1:
+	cd /ssd_nvidia/autonomy_ws
+	. devel/setup.bash 
+	roslaunch realsense2_camera rs_qolo.launch 
+
+Termina 2: 
+	cd ~/tracker_ws
+	. /ssd_nvidia/venv_sensing/bin/activate
+	. devel/setup.bash
+	roslaunch rwth_crowdbot_launch qolo_onboard.launch trt:=true
+
+
+
 
 ------------- RGBD Detection and Visualization -----------------
 	
@@ -54,10 +72,24 @@ rosrun kalman_bounding_boxes kalman_bounding_boxes_node
 	rosbag record -O baby_6.bag /tf /tf_static /front_lidar/velodyne_packets /front_lidar/velodyne_points /front_lidar/laserscan front_lidar/scan /camera_front/color/image_raw /camera_front/color/camera_info /camera_front/depth/camera_info /camera_front/depth/image_rect_raw /camera_front/depth/color/points /camera_front/aligned_depth_to_color/camera_info /camera_front/aligned_depth_to_color/image_raw /qolo
 
 ###### ROSbag with Frontal RGBD and 2LRF ######
-	rosbag record -O 1person_2lrf.bag /tf /tf_static /front_lidar/velodyne_packets /front_lidar/laserscan /rear_lidar/velodyne_packets /rear_lidar/laserscan /camera_front/color/image_raw /camera_front/color/camera_info /camera_front/depth/camera_info /camera_front/depth/image_rect_raw /camera_front/depth/color/points /camera_front/aligned_depth_to_color/camera_info /camera_front/aligned_depth_to_color/image_raw /qolo
+	rosbag record -O all_sensors_tracking.bag /tf /tf_static /front_lidar/velodyne_packets /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_packets /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /qolo
+
+###### ROSbag with tracking and 2 LIDARS ######
+rosbag record -O all_sensors_tracking_2.bag /tf /tf_static /front_lidar/velodyne_packets /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_packets /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /qolo /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons
+
+rosbag record -O all_sensors_tracking_3.bag -a
 
 ###### ROSbag with FT sensors ######
 	rosbag record /rokubi_node_front/ft_sensor_measurements /rokubi_node_back/ft_sensor_measurements
+
+============= ROSBAG Play and Visualization ================
+modify ROS_MASTER to local
+	gedit ~/.bashrc
+
+	rosparam set use_sim_time true
+
+	
+	rosrun rviz rviz	
 
 ------------- RDS  -----------------
 	

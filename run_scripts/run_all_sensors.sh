@@ -22,7 +22,7 @@ eval "roslaunch realsense2_camera rs_qolo_rear.launch \
 PID_LIST+="$! "
 sleep 1
 #----- Launch and record force sensors -----
-eval "/home/qolo/collision_test/src/rokubimini_interface/run_rokubimini_ros.sh -f ${LOG_FOLDER}&"
+eval "/home/qolo/collision_ws/src/rokubimini_interface/run_rokubimini_ros.sh -f ${LOG_FOLDER}"
 PID_LIST+="$! "
 sleep 3
 

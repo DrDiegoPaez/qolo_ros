@@ -120,5 +120,27 @@ Newest Velodyne Driver (recommended for tracker)
 	cd ../
 	catkin build rokubimini_ros
   	catkin build rokubimini_cosmo	
+
+
+
+  ################## Setup for INRIA Simulator ################## 
+
+Topics to subscribe to:
+	/qolo/joint_state
+	Message type: ROS Twist
+	returns the current location of the robot
+
+Topics to subscribe to:
+	/qolo/scan
+	Message type: ROS laserscan
+	This topic publishes the lidar reading from the virtual environment
+
+Publish to:
+	/qolo/velocity_cmd
+	Message type: ROS Twist
+	This topic recieves the velocity of the robot as a Twist message
+
+
+
 	
 	
