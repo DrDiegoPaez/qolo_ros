@@ -1,6 +1,7 @@
 
 ============== Execute in main UpBoard 110 ==========================
 cd catkin_ws/
+sudo -s
 . devel/setup.bash
 
 1 terminal
@@ -8,8 +9,12 @@ cd catkin_ws/
 2 terminal:
 	roslaunch qolo qolo.launch
 3 terminal:
-	OR only RDS in the rear lindar
+	OR only rear LIDAR
+ 	roslaunch rds_ros rear_lrf_new_driver.launch
+
+	OR only RDS in the rear LIDAR
  	roslaunch rds_ros rds_rear_lrf_cloud.launch
+
  	# This rear LIDAR + rear camera
 	./src/qolo_ros/run_scripts/run_rear_camera.sh
  	OR for all combined
@@ -18,17 +23,17 @@ cd catkin_ws/
  	sudo -s
  	./src/qolo_ros/run_scripts/run_compliant.sh
 
+
+ 4 terminal:
+ 	cd catkin_ws/
+ 	sudo -s
+	. devel/setup.bash
+ 	./src/scripts/record_imu.sh
+
 ============== Execute in Fron UpBoard 120 ==========================
 
 cd autonomy_ws
 . devel/setup.bash
-
-	only LIDAR:
-	roslaunch rds_ros rds_front_lrf.launch
-	
-	OR LIDAR + RGBD front
-		# This includes the frontal LIDAR
-	./src/rds/rds_ros/launch/run_front_camera.sh
 	
 	OR LIDAR with SLAM
 		# This includes the frontal LIDAR
@@ -38,6 +43,15 @@ cd autonomy_ws
 	OR LIDAR with 3d pointcloud
 		# This includes the frontal LIDAR
 	./src/rds/rds_ros/launch/run_front_cloud.sh
+
+	only RDS with 2D lidar:
+	roslaunch rds_ros rds_front_lrf.launch
+	
+	OR LIDAR + RGBD front
+		# This includes the frontal LIDAR
+	./src/rds/rds_ros/launch/run_front_camera.sh
+	
+
 
 ============== Execute in Nvidia Board 200 ==========================
 
@@ -81,6 +95,10 @@ rosbag record -O all_sensors_tracking_3.bag -a
 
 ###### ROSbag with FT sensors ######
 	rosbag record /rokubi_node_front/ft_sensor_measurements /rokubi_node_back/ft_sensor_measurements
+
+###### ROSbag with Frontal RGBD + LIDAR + ft sensing ######
+	rosbag record -O imu_record_3.bag /tf /tf_static /front_lidar/scan /camera_front/color/image_raw /camera_front/color/camera_info /camera_front/depth/camera_info /camera_front/depth/image_rect_raw /camera_front/depth/color/points /camera_front/aligned_depth_to_color/camera_info /camera_front/aligned_depth_to_color/image_raw /camera_front/gyro/sample /camera_front/accel/sample /qolo /rokubi_node_front/ft_sensor_measurements
+
 
 ============= ROSBAG Play and Visualization ================
 modify ROS_MASTER to local

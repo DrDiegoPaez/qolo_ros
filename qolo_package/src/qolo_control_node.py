@@ -42,7 +42,7 @@ except PermissionError:
     rospy.logerr("Cannot set niceness for the process...")
     rospy.logerr("Run the script as sudo...")
 
-SHARED_MODE = False
+SHARED_MODE = True
 COMPLIANCE_FLAG = False
 JOYSTICK_MODE = True
 REMOTE_MODE = False

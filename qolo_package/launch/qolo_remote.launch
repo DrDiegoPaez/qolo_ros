@@ -1,4 +1,0 @@
-<launch>
-  <node name="qolo_remote" pkg="qolo" type="qolo_remote_node.py" />
-
-</launch>

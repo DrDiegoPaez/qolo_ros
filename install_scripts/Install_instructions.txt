@@ -104,9 +104,9 @@ Velodyne system isntallation:
 
 Newest Velodyne Driver (recommended for tracker)
 	sudo apt-get remove ros-kinetic-velodyne ros-kinetic-velodyne-driver ros-kinetic-velodyne-laserscan ros-kinetic-velodyne-msgs ros-kinetic-velodyne-pointcloud 
-	cd ~/autonomy_ws/src/velodyne
+	cd ~/autonomy_ws/src/
 	git clone https://github.com/ros-drivers/velodyne.git
-	cd ~/catkin_ws/
+	cd ~/autonomy_ws/
 	rosdep install --from-paths src --ignore-src --rosdistro kinetic -y
 	catkin_make clean
 	catkin_make
