@@ -939,7 +939,7 @@ def control_node():
     pub_compliance = rospy.Publisher('qolo/compliance', Wrench, queue_size=10)
     
     pub_mess = rospy.Publisher('qolo/message', String, queue_size=1)
-    rospy.init_node('qolo_control', anonymous=True)
+    rospy.init_node('qolo_remote', anonymous=True)
     rate = rospy.Rate(100) #  100 hz
 
 
