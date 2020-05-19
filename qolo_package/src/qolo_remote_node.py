@@ -42,10 +42,11 @@ except PermissionError:
     rospy.logerr("Cannot set niceness for the process...")
     rospy.logerr("Run the script as sudo...")
 
+REMOTE_MODE = True
 SHARED_MODE = False
 COMPLIANCE_FLAG = False
 JOYSTICK_MODE = False
-REMOTE_MODE = True
+
 PORT = 8080
 control_type ='embodied'
 threadLock = threading.Lock()

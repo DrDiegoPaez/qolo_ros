@@ -110,7 +110,6 @@ def joystick_control():
         http_server = tornado.httpserver.HTTPServer(application)
         http_server.listen(PORT)
         main_loop = tornado.ioloop.IOLoop.instance()
-        
         data_remote.layout.dim.append(MultiArrayDimension())
         data_remote.layout.dim[0].label = 'Joystick Commands [V, W]'
         data_remote.layout.dim[0].size = 3
@@ -118,7 +117,6 @@ def joystick_control():
 
         rospy.init_node('qolo_joystick', anonymous=True)
         rate = rospy.Rate(50) #  50 hz
-
         print ("Tornado Server started")
         main_loop.start()
 
