@@ -84,8 +84,9 @@ Termina 2:
 roslaunch movidius_ncs_launch ncs_camera.launch cnn_type:=tinyyolo_v1 camera:=realsense
 rosrun kalman_bounding_boxes kalman_bounding_boxes_node
 
-------------- ROSBAG recording  -----------------
-###### ROSbag with RGBD and 3D points ######
+################## ROSBAG recording  ########################
+
+============== ROSbag with RGBD and 3D points ===============
 	rosbag record -a
 
 	rosbag record /tf /tf_static /front_lidar/velodyne_packets /front_lidar/velodyne_points /front_lidar/laserscan /rear_lidar/velodyne_packets /rear_lidar/velodyne_points /rear_lidar/laserscan /camera_front/color/image_raw /camera_front/color/camera_info /camera_front/depth/camera_info /camera_front/depth/image_rect_raw /camera_front/depth/color/points /camera_front/aligned_depth_to_color/camera_info /camera_front/aligned_depth_to_color/image_raw /camera_rear/color/image_raw /camera_rear/color/camera_info /camera_rear/depth/camera_info /camera_rear/depth/image_rect_raw /camera_rear/depth/color/points /camera_rear/aligned_depth_to_color/camera_info /camera_rear/aligned_depth_to_color/image_raw /rds_to_gui /qolo
@@ -106,44 +107,3 @@ rosbag record -O all_sensors_tracking_3.bag -a
 
 ###### ROSbag with Frontal RGBD + LIDAR + ft sensing ######
 	rosbag record -O imu_record_3.bag /tf /tf_static /front_lidar/scan /camera_front/color/image_raw /camera_front/color/camera_info /camera_front/depth/camera_info /camera_front/depth/image_rect_raw /camera_front/depth/color/points /camera_front/aligned_depth_to_color/camera_info /camera_front/aligned_depth_to_color/image_raw /camera_front/gyro/sample /camera_front/accel/sample /qolo /rokubi_node_front/ft_sensor_measurements
-
-
-============= ROSBAG Play and Visualization ================
-modify ROS_MASTER to local
-	gedit ~/.bashrc
-	export ROS_HOSTNAME=localhost
-	export ROS_MASTER_URI=http://localhost:11311
-terminal 0
-	reoscore
-
-terminal 1
-	cd  ~/rosbags/
-	rosparam set use_sim_time true
-	rosbag play -l imu_record_0.bag --clock
-
-terminal 2
-	cd  ~/catkin_ws
-	source devel/setup.bash 
-	rosrun rviz rviz	
-
-------------- RDS  -----------------
-	
-	--- If building is necesary:
-	cd ~/autonomy_ws/
-	. make_rds.bash 
-
-	--> take time from Main Qolo CPU
-	sudo ntpdate 192.168.13.110
-	Restart chrony synchronisation:
-	service chrony restart
-
-	rosrun rds_gui_ros rds_gui_ros_node
-
-------------- Velodyne points and LRF transformation ------------------
-	roslaunch velodyne_pointcloud VLP16_points.launch 
-	rosrun rds_ros rds_ros_lidar_to_lrf_node 
-	rosbag record /laserscan /velodyne_points
-	rosbag record /qolo /velodyne_packets /rds_to_gui
-
------------- To see raw image ---------------
-roslaunch my_ncs_stream_detection_example.launch camera_topic:="/camera/color/image_raw"
