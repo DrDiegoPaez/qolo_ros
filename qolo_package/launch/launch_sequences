@@ -111,10 +111,19 @@ rosbag record -O all_sensors_tracking_3.bag -a
 ============= ROSBAG Play and Visualization ================
 modify ROS_MASTER to local
 	gedit ~/.bashrc
+	export ROS_HOSTNAME=localhost
+	export ROS_MASTER_URI=http://localhost:11311
+terminal 0
+	reoscore
 
+terminal 1
+	cd  ~/rosbags/
 	rosparam set use_sim_time true
+	rosbag play -l imu_record_0.bag --clock
 
-	
+terminal 2
+	cd  ~/catkin_ws
+	source devel/setup.bash 
 	rosrun rviz rviz	
 
 ------------- RDS  -----------------
