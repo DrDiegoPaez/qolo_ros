@@ -8,7 +8,8 @@ Setup on ~.basrch
 	export ROS_MASTER_URI=http://192.168.13.110:11311
 
 Others:
-	export ROS_IP=192.168.13.120
+Setup on ~.basrch
+	export ROS_IP=192.168.13.XXX (local Qolo_Net assigned IP)
 	export ROS_MASTER_URI=http://192.168.13.110:11311
 
 Nvidia Board:
