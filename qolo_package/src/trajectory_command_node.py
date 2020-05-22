@@ -17,8 +17,8 @@ from scipy.interpolate import UnivariateSpline
  
 trajectory_xyt = np.array([
    [ 0.3, 0.0,  0.0], # accelerating
-   [ 2.3, 0.0,  7.0],
-   [ 2.3, 2.0, 12.0] # decelerating
+   [ 1.3, 0.0,  7.0],
+   [ 2.3, 0.0, 10.0] # decelerating
    ])
 # trajectory_xyt = np.array([
 #    [ 0.0, 0.0,  0.0], # accelerating
@@ -100,8 +100,8 @@ def feedforward_feedback_controller(t):
          [trajectory_spline_derivative[1](t)]])
       position_setpoint = np.array([[trajectory_spline[0](t)],
          [trajectory_spline[1](t)]])
-      feedback_velocity = 0.25*(position_setpoint - p_ref_global)
-      v_norm_max = 1.2
+      feedback_velocity = 0.1*(position_setpoint - p_ref_global)
+      v_norm_max = 1.0
       v_norm_actual = np.linalg.norm(feedback_velocity)
       if (v_norm_actual > v_norm_max):
          feedback_velocity = feedback_velocity/v_norm_actual*v_norm_max

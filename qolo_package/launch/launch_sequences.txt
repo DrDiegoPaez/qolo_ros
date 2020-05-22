@@ -14,7 +14,7 @@
 	cd ~/catkin_ws/
 	sudo -s
 	. devel/setup.bash
-	roslaunch qolo qolo_remote.launch
+	roslaunch qolo remote_qolo.launch
 	
 
 3 terminal:
@@ -39,6 +39,12 @@
 	. devel/setup.bash
  	./src/scripts/record_imu.sh
 
+ 5. terminal: Trajectory tracking
+	cd catkin_ws/
+	. devel/setup.bash
+ 	python src/qolo_ros/qolo_package/src/trajectory_command_node.py
+
+
 ============== Execute in Fron UpBoard 120 ==========================
 
 cd autonomy_ws
@@ -60,8 +66,6 @@ cd autonomy_ws
 	OR LIDAR + RGBD front
 		# This includes the frontal LIDAR
 	./src/rds/rds_ros/launch/run_front_camera.sh
-	
-
 
 ============== Execute in Nvidia Board 200 ==========================
 
@@ -98,7 +102,7 @@ rosrun kalman_bounding_boxes kalman_bounding_boxes_node
 	rosbag record -O all_sensors_tracking.bag /tf /tf_static /front_lidar/velodyne_packets /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_packets /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /qolo
 
 ###### ROSbag with tracking and 2 LIDARS ######
-rosbag record -O rds_test_2.bag /tf /tf_static /qolo /front_lidar/velodyne_packets /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_packets /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons
+rosbag record -O rds_test_gain_1.bag /tf /tf_static /qolo /front_lidar/velodyne_packets /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_packets /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons
 
 rosbag record -O all_sensors_tracking_3.bag -a
 
