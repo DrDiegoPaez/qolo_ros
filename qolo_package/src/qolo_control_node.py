@@ -699,39 +699,27 @@ def mds_service():
 
     request.nominal_command.linear = User_V;
     request.nominal_command.angular = User_W;
-
-    request.velocity_limits.max_linear = max_linear;
-    request.velocity_limits.min_linear = min_linear;
-    request.velocity_limits.abs_angular_at_min_linear = absolute_angular_at_min_linear;
-    request.velocity_limits.abs_angular_at_max_linear = absolute_angular_at_max_linear;
-    request.velocity_limits.abs_angular_at_zero_linear = absolute_angular_at_zero_linear;
-    request.abs_linear_acceleration_limit = linear_acceleration_limit;
-    request.abs_angular_acceleration_limit = angular_acceleration_limit;
-
-    request.y_coordinate_of_reference_point_for_command_limits = y_coordinate_of_reference_point_for_command_limits;
-    request.weight_scaling_of_reference_point_for_command_limits = weight_scaling_of_reference_point_for_command_limits;
-    request.clearance_from_axle_of_final_reference_point = clearance_from_axle_of_final_reference_point;
-    request.delta = delta;
-    request.tau = tau;
-    request.y_coordinate_of_reference_biasing_point = 1.;
-    request.weight_of_reference_biasing_point = 0.;
-
-    request.last_actual_command.linear = last_v;
-    request.last_actual_command.angular = last_w;
-
+    request.capsule_center_front_y = 0.05;
+    request.capsule_center_rear_y = -0.5;
+    request.capsule_radius = 0.45;
+    request.reference_point_y = 0.25;
+    request.rds_tau = 1.5;
+    request.rds_delta = 0.05;
+    request.vel_lim_linear_min = 0.5;
+    request.vel_lim_linear_max = 1.5;
+    request.vel_lim_angular_abs_max = 1.0;
+    request.vel_linear_at_angular_abs_max = 0.2;
+    request.acc_limit_linear_abs_max = 0.5;
+    request.acc_limit_angular_abs_max = 0.5;
     if cycle==0:
         delta_time = 0.005;
     else:
         delta_time = time.clock() - cycle;
-
-    request.command_cycle_time = delta_time
-    request.abs_linear_acceleration_limit = 4;
-    request.abs_angular_acceleration_limit = 2;
+    request.dt = delta_time
 
     response = RDS(request)
     Corrected_V = round(response.corrected_command.linear,6)
     Corrected_W = round(response.corrected_command.angular,6)
-    feasible = response.feasible
 
     # last_v = Output_V
     # last_w = Output_W
