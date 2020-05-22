@@ -82,6 +82,11 @@ Option 3: Hasler Control Commands
 		# This includes the frontal LIDAR
 	./src/rds/rds_ros/launch/run_front_camera.sh
 
+2. Terminal: TRAJECTORY TRACKING
+	cd autonomy_ws
+	. devel/setup.bash
+	python src/rds/rds_ros/scripts/trajectory_command_node.py 
+
 ============== Execute in Nvidia Board 200 ==========================
 
 Activate virtual environment
