@@ -1,3 +1,7 @@
+############ Launch Sequence for experiments in Qolo robot ##########
+
+ssh -X qolo@192.168.13.XXX
+	pass
 
 ============== Execute in main UpBoard 110 ==========================
 
@@ -8,14 +12,16 @@
 	cd ~/catkin_ws/
 	sudo -s
 	. devel/setup.bash
+
+Option 1: Main Qolo controller
 	roslaunch qolo qolo.launch
 
-	or
-	cd ~/catkin_ws/
-	sudo -s
-	. devel/setup.bash
+Option 2: Remote Command Control
 	roslaunch qolo remote_qolo.launch
 	
+Option 3: Hasler Control Commands
+	roslaunch qolo hasler_qolo.launch
+
 
 3 terminal:
 	OR only rear LIDAR
@@ -39,6 +45,7 @@
 	. devel/setup.bash
  	./src/scripts/record_imu.sh
 
+
  5. terminal: Trajectory tracking
 	cd catkin_ws/
 	. devel/setup.bash
@@ -47,23 +54,31 @@
 
 ============== Execute in Fron UpBoard 120 ==========================
 
-cd autonomy_ws
-. devel/setup.bash
+1-Terminal
+	cd autonomy_ws
+	. devel/setup.bash
 	
-	OR LIDAR with SLAM
+	Options for launch file:
+	0. LIDAR SLAM
+	roslaunch rds_ros rds_slam.launch
+	RESETTING SLAM:
+		rostopic pub /syscommand std_msgs/String "reset"
+
+	1. RDS with LIDAR + SLAM
 		# This includes the frontal LIDAR
 	./src/rds/rds_ros/launch/run_slam.sh
 	or
 	roslaunch rds_ros rds_slam.launch
 
-	OR LIDAR with 3d pointcloud
+
+	2. LIDAR with 3d pointcloud
 		# This includes the frontal LIDAR
 	./src/rds/rds_ros/launch/run_front_cloud.sh
 
-	only RDS with 2D lidar:
+	3. Only RDS with 2D lidar:
 	roslaunch rds_ros rds_front_lrf.launch
 	
-	OR LIDAR + RGBD front
+	4. OR LIDAR + RGBD front
 		# This includes the frontal LIDAR
 	./src/rds/rds_ros/launch/run_front_camera.sh
 
