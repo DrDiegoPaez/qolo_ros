@@ -13,6 +13,7 @@ from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import MultiArrayLayout, MultiArrayDimension 
 import numpy as np
 from scipy.interpolate import UnivariateSpline
+import dynamical_system_representation as ds
 #import matplotlib.pyplot as plt
 
 trajectory_xyt = np.array([
@@ -21,6 +22,12 @@ trajectory_xyt = np.array([
    [ 1.3, -1.3,  10.0],
    [ 3.0, -0.1,  17.0]
    ])
+
+dx_prev = np.array([0.0 0.0])
+dx = np.array([0.0 0.0])
+
+Attractor = np.array([3.0 0.0 0.0])
+time_limit = 10
 # trajectory_xyt = np.array([
 #    [ 0.0, 0.0,  0.0], # accelerating
 #    [ 0.0, 1.0,  4.0],
@@ -131,38 +138,20 @@ def feedforward_feedback_controller(t):
       return (decay_factor*previous_command_linear,
          decay_factor*previous_command_angular)
 
+
+def ds_generation(t):
+   global dx_prev, dx
+
+   constVelocity_distance(dx, x, x0=[0,0], velConst = 1.0, distSlow=0.1)
+   dx_prev = dx
+
 def publish_command(command_linear, command_angular, t):
    global data_remote, command_publisher
-   
    Ctime = round(time.clock(),4)
    data_remote.data = [Ctime,command_linear,command_angular]
-   # msg.data = np.array([
-   #    rospy.get_rostime(),
-   #    command_linear,
-   #    command_angular])
    command_publisher.publish(data_remote)
    rospy.loginfo(data_remote)
 
-# def rds_service(t):
-#    # print "Waiting for RDS Service"
-
-#    rospy.wait_for_service('rds_velocity_command_correction')
-#    # try:
-#    RDS = rospy.ServiceProxy('rds_velocity_command_correction',
-#       VelocityCommandCorrectionRDS)
-
-#    request = VelocityCommandCorrectionRDSRequest()
-
-#    (Trajectory_V, Trajectory_W) = feedforward_feedback_controller(t)
-
-#    request.nominal_command.linear = Trajectory_V;
-#    request.nominal_command.angular = Trajectory_W;
-
-#    response = RDS(request)
-#    Output_V = round(response.corrected_command.linear, 4)
-#    Output_W = round(response.corrected_command.angular, 4)
-
-#    publish_command(Output_V, Output_W, t)
 
 def trajectory_service(t):
    # print "Waiting for RDS Service"

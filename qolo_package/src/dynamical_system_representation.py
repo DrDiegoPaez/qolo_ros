@@ -12,10 +12,8 @@ import numpy.linalg as LA
 
 def linearAttractor(x, x0='default'):
     # change initial value for n dimensions
-    
     # From Matlab
     # dx = -10*eye(2)*(x-x_ref) + dx_ref;
-
 
     dim = x.shape[0]
 
