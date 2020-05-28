@@ -1,5 +1,5 @@
 <launch>
-  <include file="$(find qolo)/launch/rear_lidar-lrf.launch"/>
+  <!--  <include file="$(find qolo)/launch/rear_lidar-lrf.launch"/> -->
 
   <include file="$(find qolo)/launch/joystick_qolo.launch"/>
   

@@ -89,7 +89,23 @@ PYYAML: For FT model
 ======================== Setup network for LIDAR ========================
 sudo nano /etc/network/interface
 	
-	# LIDAR NETWORK
+	======= VELODYNE's LIDARs =========
+		Qolo’s IP: 192.168.1.110
+		Model: VLP-16
+
+		 —> Front LIDAR
+		Velodyne IP: 192.168.1.201
+		name="port" default="2368"
+		X distance to axle = 30mm
+		Height = 465mm
+
+		—> Rear LIDAR
+		Velodyne IP: 192.168.1.19
+		name="port" value="2369”
+		X distance to axle = -520mm
+		Height = 363mm
+
+	# LIDAR NETWORK on Frontal and Rear PCs
 	auto enp2s0
 	allow-hotplug enp2s0
 	iface enp2s0 inet static

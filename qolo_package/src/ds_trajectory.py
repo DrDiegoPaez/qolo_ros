@@ -23,11 +23,22 @@ trajectory_xyt = np.array([
    [ 3.0, -0.1,  17.0]
    ])
 
-dx_prev = np.array([0.0 0.0])
-dx = np.array([0.0 0.0])
+dx_prev = np.array([[0.0], [0.0]])
+dx = np.array([[0.0], [0.0]])
 
-Attractor = np.array([3.0 0.0 0.0])
-time_limit = 10
+DEBUG_FLAG = False
+MaxSpeed = 1.5/2 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
+MaxAngular = 4.124/4
+D_angular = 10
+D_linear = 10
+
+ref_vel = 0.6
+control_point = 0.5
+stop_distance = 0.1
+time_limit = 90
+
+Attractor = np.array([[15.0+control_point], [0.0]])
+
 # trajectory_xyt = np.array([
 #    [ 0.0, 0.0,  0.0], # accelerating
 #    [ 0.0, 1.0,  4.0],
@@ -80,7 +91,7 @@ trajectory_spline_derivative = [trajectory_spline[0].derivative(), trajectory_sp
 
 def get_pose():
    global tf_listener
-   (trans, rot) = tf_listener.lookupTransform('/tf_qolo_world', '/tf_rds', rospy.Time(0))
+   (trans, rot) = tf_listener.lookupTransform('/tf_qolo_world', '/tf_qolo', rospy.Time(0))
    rpy = tf.transformations.euler_from_quaternion(rot)
    print ("phi=", rpy[2])
    return (trans[0], trans[1], rpy[2])
@@ -139,11 +150,62 @@ def feedforward_feedback_controller(t):
          decay_factor*previous_command_angular)
 
 
-def ds_generation(t):
-   global dx_prev, dx
+def ds_generation(x,y,phi):
+   global dx_prev, dx, previous_time, ref_vel
+   try:
+      # x = 1
+      # y = 1
+      # phi = 0.79
+      t_lost_tf = -1.0
+      Ctime = time.clock()
+      translation = np.array([[x], [y]])
+      Rotation = np.array([
+         [np.cos(phi), -np.sin(phi)],
+         [np.sin(phi),  np.cos(phi)]])
+      p_ref_local = np.array([[control_point], [0.0]])
+      p_ref_global = np.matmul(Rotation, p_ref_local) + translation
 
-   constVelocity_distance(dx, x, x0=[0,0], velConst = 1.0, distSlow=0.1)
-   dx_prev = dx
+      if DEBUG_FLAG:
+         print(" Attractor X, Y = ",Attractor[0,0],Attractor[1,0])
+         print(" Current X, Y, Phi = ",p_ref_global[0,0],p_ref_global[1,0], np.rad2deg(phi))
+      
+      dx = ds.linearAttractor_const(p_ref_global, Attractor, ref_vel, stop_distance)
+      v_command_p_ref_global = dx
+      
+      if DEBUG_FLAG:
+         print(" V_global2 = ",v_command_p_ref_global[0,0],v_command_p_ref_global[1,0])
+
+      J_p_ref_inv = np.array([
+            [1.0, p_ref_local[1,0]/p_ref_local[0,0]],
+            [0.0, 1/p_ref_local[0,0]]])
+      
+      v_command_p_ref_local = np.matmul(np.transpose(Rotation), v_command_p_ref_global)
+      if DEBUG_FLAG:
+         print(" V_local = ",v_command_p_ref_local[0,0],v_command_p_ref_local[1,0])
+
+      cammand_robot = np.matmul(J_p_ref_inv, v_command_p_ref_local)
+
+      command_linear = cammand_robot[0,0]
+
+      if cammand_robot[1,0] > MaxAngular:
+         command_angular = MaxAngular
+      elif cammand_robot[1,0] < -MaxAngular:
+         command_angular = -MaxAngular
+      else:
+         command_angular = cammand_robot[1,0]
+      # previous_command_linear = command_linear
+      # previous_command_angular = command_angular
+      if DEBUG_FLAG:
+         print(" Robot Command = ",command_linear, command_angular)
+         time.sleep(0.5)
+      dx_prev = dx
+      # commands = [command_linear, command_angular]
+
+      return command_linear, command_angular
+
+   except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+      print ("Exception during tf lookup ...")
+
 
 def publish_command(command_linear, command_angular, t):
    global data_remote, command_publisher
@@ -156,16 +218,18 @@ def publish_command(command_linear, command_angular, t):
 def trajectory_service(t):
    # print "Waiting for RDS Service"
    try:
-      (Trajectory_V, Trajectory_W) = feedforward_feedback_controller(t)
-      publish_command(Trajectory_V, Trajectory_W, t)
+      (x, y, phi) = get_pose()
+      (Trajectory_V, Trajectory_W) = ds_generation(x,y,phi)
+      if ~DEBUG_FLAG:
+         publish_command(Trajectory_V, Trajectory_W, t)
    except:
         publish_command(0., 0., 0.)
-        print ('Trajectory Stopping [0 0]')
+        print ('No Pose Setting [V,W] = [0, 0]')
 
 
 def main():
    global tf_listener, command_publisher, data_remote, trajectory_xyt
-   rospy.init_node('qolo_trajectory_tracking')
+   rospy.init_node('qolo_ds_trajectory')
    tf_listener = tf.TransformListener()
    command_publisher = rospy.Publisher('qolo/remote_commands',Float32MultiArray, queue_size=1)
 
@@ -174,15 +238,20 @@ def main():
    data_remote.layout.dim[0].size = 3
    data_remote.data = [0]*3
 
-   end_time = trajectory_xyt[-1][2]
-   print('Trajectory time: ',end_time)
+   # end_time = trajectory_xyt[-1][2]
+   print('Trajectory time: ',time_limit)
    start_time = time.time()
    while not rospy.is_shutdown():
       current_t = time.time() - start_time
-      if current_t <= end_time:
+      if current_t <= time_limit:
          trajectory_service(current_t)
       else:
          publish_command(0., 0., 0.)
+         print ('End of Trajectory set to --[0 , 0]')
+         time.sleep(0.5)
+         publish_command(0., 0., 0.)
+         time.sleep(0.5)
+         break
 
 if __name__ == '__main__':
    main()

@@ -25,7 +25,7 @@ Option 3: Hasler Control Commands
 
 3 terminal:
 	OR only rear LIDAR
- 	roslaunch rds_ros rear_lrf_new_driver.launch
+ 	roslaunch qolo rear_lidar-lrf.launch
 
 	OR only RDS in the rear LIDAR
  	roslaunch rds_ros rds_rear_lrf_cloud.launch
@@ -60,7 +60,8 @@ Option 3: Hasler Control Commands
 	
 	Options for launch file:
 	0. LIDAR SLAM
-	roslaunch rds_ros rds_slam.launch
+	roslaunch rds_ros slam_lrf.launch
+
 	RESETTING SLAM:
 		rostopic pub /syscommand std_msgs/String "reset"
 
@@ -122,7 +123,7 @@ rosrun kalman_bounding_boxes kalman_bounding_boxes_node
 	rosbag record -O all_sensors_tracking.bag /tf /tf_static /front_lidar/velodyne_packets /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_packets /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /qolo
 
 ###### ROSbag with tracking and 2 LIDARS ######
-rosbag record -O rds_test_gain_1.bag /tf /tf_static /qolo /front_lidar/velodyne_packets /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_packets /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons
+rosbag record -O rds_pedetrian_1.bag /tf /tf_static /qolo /front_lidar/velodyne_packets /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_packets /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui
 
 rosbag record -O all_sensors_tracking_3.bag -a
 

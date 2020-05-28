@@ -1,8 +1,8 @@
 #! /usr/bin/env python
-#########  TEMPORAL Program only for HASLER Project ##########
+#########  Qolo Main Code for Shared / Embodied / Remore Control ##########
 ##### Author: Diego F. Paez G.
+##### Preliminar version: Chen Yang
 ##### Data: 2019/10/01
-##### To be Deleted
 
 import HighPrecision_ADDA_Double as converter
 import time
@@ -41,12 +41,12 @@ except PermissionError:
     # Need to run via sudo for high priority
     rospy.logerr("Cannot set niceness for the process...")
     rospy.logerr("Run the script as sudo...")
-
-REMOTE_MODE = True
+K_vel = 0.5
+CONSTANT_VEL = False
 SHARED_MODE = True
 COMPLIANCE_FLAG = False
 JOYSTICK_MODE = False
-
+REMOTE_MODE = True
 PORT = 8080
 control_type ='embodied'
 threadLock = threading.Lock()
@@ -66,7 +66,7 @@ backward_coefficient = 0.5
 # DAC1 --> Right Wheel Velocity
 # DAC2 --> Enable Qolo Motion
 THRESHOLD_V = 1500;
-ZERO_LW = 2650 #2750;
+ZERO_LW = 2500 #2750;
 ZERO_RW = 2500 #2650;
 High_DAC = 5000;
 MBED_Enable = mraa.Gpio(36) #11 17
@@ -79,27 +79,31 @@ RADIUS = 0.304/2 # meter
 MaxSpeed = 1.5 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
 MinSpeed = MaxSpeed*backward_coefficient
 MaxAngular = 4.124
-W_ratio = 4 # Ratio of the maximum angular speed (232 deg/s)
+W_ratio = 5 # Ratio of the maximum angular speed (232 deg/s)
 
 Max_motor_v = (MaxSpeed/ (RADIUS*(2*np.pi))) *60*GEAR # max motor speed: 1200 rpm
 
-# Setting for the RDS service
-# Some reference for controlling the non-holonomic base
-y_coordinate_of_reference_point_for_command_limits = 0.5;
+#########################################################
+############ Setting for the RDS service ################
+#########################################################
+
+# y_coordinate_of_reference_point_for_command_limits = 0.5;
 # Gain to this point
 weight_scaling_of_reference_point_for_command_limits = 0.;
 # Some gain for velocity after proximity reaches limits
-tau = 2.;
+tau = 3.5;
 # Minimal distance to obstacles
-delta = 0.08;
-clearance_from_axle_of_final_reference_point = 0.15;
+delta = 0.05;
+# Some reference for controlling the non-holonomic base
+control_point = 0.17
+
 max_linear = MaxSpeed;
 min_linear = -MinSpeed;
 absolute_angular_at_min_linear = 0.;
 absolute_angular_at_max_linear = 0.;
 absolute_angular_at_zero_linear = MaxAngular/W_ratio;
-linear_acceleration_limit = 1.1
-angular_acceleration_limit = 1.5
+linear_acceleration_limit = 0.7
+angular_acceleration_limit = 0.5
 
 feasible = 0
 Output_V = 0.;
@@ -166,6 +170,7 @@ Rcenter = np.array([0., -2.5, -1.875, -1.25, -0.625, 0.625, 1.25, 1.875, 2.5, 0.
 
 # classification point for center of pressure ox(calibration needed)
 pl2, pl1, pr1, pr2 = -1.5, -0.7, 0.7, 1.5
+# B-2, B-1, B1, B2
 # -1.72, 0.075, 1.455, 1.98 
 # -2.42, 0.67, 1.27, 1.82  
 # -0.97, -0.2, 0.2, 1.17
@@ -283,8 +288,8 @@ def callback_remote(data):
     # temp_dat.data = [0]*2
     # print(time_msg)
     if time_msg != 0:
-        Remote_V = round(data.data[1],6)
-        Remote_W =  round(data.data[2],6)
+        Remote_V = round(data.data[1],8)
+        Remote_W =  round(data.data[2],8)
         FlagRemote = True
         time_msg = data.data[0]
     time_msg = data.data[0]
@@ -448,14 +453,14 @@ def FSR_execution():
     global Command_V, Command_W, Comand_DAC0, Comand_DAC1
     global Xin, FsrZero, FsrK, Out_CP
     
-    a = Xin[1]
+    a = Xin[1] #--> Sensor 2
     b = Xin[2]
     c = Xin[3]
     d = Xin[4]
     e = Xin[5]
     f = Xin[6]
     g = Xin[7]
-    h = Xin[8]
+    h = Xin[8] # --> Sensor 9
     ox = Out_CP
 
     treshold  = 700 # avoid unstoppable and undistinguishable
@@ -661,35 +666,75 @@ def FSR_output(a, b, c, d, e, f, g, h, ox):
 def rds_service():
     global User_V, User_W, Output_V, Output_W, last_v, last_w, cycle, feasible, Corrected_V, Corrected_W
     # print "Waiting for RDS Service"
-
     rospy.wait_for_service('rds_velocity_command_correction')
-    # try:
-    RDS = rospy.ServiceProxy('rds_velocity_command_correction',VelocityCommandCorrectionRDS)
+    try:
+        RDS = rospy.ServiceProxy('rds_velocity_command_correction',VelocityCommandCorrectionRDS)
 
-    request = VelocityCommandCorrectionRDSRequest()
+        request = VelocityCommandCorrectionRDSRequest()
+        # y_coordinate_of_reference_point_for_command_limits = 0.5;
+        # # Gain to this point
+        # weight_scaling_of_reference_point_for_command_limits = 0.;
+        # # Some gain for velocity after proximity reaches limits
+        # tau = 2.;
+        # # Minimal distance to obstacles
+        # delta = 0.08;
+        # clearance_from_axle_of_final_reference_point = 0.15;
+        # max_linear = MaxSpeed;
+        # min_linear = -MinSpeed;
+        # absolute_angular_at_min_linear = 0.;
+        # absolute_angular_at_max_linear = 0.;
+        # absolute_angular_at_zero_linear = MaxAngular/W_ratio;
+        # linear_acceleration_limit = 1.1
+        # angular_acceleration_limit = 1.5
 
-    request.nominal_command.linear = User_V;
-    request.nominal_command.angular = User_W;
+        request.nominal_command.linear = User_V;
+        request.nominal_command.angular = User_W;
+        request.capsule_center_front_y = 0.035;
+        request.capsule_center_rear_y = -0.50;
+        request.capsule_radius = 0.45;
+        
+        request.reference_point_y = control_point;
 
-    if cycle<=0.001:
-        delta_time = 0.005;
-    else:
-        delta_time = time.clock() - cycle;
+        request.rds_tau = tau;  # Time horizon for velocity obstacles
+        request.rds_delta = delta;
+        request.vel_lim_linear_min = min_linear;
+        request.vel_lim_linear_max = max_linear;
+        request.vel_lim_angular_abs_max = absolute_angular_at_zero_linear;
+        request.vel_linear_at_angular_abs_max = 0.1;
+        request.acc_limit_linear_abs_max = linear_acceleration_limit;
+        request.acc_limit_angular_abs_max = angular_acceleration_limit;
 
-    response = RDS(request)
-    Corrected_V = round(response.corrected_command.linear,6)
-    Corrected_W = round(response.corrected_command.angular,6)
+        # // shall rds consider lrf measurements?
+        request.lrf_point_obstacles = True;
+        # // for generating constraints due to raw lrf scan points,
+        # // shall rds use the VO-based or the alternative (prior) approach?
+        request.lrf_alternative_rds = False;
+        # // how shall rds choose the base velocity for determining the convex approximate VO
+        # // 0 : use zero velocity (ensures that the final halfplane contains the VO, if the VO does not contain the origin)
+        # // 1 : use the velocity which rds computed previously
+        # // any other integer: use the nominal velocity (from the current nominal command)
+        request.vo_tangent_base_command = 2;
+        # // shall rds map the base velocity to the tangent point the same way as ORCA for determining the convex approximate VO?
+        request.vo_tangent_orca_style = False;
 
-    cycle = time.clock()
+        if cycle==0:
+            delta_time = 0.005;
+        else:
+            delta_time = time.clock() - cycle;
 
-# print cycle 
-# except:
-    # Output_V = User_V
-    # Output_W = User_W
-# print "RDS Service failed"
+        request.dt = 0.01 #delta_time
+
+        response = RDS(request)
+        Corrected_V = round(response.corrected_command.linear,6)
+        Corrected_W = round(response.corrected_command.angular,6)
+
+        cycle = time.clock()
+    except:
+        Corrected_V = 0.
+        Corrected_W = 0.
 
 def mds_service():
-    global User_V, User_W, Output_V, Output_W, last_v, last_w, cycle, feasible, Corrected_V, Corrected_W
+    global User_V, User_W, Output_V, Output_W, last_v, last_w, cycle, feasible, Corrected_V, Corrected_W, control_point
     # print "Waiting for MDS Service"
 
     rospy.wait_for_service('rds_velocity_command_correction')
@@ -700,39 +745,27 @@ def mds_service():
 
     request.nominal_command.linear = User_V;
     request.nominal_command.angular = User_W;
-
-    request.velocity_limits.max_linear = max_linear;
-    request.velocity_limits.min_linear = min_linear;
-    request.velocity_limits.abs_angular_at_min_linear = absolute_angular_at_min_linear;
-    request.velocity_limits.abs_angular_at_max_linear = absolute_angular_at_max_linear;
-    request.velocity_limits.abs_angular_at_zero_linear = absolute_angular_at_zero_linear;
-    request.abs_linear_acceleration_limit = linear_acceleration_limit;
-    request.abs_angular_acceleration_limit = angular_acceleration_limit;
-
-    request.y_coordinate_of_reference_point_for_command_limits = y_coordinate_of_reference_point_for_command_limits;
-    request.weight_scaling_of_reference_point_for_command_limits = weight_scaling_of_reference_point_for_command_limits;
-    request.clearance_from_axle_of_final_reference_point = clearance_from_axle_of_final_reference_point;
-    request.delta = delta;
-    request.tau = tau;
-    request.y_coordinate_of_reference_biasing_point = 1.;
-    request.weight_of_reference_biasing_point = 0.;
-
-    request.last_actual_command.linear = last_v;
-    request.last_actual_command.angular = last_w;
-
+    request.capsule_center_front_y = 0.05;
+    request.capsule_center_rear_y = -0.5;
+    request.capsule_radius = 0.45;
+    request.reference_point_y = control_point;
+    request.rds_tau = 1.5;
+    request.rds_delta = 0.05;
+    request.vel_lim_linear_min = 0.5;
+    request.vel_lim_linear_max = 1.5;
+    request.vel_lim_angular_abs_max = 1.0;
+    request.vel_linear_at_angular_abs_max = 0.2;
+    request.acc_limit_linear_abs_max = 0.5;
+    request.acc_limit_angular_abs_max = 0.5;
     if cycle==0:
         delta_time = 0.005;
     else:
         delta_time = time.clock() - cycle;
-
-    request.command_cycle_time = delta_time
-    request.abs_linear_acceleration_limit = 4;
-    request.abs_angular_acceleration_limit = 2;
+    request.dt = delta_time
 
     response = RDS(request)
     Corrected_V = round(response.corrected_command.linear,6)
     Corrected_W = round(response.corrected_command.angular,6)
-    feasible = response.feasible
 
     # last_v = Output_V
     # last_w = Output_W
@@ -784,7 +817,9 @@ def control():
         else:
             User_V = 0.
             User_W = 0.
-
+    elif CONSTANT_VEL:
+        User_V = K_vel
+        User_W = 0.
     else:
         read_FSR()
         # FSR Inputs calibration: 
@@ -797,6 +832,7 @@ def control():
         if math.isnan(ox):
             ox = 0.
         Out_CP = round(ox, 6);
+
         FSR_execution()  # Runs the user input with Out_CP and returns Command_V and Command_W --> in 0-5k scale
         motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
         motor_w = (2*Max_motor_v/(DSITANCE_CW)*Command_W/5000 - Max_motor_v/(DSITANCE_CW)) / W_ratio # In [RPM]
@@ -919,9 +955,9 @@ def control_node():
 
     dat_cor_vel = Float32MultiArray()
     dat_cor_vel.layout.dim.append(MultiArrayDimension())
-    dat_cor_vel.layout.dim[0].label = 'Velocities: User[2], Corrected_OA[2], Corrected_Compliance[2]'
-    dat_cor_vel.layout.dim[0].size = 6
-    dat_cor_vel.data = [0]*6
+    dat_cor_vel.layout.dim[0].label = 'Velocities: User[2], Corrected_OA[2], Corrected_Compliance[2], RDS_dT'
+    dat_cor_vel.layout.dim[0].size = 7
+    dat_cor_vel.data = [0]*7
 
     dat_wheels = Float32MultiArray()
     dat_wheels.layout.dim.append(MultiArrayDimension())
@@ -940,7 +976,7 @@ def control_node():
     pub_compliance = rospy.Publisher('qolo/compliance', Wrench, queue_size=10)
     
     pub_mess = rospy.Publisher('qolo/message', String, queue_size=1)
-    rospy.init_node('qolo_remote', anonymous=True)
+    rospy.init_node('qolo_control', anonymous=True)
     rate = rospy.Rate(100) #  100 hz
 
 
@@ -1015,12 +1051,12 @@ def control_node():
         current_time = now.strftime("%H:%M:%S")
         # RosMassage = "%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s" % (current_time, cycle_T, RDS_time,Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Out_CP,Send_DAC0, Send_DAC1, User_V, User_W, feasible, Output_V, Output_W)
         # RosMassage = "%s %s %s %s %s %s %s %s" % (cycle_T, RDS_time, DA_time, feasible, User_V, User_W, round(Output_V,4), round(Output_W,4) )
-        RosMassage = "%s %s %s %s %s %s" % (User_V, User_W, compliant_V, compliant_W, Output_V, Output_W)
+        RosMassage = "%s %s %s %s %s" % (User_V, User_W, Output_V, Output_W, RDS_time)
         dat_wheels.data = [Send_DAC0, Send_DAC1]
         dat_vel.data = [time_msg, User_V, User_W, Output_V, Output_W]
         qolo_twist.linear.x = Output_V
         qolo_twist.angular.z = Output_W
-        dat_cor_vel.data = [User_V, User_W, Corrected_V, Corrected_W, compliant_V, compliant_W]
+        dat_cor_vel.data = [User_V, User_W, Corrected_V, Corrected_W, compliant_V, compliant_W, RDS_time]
         dat_user.data = [Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Out_CP]
         
 

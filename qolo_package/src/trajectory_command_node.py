@@ -15,6 +15,8 @@ import numpy as np
 from scipy.interpolate import UnivariateSpline
 #import matplotlib.pyplot as plt
 
+v_norm_max = 1.0
+
 trajectory_xyt = np.array([
    [ 0.0, 0.0,  0.0], # accelerating
    [ 0.5, 0.0,  4.0],
@@ -86,6 +88,7 @@ def feedforward_feedback_controller(t):
    global previous_command_angular
    global trajectory_spline
    global trajectory_spline_derivative
+   global v_norm_max
    
    try:
       (x, y, phi) = get_pose()
@@ -104,7 +107,7 @@ def feedforward_feedback_controller(t):
       position_setpoint = np.array([[trajectory_spline[0](t)],
          [trajectory_spline[1](t)]])
       feedback_velocity = 0.15*(position_setpoint - p_ref_global)
-      v_norm_max = 1.0
+
       v_norm_actual = np.linalg.norm(feedback_velocity)
       if (v_norm_actual > v_norm_max):
          feedback_velocity = feedback_velocity/v_norm_actual*v_norm_max
