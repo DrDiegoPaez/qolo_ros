@@ -17,7 +17,7 @@
   <arg name="repeat_delay" default="0.0" />
   <arg name="rpm" default="900.0" />
   <arg name="cut_angle" default="-0.01" />
-  <arg name="laserscan_ring" default="8" />
+  <arg name="laserscan_ring" default="9" />
   <arg name="laserscan_resolution" default="0.007" />
   <arg name="organize_cloud" default="false" />
 
@@ -57,8 +57,9 @@
       <arg name="resolution" value="$(arg laserscan_resolution)"/>
     </include>
     
-    <include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>
     <!--  <node name="lidar_channels_to_lrf_node" pkg="rds_ros" type="lidar_channels_to_lrf_node" /> -->
+
+    <!--     <include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>   -->
 
   </group>
 

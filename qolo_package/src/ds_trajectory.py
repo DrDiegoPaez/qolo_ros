@@ -32,20 +32,12 @@ MaxAngular = 4.124/4
 D_angular = 10
 D_linear = 10
 
-ref_vel = 0.6
-control_point = 0.5
-stop_distance = 0.1
+ref_vel = 0.8
+control_point = 0.9
+stop_distance = 0.5
 time_limit = 90
 
-Attractor = np.array([[15.0+control_point], [0.0]])
-
-# trajectory_xyt = np.array([
-#    [ 0.0, 0.0,  0.0], # accelerating
-#    [ 0.0, 1.0,  4.0],
-#    [ 1.0, 5.0, 10.0],
-#    [ 5.0, 6.0, 16.0],
-#    [ 6.0, 6.0, 20.0] # decelerating
-#    ])
+Attractor = np.array([[20.0+control_point], [0.0]])
 
 tf_listener = None
 command_publisher = None

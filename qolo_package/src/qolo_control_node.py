@@ -86,6 +86,7 @@ Max_motor_v = (MaxSpeed/ (RADIUS*(2*np.pi))) *60*GEAR # max motor speed: 1200 rp
 #########################################################
 ############ Setting for the RDS service ################
 #########################################################
+LRF_points_Flag = True
 # y_coordinate_of_reference_point_for_command_limits = 0.5;
 # Gain to this point
 weight_scaling_of_reference_point_for_command_limits = 0.;
@@ -94,15 +95,16 @@ tau = 3.5;
 # Minimal distance to obstacles
 delta = 0.05;
 # Some reference for controlling the non-holonomic base
-control_point = 0.18
+control_point = 0.2
 
 max_linear = MaxSpeed;
 min_linear = -MinSpeed;
 absolute_angular_at_min_linear = 0.;
 absolute_angular_at_max_linear = 0.;
 absolute_angular_at_zero_linear = MaxAngular/W_ratio;
-linear_acceleration_limit = 0.8
-angular_acceleration_limit = 1.0
+linear_acceleration_limit = 1.2
+angular_acceleration_limit = 1.4
+
 
 feasible = 0
 Output_V = 0.;
@@ -699,12 +701,12 @@ def rds_service():
         request.vel_lim_linear_min = min_linear;
         request.vel_lim_linear_max = max_linear;
         request.vel_lim_angular_abs_max = absolute_angular_at_zero_linear;
-        request.vel_linear_at_angular_abs_max = 0.1;
+        request.vel_linear_at_angular_abs_max = 0.2;
         request.acc_limit_linear_abs_max = linear_acceleration_limit;
         request.acc_limit_angular_abs_max = angular_acceleration_limit;
 
         # // shall rds consider lrf measurements?
-        request.lrf_point_obstacles = True;
+        request.lrf_point_obstacles = LRF_points_Flag;
         # // for generating constraints due to raw lrf scan points,
         # // shall rds use the VO-based or the alternative (prior) approach?
         request.lrf_alternative_rds = False;
