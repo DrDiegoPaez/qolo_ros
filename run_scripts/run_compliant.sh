@@ -45,6 +45,7 @@ sleep 5
 
 #----- Launch and record force sensors -----
 echo "Launching FT Sensors..."
+eval "source /home/qolo/collision_ws/devel/setup.bash" 
 eval "/home/qolo/collision_ws/src/rokubimini_interface/run_rokubimini_ros.sh -f ${LOG_FOLDER}"
 sleep 5
 PID_LIST+="$! "

@@ -50,9 +50,9 @@ class BumperModel:
             folder = os.path.dirname(__file__)
 
         self.models = [
-            # SVR(os.path.join(folder, 'trainedModels_Fx.yaml')),
+            SVR(os.path.join(folder, 'trainedModels_Fx.yaml')),
             SVR(os.path.join(folder, 'trainedModels_Fy.yaml')),
-            # SVR(os.path.join(folder, 'trainedModels_Tz.yaml'))
+            SVR(os.path.join(folder, 'trainedModels_Tz.yaml'))
         ]
     
     def predict(self, x):

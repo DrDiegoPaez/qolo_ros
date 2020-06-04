@@ -43,10 +43,10 @@ except PermissionError:
     rospy.logerr("Run the script as sudo...")
 K_vel = 0.5
 CONSTANT_VEL = False
-SHARED_MODE = True
-COMPLIANCE_FLAG = False
-JOYSTICK_MODE = False
-REMOTE_MODE = True
+SHARED_MODE = False
+COMPLIANCE_FLAG = True
+JOYSTICK_MODE = True
+REMOTE_MODE = False
 PORT = 8080
 control_type ='embodied'
 threadLock = threading.Lock()
@@ -72,14 +72,14 @@ High_DAC = 5000;
 MBED_Enable = mraa.Gpio(36) #11 17
 MBED_Enable.dir(mraa.DIR_OUT)
 
-GEAR = 12.64
+GEAR = 12.64 # Gear ratio
 DSITANCE_CW = 0.548/2  # DSITANCE_CW bettween two wheels
 RADIUS = 0.304/2 # meter
 
 MaxSpeed = 1.5 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
 MinSpeed = MaxSpeed*backward_coefficient
 MaxAngular = 4.124
-W_ratio = 5 # Ratio of the maximum angular speed (232 deg/s)
+W_ratio = 3.5 # Ratio of the maximum angular speed (232 deg/s)
 
 Max_motor_v = (MaxSpeed/ (RADIUS*(2*np.pi))) *60*GEAR # max motor speed: 1200 rpm
 
@@ -91,9 +91,9 @@ LRF_points_Flag = True
 # Gain to this point
 weight_scaling_of_reference_point_for_command_limits = 0.;
 # Some gain for velocity after proximity reaches limits
-tau = 3.5;
+tau = 1.5;
 # Minimal distance to obstacles
-delta = 0.05;
+delta = 0.02;
 # Some reference for controlling the non-holonomic base
 control_point = 0.2
 
@@ -851,6 +851,8 @@ def control():
 
     if SHARED_MODE:
         rds_service()
+        # Corrected_V = User_V
+        # Corrected_W = User_W
     else:
         Corrected_V = User_V
         Corrected_W = User_W
