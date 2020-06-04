@@ -25,10 +25,11 @@ import datetime
 import rospy
 import threading
 from prediction_model import BumperModel
+from filters import MultiLowPassFilter
 
-from geometry_msgs.msg import Wrench, WrenchStamped, Vector3, PoseStamped, Quaternion, Twist
+from geometry_msgs.msg import Wrench, WrenchStamped, Vector3, PoseStamped, Quaternion, Twist, TwistStamped
 from std_msgs.msg import String, Bool, Float32MultiArray, Float32, Int32MultiArray
-from std_msgs.msg import MultiArrayLayout, MultiArrayDimension 
+from std_msgs.msg import MultiArrayLayout, MultiArrayDimension, Header
 
 from rds_network_ros.srv import *
 # from builtins import PermissionError
@@ -201,6 +202,7 @@ offset_ft_data = np.zeros((6,))
 raw_ft_data  = np.zeros((6,))
 filtered_ft_data  = np.zeros((6,))
 ft_data =  np.zeros((6,))
+svr_data =  np.zeros((3,))
 initialising_ft=True
 init_ft_data = {
     'Fx': [],
@@ -213,6 +215,7 @@ init_ft_data = {
 
 # Prediction Models
 bumperModel = None
+lp_filter = None
 
 level_relations = {
         # 'debug':logging.DEBUG,
@@ -348,10 +351,30 @@ def damper_correction(ft_data):
     global bumperModel
     # corr_ft_data = bumperModel.predict(ft_data)
     # ft_data_temp = ft_data
-    corr_ft_data = bumperModel.predict(np.reshape(ft_data, (1,-1)))
+    (Fx, Fy, Mz) = bumperModel.predict(np.reshape(ft_data, (1,-1)))
     h = 0.1
-    theta = 30 #np.pi/6
-    return (corr_ft_data, h, theta)
+    (a, b, c) = (Fx, Fy, Mz/bumper_R)
+    temp = a**2 + b**2 - c**2
+    if temp > 0:
+        theta = np.real(-1j * np.log(
+            (c + 1j*np.sqrt(temp)) /
+            (a + 1j*b)
+        ))
+    else:
+        theta = np.real(-1j * np.log(
+            (c - np.sqrt(-temp)) /
+            (a + 1j*b)
+        ))
+
+    Fmag = Fx*np.sin(theta) + Fy*np.cos(theta)
+    
+    rospy.loginfo(
+        "\n\tFx = {}\n\tFy = {}\n\tMz = {}\n\ttheta = {}\n\tFmag = {}\n-------------------------\n".format(
+            Fx, Fy, Mz, theta, Fmag
+        )
+    )
+
+    return (Fx, Fy, Mz, Fmag, h, theta)
 
 
 def transform_to_bumper_surface(ft_data, h, theta):
@@ -801,7 +824,7 @@ def control():
     # global r1, r2, r3, r4, r5, r6, r7, r8
     global Rcenter, Count_msg_lost, time_msg, last_msg
     global Command_V, Command_W, Comand_DAC0, Comand_DAC1, User_V, User_W, Output_V, Output_W, last_w, last_v, Corrected_V, Corrected_W
-    global counter1, compliant_V, compliant_W, raw_ft_data, ft_data, offset_ft_data
+    global counter1, compliant_V, compliant_W, raw_ft_data, ft_data, svr_data, offset_ft_data
     global DA_time, RDS_time, Compute_time, FSR_time
     
     # Replace with a node subsription
@@ -858,9 +881,12 @@ def control():
         Corrected_W = User_W
 
     if COMPLIANCE_FLAG:
-        [ft_data, h, theta] = damper_correction(raw_ft_data - offset_ft_data)
-        ft_data = transform_to_bumper_surface(ft_data, h, theta)
-        [compliant_V, compliant_W] = compliance_control(Corrected_V, Corrected_W, ft_data[2], h, theta)
+        ft_data = lp_filter.filter(raw_ft_data - offset_ft_data)
+        [Fx, Fy, Mz, Fmag, h, theta] = damper_correction(ft_data)
+        svr_data[0] = Fx
+        svr_data[1] = Fy
+        svr_data[2] = Mz
+        [compliant_V, compliant_W] = compliance_control(Corrected_V, Corrected_W, Fmag, h, theta)
         Output_V = round(compliant_V,6)
         Output_W = round(compliant_W,6)
     else:
@@ -905,7 +931,7 @@ def control_node():
     global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Xin
     global RemoteE, ComError
     global DA_time, RDS_time, Compute_time, FSR_time, extra_time,last_msg, time_msg
-    global compliant_V, compliant_W, offset_ft_data, bumperModel
+    global compliant_V, compliant_W, offset_ft_data, bumperModel, lp_filter
     prevT = 0
     FlagEmergency=False
     # threadLock = threading.Lock()
@@ -914,8 +940,11 @@ def control_node():
     # Call the calibration File
     # load_calibration()
     if COMPLIANCE_FLAG:
-        print("loading SVR models")
+        rospy.loginfo("loading SVR models")
         bumperModel = BumperModel()
+        rospy.loginfo("SVR models loaded")
+        lp_filter = MultiLowPassFilter(size=6)
+
 
     ########### Starting Communication and MBED Board ###########
 
@@ -941,19 +970,42 @@ def control_node():
     # rate = rospy.Rate(50) #  20 hz
 
     ########### Starting ROS Node ###########
+    pub_wheels = rospy.Publisher('qolo/wheels', Float32MultiArray, queue_size=1)
+    pub_twist = rospy.Publisher('qolo/twist', TwistStamped, queue_size=1)
+    pub_vel = rospy.Publisher('qolo/velocity', Float32MultiArray, queue_size=1)
+    pub_cor_vel = rospy.Publisher('qolo/corrected_velocity', Float32MultiArray, queue_size=1)
+    pub_emg = rospy.Publisher('qolo/emergency', Bool, queue_size=1)
+    pub_user = rospy.Publisher('qolo/user_input', Float32MultiArray, queue_size=1)
+    pub_compliance_raw = rospy.Publisher('qolo/compliance/raw', WrenchStamped, queue_size=10)
+    pub_compliance_svr = rospy.Publisher('qolo/compliance/svr', WrenchStamped, queue_size=10)
+    
+    pub_mess = rospy.Publisher('qolo/message', String, queue_size=1)
+    rospy.init_node('qolo_control', anonymous=True)
+    rate = rospy.Rate(100) #  100 hz
+
+    
+    def make_header(name):
+        header = Header()
+        header.frame_id = name
+        header.stamp = rospy.get_rostime()
+        # header.stamp = rospy.Time.now()
+        return header
+
     dat_user = Float32MultiArray()
     dat_user.layout.dim.append(MultiArrayDimension())
     dat_user.layout.dim[0].label = 'FSR_read'
     dat_user.layout.dim[0].size = 11
     dat_user.data = [0]*11
 
-    qolo_twist = Twist()
-    qolo_twist.linear.x = 0
-    qolo_twist.linear.y = 0
-    qolo_twist.linear.z = 0
-    qolo_twist.angular.x = 0
-    qolo_twist.angular.y = 0
-    qolo_twist.angular.z = 0
+    qolo_twist = TwistStamped()
+    qolo_twist.header = make_header("tf_qolo")
+    qolo_twist.twist.linear.x = 0
+    qolo_twist.twist.linear.y = 0
+    qolo_twist.twist.linear.z = 0
+    qolo_twist.twist.angular.x = 0
+    qolo_twist.twist.angular.y = 0
+    qolo_twist.twist.angular.z = 0
+
     dat_vel = Float32MultiArray()
     dat_vel.layout.dim.append(MultiArrayDimension())
     dat_vel.layout.dim[0].label = 'Velocities: last message, Input[2], Output[2]'
@@ -972,26 +1024,15 @@ def control_node():
     dat_wheels.layout.dim[0].size = 2
     dat_wheels.data = [0]*2
 
-    dat_compliance = Wrench()
-
-    pub_wheels = rospy.Publisher('qolo/wheels', Float32MultiArray, queue_size=1)
-    pub_twist = rospy.Publisher('qolo/twist', Twist, queue_size=1)
-    pub_vel = rospy.Publisher('qolo/velocity', Float32MultiArray, queue_size=1)
-    pub_cor_vel = rospy.Publisher('qolo/corrected_velocity', Float32MultiArray, queue_size=1)
-    pub_emg = rospy.Publisher('qolo/emergency', Bool, queue_size=1)
-    pub_user = rospy.Publisher('qolo/user_input', Float32MultiArray, queue_size=1)
-    pub_compliance = rospy.Publisher('qolo/compliance', Wrench, queue_size=10)
-    
-    pub_mess = rospy.Publisher('qolo/message', String, queue_size=1)
-    rospy.init_node('qolo_control', anonymous=True)
-    rate = rospy.Rate(100) #  100 hz
+    dat_compliance_raw = WrenchStamped()
+    dat_compliance_svr = WrenchStamped()
 
 
     if COMPLIANCE_FLAG:
         ftsub = rospy.Subscriber("/rokubi_node_front/ft_sensor_measurements",WrenchStamped,ft_sensor_callback)
         start_time = time.time()
         initialising_ft = True
-        print('Waiting for FT Sensor Offset: 4 sec')
+        rospy.loginfo('Waiting for FT Sensor Offset: 4 sec')
         # while (time.time() - start_time > 4): # 4 s for initialising ft sensor
         time.sleep(4)
         initialising_ft = False
@@ -1003,7 +1044,7 @@ def control_node():
             np.mean(init_ft_data['My']),
             np.mean(init_ft_data['Mz']),
         ])
-        print('Starting Compliant Mode')
+        rospy.loginfo('Starting Compliant Mode')
     else:
         print('Starting WITHOUT FT Sensing')
     
@@ -1061,15 +1102,29 @@ def control_node():
         RosMassage = "%s %s %s %s %s" % (User_V, User_W, Output_V, Output_W, RDS_time)
         dat_wheels.data = [Send_DAC0, Send_DAC1]
         dat_vel.data = [time_msg, User_V, User_W, Output_V, Output_W]
-        qolo_twist.linear.x = Output_V
-        qolo_twist.angular.z = Output_W
+        
+        qolo_twist.header = make_header("tf_qolo")
+        qolo_twist.twist.linear.x = Output_V
+        qolo_twist.twist.angular.z = Output_W
+        
         dat_cor_vel.data = [User_V, User_W, Corrected_V, Corrected_W, compliant_V, compliant_W, RDS_time]
         dat_user.data = [Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Out_CP]
         
 
         #### CHANGE THIS TO WRENCH TYPE ##############
-        dat_compliance.force.x = ft_data[0]; dat_compliance.force.y = ft_data[1]; dat_compliance.force.z = ft_data[2]
-        dat_compliance.torque.x = ft_data[3]; dat_compliance.torque.y = ft_data[4]; dat_compliance.torque.z = ft_data[5]
+
+        dat_compliance_raw.header = make_header("tf_ft_front")
+        dat_compliance_raw.wrench.force.x = ft_data[0]
+        dat_compliance_raw.wrench.force.y = ft_data[1]
+        dat_compliance_raw.wrench.force.z = ft_data[2]
+        dat_compliance_raw.wrench.torque.x = ft_data[3]
+        dat_compliance_raw.wrench.torque.y = ft_data[4]
+        dat_compliance_raw.wrench.torque.z = ft_data[5]
+
+        dat_compliance_svr.header = make_header("tf_ft_front")
+        dat_compliance_svr.wrench.force.x = svr_data[0]
+        dat_compliance_svr.wrench.force.y = svr_data[1]
+        dat_compliance_svr.wrench.torque.z = svr_data[2]
 
         # rospy.loginfo(RosMassage)
         pub_emg.publish(FlagEmergency)
@@ -1078,7 +1133,8 @@ def control_node():
         pub_cor_vel.publish(dat_cor_vel)
         pub_wheels.publish(dat_wheels)
         pub_user.publish(dat_user)
-        pub_compliance.publish(dat_compliance)
+        pub_compliance_raw.publish(dat_compliance_raw)
+        pub_compliance_svr.publish(dat_compliance_svr)
 
         # rospy.loginfo(dat_user)
         rospy.loginfo(RosMassage)

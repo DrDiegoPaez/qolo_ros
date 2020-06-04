@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from scipy import signal
 import numpy as np
 
 
@@ -53,6 +52,17 @@ class LowPassFilter:
                       + self.sos[i, 2] * self.__prev_2[i])
 
         return _input * self.scaleValues[-1]
+
+class MultiLowPassFilter:
+    def __init__(self, size):
+        self.size = size
+        self.filts = [LowPassFilter() for i in range(size)]
+
+    def filter(self, x):
+        return np.array([
+            self.filts[i].filter(x[i])
+            for i in range(self.size)
+        ])
 
 
 if __name__ == "__main__":
