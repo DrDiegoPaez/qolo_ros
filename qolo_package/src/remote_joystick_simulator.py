@@ -98,8 +98,8 @@ application = tornado.web.Application([
 def publishJoystick(time,Vel,Omega):
     global pub_remote, qolo_twist
     # data_remote.data = [time,Vel,Omega]
-    qolo_twist.twist.linear.x = Vel
-    qolo_twist.twist.angular.z = Omega
+    qolo_twist.linear.x = Vel
+    qolo_twist.angular.z = Omega
 
     pub_remote.publish(data_remote)
     rospy.loginfo(data_remote)
@@ -117,12 +117,12 @@ def joystick_control():
         # data_remote.data = [0]*3
         qolo_twist = Twist()
         # qolo_twist.header = make_header("tf_qolo")
-        qolo_twist.twist.linear.x = 0
-        qolo_twist.twist.linear.y = 0
-        qolo_twist.twist.linear.z = 0
-        qolo_twist.twist.angular.x = 0
-        qolo_twist.twist.angular.y = 0
-        qolo_twist.twist.angular.z = 0
+        qolo_twist.linear.x = 0
+        qolo_twist.linear.y = 0
+        qolo_twist.linear.z = 0
+        qolo_twist.angular.x = 0
+        qolo_twist.angular.y = 0
+        qolo_twist.angular.z = 0
         rospy.init_node('qolo_joystick', anonymous=True)
         rate = rospy.Rate(50) #  50 hz
         print ("Tornado Server started")
