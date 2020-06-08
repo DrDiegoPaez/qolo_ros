@@ -12,7 +12,7 @@ LOG_FOLDER="$(pwd)/csv_logs/test${TEST_NO}"
 eval "mkdir -p ${LOG_FOLDER}/imu"
 echo "Current Test Number : ${TEST_NO}"
 
-eval ". devel/setup.bash" 
+eval ". devel/setup.bash"
 
 #----- Launch and record realsense camera -----
 echo "Launching RealSense Camera..."
@@ -45,7 +45,7 @@ sleep 5
 
 #----- Launch and record force sensors -----
 echo "Launching FT Sensors..."
-eval "source /home/qolo/collision_ws/devel/setup.bash" 
+eval "source /home/qolo/collision_ws/devel/setup.bash"
 eval "/home/qolo/collision_ws/src/rokubimini_interface/run_rokubimini_ros.sh -f ${LOG_FOLDER}"
 sleep 5
 PID_LIST+="$! "

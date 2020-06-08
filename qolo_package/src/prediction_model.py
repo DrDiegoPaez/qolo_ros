@@ -4,8 +4,11 @@ import os
 
 class SVR:
     def __init__(self, filename):
-        with open(filename, 'r') as f:
-            model = yaml.load(f, Loader=yaml.FullLoader)
+        if ".yaml" in filename:
+            with open(filename, 'r') as f:
+                model = yaml.load(f, Loader=yaml.FullLoader)
+        elif ".npz" in filename:
+            model = np.load(filename)
         self.mu = np.array(model['mu'])
         self.sigma = np.array(model['sigma'])
         self.sv = np.array(model['sv'])
@@ -49,10 +52,15 @@ class BumperModel:
         if folder is None:
             folder = os.path.dirname(__file__)
 
+        # self.models = [
+        #     SVR(os.path.join(folder, 'trainedModels_Fx.yaml')),
+        #     SVR(os.path.join(folder, 'trainedModels_Fy.yaml')),
+        #     SVR(os.path.join(folder, 'trainedModels_Tz.yaml'))
+        # ]
         self.models = [
-            SVR(os.path.join(folder, 'trainedModels_Fx.yaml')),
-            SVR(os.path.join(folder, 'trainedModels_Fy.yaml')),
-            SVR(os.path.join(folder, 'trainedModels_Tz.yaml'))
+            SVR(os.path.join(folder, 'trainedModels_Fx.npz')),
+            SVR(os.path.join(folder, 'trainedModels_Fy.npz')),
+            SVR(os.path.join(folder, 'trainedModels_Tz.npz'))
         ]
     
     def predict(self, x):
@@ -60,7 +68,7 @@ class BumperModel:
 
 
 if __name__ == "__main__":
-    svr = SVR('trainedModels_Fx.yaml')
+    svr = SVR('trainedModels_Fx.npz')
 
     x = np.matrix([
         [4.4650, -13.5988, 0.0108, -0.0045, -0.0386, -0.0169],

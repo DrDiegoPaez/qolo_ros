@@ -881,12 +881,16 @@ def control():
         Corrected_W = User_W
 
     if COMPLIANCE_FLAG:
-        ft_data = lp_filter.filter(raw_ft_data - offset_ft_data)
+        # ft_data = lp_filter.filter(raw_ft_data - offset_ft_data)
+        ft_data = (raw_ft_data - offset_ft_data)
         [Fx, Fy, Mz, Fmag, h, theta] = damper_correction(ft_data)
         svr_data[0] = Fx
         svr_data[1] = Fy
         svr_data[2] = Mz
-        [compliant_V, compliant_W] = compliance_control(Corrected_V, Corrected_W, Fmag, h, theta)
+        if abs(Fmag) > 15:
+            [compliant_V, compliant_W] = compliance_control(Corrected_V, Corrected_W, Fmag, h, theta)
+        else:
+            (compliant_V, compliant_W) = (Corrected_V, Corrected_W)
         Output_V = round(compliant_V,6)
         Output_W = round(compliant_W,6)
     else:
