@@ -101,8 +101,8 @@ def publishJoystick(time,Vel,Omega):
     qolo_twist.linear.x = Vel
     qolo_twist.angular.z = Omega
 
-    pub_remote.publish(data_remote)
-    rospy.loginfo(data_remote)
+    pub_remote.publish(qolo_twist)
+    rospy.loginfo(qolo_twist)
 
 
 def joystick_control():
