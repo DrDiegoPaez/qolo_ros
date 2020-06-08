@@ -194,8 +194,12 @@ compliant_W =0.
 bumper_l = 0.2425      # (210+32.5) mm
 bumper_R = 0.33 # 330 mm
 Ts = 1.0/100    # 100 Hz
+<<<<<<< HEAD
 control_time = 0.1
 Damping_gain = 100           # 1 N-s/m 
+=======
+Damping_gain = 200           # 1 N-s/m 
+>>>>>>> d84fcbf22d550e97575ced07b371a8e53ad0fd16
 robot_mass = 5         # 120 kg
 
 # Global Variables for Compliant mode
