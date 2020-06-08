@@ -67,7 +67,7 @@ backward_coefficient = 0.5
 # DAC1 --> Right Wheel Velocity
 # DAC2 --> Enable Qolo Motion
 THRESHOLD_V = 1500;
-ZERO_LW = 2500 #2750;
+ZERO_LW = 2580 #2750;
 ZERO_RW = 2500 #2650;
 High_DAC = 5000;
 MBED_Enable = mraa.Gpio(36) #11 17
@@ -94,7 +94,7 @@ weight_scaling_of_reference_point_for_command_limits = 0.;
 # Some gain for velocity after proximity reaches limits
 tau = 1.5;
 # Minimal distance to obstacles
-delta = 0.02;
+delta = 0.04;
 # Some reference for controlling the non-holonomic base
 control_point = 0.2
 
@@ -103,8 +103,8 @@ min_linear = -MinSpeed;
 absolute_angular_at_min_linear = 0.;
 absolute_angular_at_max_linear = 0.;
 absolute_angular_at_zero_linear = MaxAngular/W_ratio;
-linear_acceleration_limit = 1.2
-angular_acceleration_limit = 1.4
+linear_acceleration_limit = 1.5
+angular_acceleration_limit = 1.8
 
 
 feasible = 0
@@ -194,8 +194,8 @@ compliant_W =0.
 bumper_l = 0.2425      # (210+32.5) mm
 bumper_R = 0.33 # 330 mm
 Ts = 1.0/100    # 100 Hz
-Damping_gain = 100           # 1 N-s/m 
-robot_mass = 50         # 120 kg
+Damping_gain = 200           # 1 N-s/m 
+robot_mass = 5         # 120 kg
 
 # Global Variables for Compliant mode
 offset_ft_data = np.zeros((6,))
@@ -445,7 +445,11 @@ def compliance_control(v_prev, omega_prev, Fmag, h, theta):
         return (v_eff/a, omega_prev)
 
     # Calculate new v and omega in parameterized form
-    t = 0.5     # \in [0,1]
+    # t = 0.5     # \in [0,1]
+    __from_range = [0.0, np.pi/2]
+    __to_range = [1.0, 0.0]
+    __x = np.abs(theta)
+    t = __to_range[0] + ((__x - __from_range[0]) * (__to_range[1]-__to_range[0]) / (__from_range[1]-__from_range[0]))
     v = t * v_prev + (1-t) * (v_eff - b*omega_prev) / a
     omega = t * (v_eff - a*v_prev) / b + (1-t) * omega_prev
     return (v, omega)
@@ -980,12 +984,12 @@ def control_node():
     pub_cor_vel = rospy.Publisher('qolo/corrected_velocity', Float32MultiArray, queue_size=1)
     pub_emg = rospy.Publisher('qolo/emergency', Bool, queue_size=1)
     pub_user = rospy.Publisher('qolo/user_input', Float32MultiArray, queue_size=1)
-    pub_compliance_raw = rospy.Publisher('qolo/compliance/raw', WrenchStamped, queue_size=10)
-    pub_compliance_svr = rospy.Publisher('qolo/compliance/svr', WrenchStamped, queue_size=10)
+    pub_compliance_raw = rospy.Publisher('qolo/compliance/raw', WrenchStamped, queue_size=1)
+    pub_compliance_svr = rospy.Publisher('qolo/compliance/svr', WrenchStamped, queue_size=1)
     
     pub_mess = rospy.Publisher('qolo/message', String, queue_size=1)
     rospy.init_node('qolo_control', anonymous=True)
-    rate = rospy.Rate(100) #  100 hz
+    rate = rospy.Rate(50) #  100 hz
 
     
     def make_header(name):
@@ -1033,12 +1037,12 @@ def control_node():
 
 
     if COMPLIANCE_FLAG:
-        ftsub = rospy.Subscriber("/rokubi_node_front/ft_sensor_measurements",WrenchStamped,ft_sensor_callback)
+        ftsub = rospy.Subscriber("/rokubi_node_front/ft_sensor_measurements",WrenchStamped,ft_sensor_callback, queue_size=1)
         start_time = time.time()
         initialising_ft = True
-        rospy.loginfo('Waiting for FT Sensor Offset: 4 sec')
+        rospy.loginfo('Waiting for FT Sensor Offset: 5 sec')
         # while (time.time() - start_time > 4): # 4 s for initialising ft sensor
-        time.sleep(4)
+        time.sleep(5)
         initialising_ft = False
         offset_ft_data = np.array([
             np.mean(init_ft_data['Fx']),
