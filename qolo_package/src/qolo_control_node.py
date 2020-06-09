@@ -194,7 +194,7 @@ compliant_W =0.
 bumper_l = 0.2425      # (210+32.5) mm
 bumper_R = 0.33 # 330 mm
 Ts = 1.0/100    # 100 Hz
-Damping_gain = 200           # 1 N-s/m 
+Damping_gain = 100           # 1 N-s/m 
 robot_mass = 5         # 120 kg
 
 # Global Variables for Compliant mode
@@ -446,7 +446,7 @@ def compliance_control(v_prev, omega_prev, Fmag, h, theta):
 
     # Calculate new v and omega in parameterized form
     # t = 0.5     # \in [0,1]
-    __from_range = [0.0, np.pi/2]
+    __from_range = [0.0, np.pi]
     __to_range = [1.0, 0.0]
     __x = np.abs(theta)
     t = __to_range[0] + ((__x - __from_range[0]) * (__to_range[1]-__to_range[0]) / (__from_range[1]-__from_range[0]))
