@@ -194,7 +194,16 @@ compliant_W =0.
 bumper_l = 0.2425      # (210+32.5) mm
 bumper_R = 0.33 # 330 mm
 Ts = 1.0/100    # 100 Hz
+<<<<<<< HEAD
 Damping_gain = 100           # 1 N-s/m 
+=======
+<<<<<<< HEAD
+control_time = 0.1
+Damping_gain = 100           # 1 N-s/m 
+=======
+Damping_gain = 200           # 1 N-s/m 
+>>>>>>> d84fcbf22d550e97575ced07b371a8e53ad0fd16
+>>>>>>> 2b83c059ef4e7501f63866311a81b4e86e854cf9
 robot_mass = 5         # 120 kg
 
 # Global Variables for Compliant mode
@@ -409,9 +418,9 @@ def transform_to_bumper_surface(ft_data, h, theta):
 
 
 def compliance_control(v_prev, omega_prev, Fmag, h, theta):
+    global control_time
     # F = robot_mass \Delta \ddot{x} + Damping_gain \Delta \dot{x} + K \Delta x
     # And set reference to 0 and discretize w/ ZOH
-    
     stheta = math.sin(theta)    # Small optimization
     ctheta = math.cos(theta)    # Small optimization
 
@@ -426,10 +435,14 @@ def compliance_control(v_prev, omega_prev, Fmag, h, theta):
     b = R*(stheta*cbeta - ctheta*sbeta)
 
     # Admittance Control
+    
+    Ts_control = round((time.clock() - control_time),4)
+    control_time = time.clock()
+    
     v_eff_prev = (a * v_prev) + (b * omega_prev)
 
     v_eff_dot = (-Fmag - Damping_gain*v_eff_prev) / robot_mass
-    v_eff = v_eff_dot * Ts + v_eff_prev
+    v_eff = v_eff_dot * Ts_control + v_eff_prev
 
     # # Calculate new v and omega
     # c_prev = (-b * v_prev) + (a * omega_prev)
@@ -884,6 +897,10 @@ def control():
         Corrected_V = User_V
         Corrected_W = User_W
 
+    if FLAG_debug:
+        RDS_time = round((time.clock() - t1),4)
+        t1 = time.clock()
+
     if COMPLIANCE_FLAG:
         # ft_data = lp_filter.filter(raw_ft_data - offset_ft_data)
         ft_data = (raw_ft_data - offset_ft_data)
@@ -900,11 +917,6 @@ def control():
     else:
         Output_V = Corrected_V
         Output_W = Corrected_W
-
-
-    if FLAG_debug:
-        RDS_time = round((time.clock() - t1),4)
-        t1 = time.clock()
     
     # Debugging the speed controller
     # if counter1 < 20:
