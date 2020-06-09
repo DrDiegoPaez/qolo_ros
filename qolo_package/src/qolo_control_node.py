@@ -44,8 +44,8 @@ except PermissionError:
     rospy.logerr("Run the script as sudo...")
 K_vel = 0.5
 CONSTANT_VEL = False
-SHARED_MODE = False
-COMPLIANCE_FLAG = True
+SHARED_MODE = True
+COMPLIANCE_FLAG = False
 JOYSTICK_MODE = True
 REMOTE_MODE = False
 PORT = 8080
@@ -195,8 +195,8 @@ bumper_l = 0.2425      # (210+32.5) mm
 bumper_R = 0.33 # 330 mm
 Ts = 1.0/100    # 100 Hz
 control_time = 0.1
-Damping_gain = 100           # 1 N-s/m 
-robot_mass = 5         # 120 kg
+Damping_gain = 1           # 1 N-s/m 
+robot_mass = 54         # 120 kg
 
 # Global Variables for Compliant mode
 offset_ft_data = np.zeros((6,))
@@ -213,6 +213,7 @@ init_ft_data = {
     'My': [],
     'Mz': [],
     }
+bumper_loc = np.zeros((4,))
 
 # Prediction Models
 bumperModel = None
@@ -349,7 +350,7 @@ def ft_sensor_callback(data):
 
 def damper_correction(ft_data):
     # Correcting based on trained SVR damping model
-    global bumperModel
+    global bumperModel, bumper_loc
     # corr_ft_data = bumperModel.predict(ft_data)
     # ft_data_temp = ft_data
     (Fx, Fy, Mz) = bumperModel.predict(np.reshape(ft_data, (1,-1)))
@@ -374,6 +375,10 @@ def damper_correction(ft_data):
             Fx, Fy, Mz, theta, Fmag
         )
     )
+
+    bumper_loc[0] = Fmag
+    bumper_loc[1] = theta
+    bumper_loc[2] = h
 
     return (Fx, Fy, Mz, Fmag, h, theta)
 
@@ -410,7 +415,7 @@ def transform_to_bumper_surface(ft_data, h, theta):
 
 
 def compliance_control(v_prev, omega_prev, Fmag, h, theta):
-    global control_time
+    global control_time, bumper_loc
     # F = robot_mass \Delta \ddot{x} + Damping_gain \Delta \dot{x} + K \Delta x
     # And set reference to 0 and discretize w/ ZOH
     stheta = math.sin(theta)    # Small optimization
@@ -455,6 +460,7 @@ def compliance_control(v_prev, omega_prev, Fmag, h, theta):
     __to_range = [1.0, 0.0]
     __x = np.abs(theta)
     t = __to_range[0] + ((__x - __from_range[0]) * (__to_range[1]-__to_range[0]) / (__from_range[1]-__from_range[0]))
+    bumper_loc[3] = t
     v = t * v_prev + (1-t) * (v_eff - b*omega_prev) / a
     omega = t * (v_eff - a*v_prev) / b + (1-t) * omega_prev
     return (v, omega)
@@ -990,6 +996,7 @@ def control_node():
     pub_user = rospy.Publisher('qolo/user_input', Float32MultiArray, queue_size=1)
     pub_compliance_raw = rospy.Publisher('qolo/compliance/raw', WrenchStamped, queue_size=1)
     pub_compliance_svr = rospy.Publisher('qolo/compliance/svr', WrenchStamped, queue_size=1)
+    pub_compliance_bumper_loc = rospy.Publisher('qolo/compliance/bumper_loc', Float32MultiArray, queue_size=1)
     
     pub_mess = rospy.Publisher('qolo/message', String, queue_size=1)
     rospy.init_node('qolo_control', anonymous=True)
@@ -1038,6 +1045,12 @@ def control_node():
 
     dat_compliance_raw = WrenchStamped()
     dat_compliance_svr = WrenchStamped()
+
+    dat_compliance_bumper_loc = Float32MultiArray()
+    dat_compliance_bumper_loc.layout.dim.append(MultiArrayDimension())
+    dat_compliance_bumper_loc.layout.dim[0].label = 'Bumper: F_mag, theta, h ; param'
+    dat_compliance_bumper_loc.layout.dim[0].size = 4
+    dat_compliance_bumper_loc.data = [0]*4
 
 
     if COMPLIANCE_FLAG:
@@ -1138,6 +1151,11 @@ def control_node():
         dat_compliance_svr.wrench.force.y = svr_data[1]
         dat_compliance_svr.wrench.torque.z = svr_data[2]
 
+        dat_compliance_bumper_loc.data[0] = bumper_loc[0]
+        dat_compliance_bumper_loc.data[1] = bumper_loc[1] * 180 / np.pi
+        dat_compliance_bumper_loc.data[2] = bumper_loc[2]
+        dat_compliance_bumper_loc.data[3] = bumper_loc[3]
+
         # rospy.loginfo(RosMassage)
         pub_emg.publish(FlagEmergency)
         pub_vel.publish(dat_vel)
@@ -1147,6 +1165,7 @@ def control_node():
         pub_user.publish(dat_user)
         pub_compliance_raw.publish(dat_compliance_raw)
         pub_compliance_svr.publish(dat_compliance_svr)
+        pub_compliance_bumper_loc.publish(dat_compliance_bumper_loc)
 
         # rospy.loginfo(dat_user)
         rospy.loginfo(RosMassage)
