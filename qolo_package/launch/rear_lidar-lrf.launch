@@ -22,7 +22,6 @@
   <arg name="organize_cloud" default="false" />
 
   <group ns="rear_lidar">
-
     <!-- start nodelet manager and driver nodelets -->
     <include file="$(find velodyne_driver)/launch/nodelet_manager.launch">
       <arg name="device_ip" value="192.168.1.19"/>
