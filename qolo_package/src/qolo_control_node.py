@@ -46,8 +46,13 @@ K_vel = 0.5
 CONSTANT_VEL = False
 SHARED_MODE = True
 COMPLIANCE_FLAG = False
+<<<<<<< HEAD
 JOYSTICK_MODE = False
 REMOTE_MODE = True
+=======
+JOYSTICK_MODE = True
+REMOTE_MODE = False
+>>>>>>> 98f1eb5be27969f84901c71f51ae40de93b548a8
 PORT = 8080
 control_type ='embodied'
 threadLock = threading.Lock()
@@ -196,7 +201,11 @@ bumper_R = 0.33 # 330 mm
 Ts = 1.0/100    # 100 Hz
 control_time = 0.1
 Damping_gain = 1           # 1 N-s/m 
+<<<<<<< HEAD
 robot_mass = 54        # 120 kg
+=======
+robot_mass = 54         # 120 kg
+>>>>>>> 98f1eb5be27969f84901c71f51ae40de93b548a8
 
 # Global Variables for Compliant mode
 offset_ft_data = np.zeros((6,))

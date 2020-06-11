@@ -36,8 +36,13 @@ class SVR:
                     x.shape[1], self.in_dim
                 )
             )
+<<<<<<< HEAD
         x = np.delete(x, [2, 4], 1)
         # x[0, 2] = 10
+=======
+        x = np.delete(x, 2, 1)
+        # x = np.delete(x, [2, 4], 1)
+>>>>>>> 98f1eb5be27969f84901c71f51ae40de93b548a8
 
         x_normalised = (x - self.mu) / self.sigma
 
