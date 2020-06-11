@@ -37,7 +37,7 @@ control_point = 0.9
 stop_distance = 0.5
 time_limit = 90
 
-Attractor = np.array([[20.0+control_point], [0.0]])
+Attractor = np.array([[10.0+control_point], [0.0]])
 
 tf_listener = None
 command_publisher = None
