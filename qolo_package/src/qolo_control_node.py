@@ -44,15 +44,11 @@ except PermissionError:
     rospy.logerr("Run the script as sudo...")
 K_vel = 0.5
 CONSTANT_VEL = False
-SHARED_MODE = True
-COMPLIANCE_FLAG = False
-<<<<<<< HEAD
-JOYSTICK_MODE = False
-REMOTE_MODE = True
-=======
+SHARED_MODE = False
+COMPLIANCE_FLAG = True
 JOYSTICK_MODE = True
-REMOTE_MODE = False
->>>>>>> 98f1eb5be27969f84901c71f51ae40de93b548a8
+REMOTE_MODE = True
+TESTING_MODE = True
 PORT = 8080
 control_type ='embodied'
 threadLock = threading.Lock()
@@ -201,11 +197,7 @@ bumper_R = 0.33 # 330 mm
 Ts = 1.0/100    # 100 Hz
 control_time = 0.1
 Damping_gain = 1           # 1 N-s/m 
-<<<<<<< HEAD
 robot_mass = 54        # 120 kg
-=======
-robot_mass = 54         # 120 kg
->>>>>>> 98f1eb5be27969f84901c71f51ae40de93b548a8
 
 # Global Variables for Compliant mode
 offset_ft_data = np.zeros((6,))
@@ -648,12 +640,17 @@ def write_DA(Write_DAC0,Write_DAC1):
     else:
         Send_DAC1 = Write_DAC1
 
-    Send_DAC0 = ZERO_LW;
-    Send_DAC1 = ZERO_RW;
+        if TESTING_MODE:
+            Send_DAC0 = ZERO_LW;
+            Send_DAC1 = ZERO_RW;
+            send_DAC2 = zero
+        else:
+            send_DAC2 = High_DAC;
+
     # threadLock.acquire()
     conv.SET_DAC0(Send_DAC0, conv.data_format.voltage)
     conv.SET_DAC1(Send_DAC1, conv.data_format.voltage)
-    conv.SET_DAC2(High_DAC, conv.data_format.voltage)
+    conv.SET_DAC2(send_DAC2, conv.data_format.voltage)
     # threadLock.release()
 
 
