@@ -413,7 +413,7 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     v_eff_cmd  = (a * v_cmd)  + (b * omega_cmd)
 
     v_eff_dot = (-Fmag - Damping_gain*v_eff_prev) / robot_mass
-    v_eff = v_eff_dot * Ts_control + v_eff_cmd
+    v_eff = v_eff_dot * Ts_control + v_eff_prev + v_eff_cmd
 
     # # Calculate new v and omega
     # c_prev = (-b * v_prev) + (a * omega_prev)
