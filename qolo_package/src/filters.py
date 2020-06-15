@@ -1,4 +1,13 @@
 #!/usr/bin/env python
+"""Filters Module.
+
+This module implements low pass filters.
+"""
+
+__all__ = ['LowPassFilter', 'MultiLowPassFilter']
+__version__ = '0.1'
+__author__ = 'Vaibhav Gupta'
+
 
 import numpy as np
 
@@ -52,6 +61,7 @@ class LowPassFilter:
                       + self.sos[i, 2] * self.__prev_2[i])
 
         return _input * self.scaleValues[-1]
+
 
 class MultiLowPassFilter:
     def __init__(self, size):

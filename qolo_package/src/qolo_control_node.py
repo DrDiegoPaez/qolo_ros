@@ -228,6 +228,42 @@ GG = []
 HH = []
 OX = []
 
+<<<<<<< HEAD
+=======
+# Parameters for compliant control
+compliant_V =0.
+compliant_W =0.
+
+bumper_l = 0.2425      # (210+32.5) mm
+bumper_R = 0.33 # 330 mm
+Ts = 1.0/100    # 100 Hz
+control_time = 0.1
+Damping_gain = 1           # 1 [N-s/m]
+robot_mass = 54        # 120 kg
+collision_F_max = 200   # [N]
+
+# Global Variables for Compliant mode
+offset_ft_data = np.zeros((6,))
+raw_ft_data  = np.zeros((6,))
+filtered_ft_data  = np.zeros((6,))
+ft_data =  np.zeros((6,))
+svr_data =  np.zeros((3,))
+initialising_ft=True
+init_ft_data = {
+    'Fx': [],
+    'Fy': [],
+    'Fz': [],
+    'Mx': [],
+    'My': [],
+    'Mz': [],
+    }
+bumper_loc = np.zeros((4,))
+
+# Prediction Models
+bumperModel = None
+lp_filter = None
+
+>>>>>>> 7d61ef0bf916bb47eec44ec6150607af4151260c
 level_relations = {
         # 'debug':logging.DEBUG,
         'info':logging.INFO,
@@ -357,6 +393,7 @@ def ft_sensor_callback(data):
     #         tz_low,
     #         ])
 
+
 def damper_correction(ft_data):
     # Correcting based on trained SVR damping model
     global bumperModel, bumper_loc
@@ -392,38 +429,7 @@ def damper_correction(ft_data):
     return (Fx, Fy, Mz, Fmag, h, theta)
 
 
-def transform_to_bumper_surface(ft_data, h, theta):
-    transformed_data = np.zeros((6,))
-
-    # Fx
-    transformed_data[0] = (ft_data[0] * math.cos(theta)
-        - ft_data[1] * math.sin(theta))
-    
-    # Fy
-    transformed_data[1] = ft_data[2]
-
-    # Fz
-    transformed_data[2] = (- ft_data[0] * math.sin(theta)
-        - ft_data[1] * math.cos(theta))
-
-    # Mx
-    transformed_data[3] = (ft_data[3] * math.cos(theta)
-        - ft_data[4] * math.sin(theta)
-        - transformed_data[2] * h
-        + transformed_data[1] * bumper_R)
-    
-    # My
-    transformed_data[4] = (ft_data[5]
-        - transformed_data[0] * bumper_R)
-
-    # Mz
-    transformed_data[5] = (- ft_data[3] * math.sin(theta)
-        - ft_data[4] * math.cos(theta))
-    
-    return transformed_data
-
-
-def compliance_control(v_prev, omega_prev, Fmag, h, theta):
+def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     global control_time, bumper_loc
     # F = robot_mass \Delta \ddot{x} + Damping_gain \Delta \dot{x} + K \Delta x
     # And set reference to 0 and discretize w/ ZOH
@@ -437,18 +443,26 @@ def compliance_control(v_prev, omega_prev, Fmag, h, theta):
     sbeta = math.sin(beta)      # Small optimization
     cbeta = math.cos(beta)      # Small optimization
     
+<<<<<<< HEAD
     a = ctheta / MaxSpeed
     b = (stheta*cbeta - ctheta*sbeta) / MaxAngular * W_ratio * 5
 
+=======
+>>>>>>> 7d61ef0bf916bb47eec44ec6150607af4151260c
     # Admittance Control
-    
     Ts_control = round((time.clock() - control_time),4)
     control_time = time.clock()
     
+    v_max = (collision_F_max * Ts_control) / (robot_mass * MaxSpeed)
+    omega_max = (collision_F_max * Ts_control) / (robot_mass * (MaxAngular/W_ratio))
+    a = ctheta / v_max
+    b = (stheta*cbeta - ctheta*sbeta) / omega_max
+    
     v_eff_prev = (a * v_prev) + (b * omega_prev)
+    v_eff_cmd  = (a * v_cmd)  + (b * omega_cmd)
 
     v_eff_dot = (-Fmag - Damping_gain*v_eff_prev) / robot_mass
-    v_eff = v_eff_dot * Ts_control + v_eff_prev
+    v_eff = v_eff_dot * Ts_control + v_eff_cmd
 
     # # Calculate new v and omega
     # c_prev = (-b * v_prev) + (a * omega_prev)
@@ -924,7 +938,7 @@ def control():
         svr_data[1] = Fy
         svr_data[2] = Mz
         if abs(Fmag) > 15:
-            [compliant_V, compliant_W] = compliance_control(Corrected_V, Corrected_W, Fmag, h, theta)
+            [compliant_V, compliant_W] = compliance_control(last_v, last_w, Corrected_V, Corrected_W, Fmag, h, theta)
         else:
             (compliant_V, compliant_W) = (Corrected_V, Corrected_W)
         Output_V = round(compliant_V,6)
@@ -961,6 +975,7 @@ def control():
     # print ('FSR_read: %s, FSR_read: %s, FSR_read: %s, FSR_read: %s,')
 
     counter1 += 1  # for estiamting frequency
+
 
 def control_node():
     global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Xin
