@@ -44,11 +44,17 @@ except PermissionError:
     rospy.logerr("Run the script as sudo...")
 K_vel = 0.5
 CONSTANT_VEL = False
+# For testing collision avoidance 
 SHARED_MODE = False
+# For testing collision control
 COMPLIANCE_FLAG = True
+# For using remote app Joystick
 JOYSTICK_MODE = True
+# For using DS or trajectory tracking
 REMOTE_MODE = True
-TESTING_MODE = True
+# For zero output to the wheels
+TESTING_MODE = False
+
 PORT = 8080
 control_type ='embodied'
 threadLock = threading.Lock()
@@ -107,6 +113,40 @@ absolute_angular_at_zero_linear = MaxAngular/W_ratio;
 linear_acceleration_limit = 1.5
 angular_acceleration_limit = 1.5
 
+
+#########################################################
+############ Setting for Compliant Control ##############
+#########################################################
+compliant_V =0.
+compliant_W =0.
+
+bumper_l = 0.2425      # (210+32.5) mm
+bumper_R = 0.33 # 330 mm
+Ts = 1.0/100    # 100 Hz
+control_time = 0.1
+Damping_gain = 1           # 1 N-s/m 
+robot_mass = 15        # 120 kg
+
+# Global Variables for Compliant mode
+offset_ft_data = np.zeros((6,))
+raw_ft_data  = np.zeros((6,))
+filtered_ft_data  = np.zeros((6,))
+ft_data =  np.zeros((6,))
+svr_data =  np.zeros((3,))
+initialising_ft=True
+init_ft_data = {
+    'Fx': [],
+    'Fy': [],
+    'Fz': [],
+    'Mx': [],
+    'My': [],
+    'Mz': [],
+    }
+bumper_loc = np.zeros((4,))
+
+# Prediction Models
+bumperModel = None
+lp_filter = None
 
 feasible = 0
 Output_V = 0.;
@@ -188,6 +228,8 @@ GG = []
 HH = []
 OX = []
 
+<<<<<<< HEAD
+=======
 # Parameters for compliant control
 compliant_V =0.
 compliant_W =0.
@@ -221,6 +263,7 @@ bumper_loc = np.zeros((4,))
 bumperModel = None
 lp_filter = None
 
+>>>>>>> 7d61ef0bf916bb47eec44ec6150607af4151260c
 level_relations = {
         # 'debug':logging.DEBUG,
         'info':logging.INFO,
@@ -400,6 +443,12 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     sbeta = math.sin(beta)      # Small optimization
     cbeta = math.cos(beta)      # Small optimization
     
+<<<<<<< HEAD
+    a = ctheta / MaxSpeed
+    b = (stheta*cbeta - ctheta*sbeta) / MaxAngular * W_ratio * 5
+
+=======
+>>>>>>> 7d61ef0bf916bb47eec44ec6150607af4151260c
     # Admittance Control
     Ts_control = round((time.clock() - control_time),4)
     control_time = time.clock()
@@ -435,6 +484,7 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     __x = np.abs(theta)
     t = __to_range[0] + ((__x - __from_range[0]) * (__to_range[1]-__to_range[0]) / (__from_range[1]-__from_range[0]))
     bumper_loc[3] = t
+
     v = t * v_prev + (1-t) * (v_eff - b*omega_prev) / a
     omega = t * (v_eff - a*v_prev) / b + (1-t) * omega_prev
     return (v, omega)
@@ -613,12 +663,12 @@ def write_DA(Write_DAC0,Write_DAC1):
     else:
         Send_DAC1 = Write_DAC1
 
-        if TESTING_MODE:
-            Send_DAC0 = ZERO_LW;
-            Send_DAC1 = ZERO_RW;
-            send_DAC2 = zero
-        else:
-            send_DAC2 = High_DAC;
+    if TESTING_MODE:
+        Send_DAC0 = ZERO_LW;
+        Send_DAC1 = ZERO_RW;
+        send_DAC2 = 0
+    else:
+        send_DAC2 = High_DAC;
 
     # threadLock.acquire()
     conv.SET_DAC0(Send_DAC0, conv.data_format.voltage)
