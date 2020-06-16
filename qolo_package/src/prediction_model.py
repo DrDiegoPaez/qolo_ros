@@ -1,6 +1,17 @@
+"""Bumper Prediction Module.
+
+This module implements prediction model for bumper damping.
+"""
+
+__all__ = ['SVR', 'BumperModel']
+__version__ = '0.1'
+__author__ = 'Vaibhav Gupta'
+
+
 import numpy as np
 import yaml
 import os
+
 
 class SVR:
     def __init__(self, filename):

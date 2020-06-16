@@ -81,15 +81,20 @@ MBED_Enable = mraa.Gpio(36) #11 17
 MBED_Enable.dir(mraa.DIR_OUT)
 
 GEAR = 12.64 # Gear ratio
-DSITANCE_CW = 0.548/2  # DSITANCE_CW bettween two wheels
+DISTANCE_CW = 0.548/2  # DISTANCE_CW bettween two wheels
 RADIUS = 0.304/2 # meter
 
-MaxSpeed = 1.5 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
-MinSpeed = MaxSpeed*backward_coefficient
-MaxAngular = 4.124
-W_ratio = 3.5 # Ratio of the maximum angular speed (232 deg/s)
+MAX_SPEED = 1.5 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
+MIN_SPEED = MAX_SPEED*backward_coefficient
+MAX_OMEGA = 4.124
+W_RATIO = 3.5 # Ratio of the maximum angular speed (232 deg/s)
 
-Max_motor_v = (MaxSpeed/ (RADIUS*(2*np.pi))) *60*GEAR # max motor speed: 1200 rpm
+MAX_MOTOR_V = 1200 # max motor speed: 1200 rpm
+
+MAX_WHEEL_VEL = (95/60)*(2*pi)
+WHEEL_ACC = (((4/60)*(2*np.pi))/GEAR)/(1/400) # Maximum wheel acceleration = 13.2557 rad/s2
+LINEAR_ACC = WHEEL_ACC * RADIUS # Maximum Robot's linear acceleration = 2.0149 m/s2
+ANGULAR_ACC = LINEAR_ACC / DISTANCE_CW # Maximum Robot's angular acceleration = 7.3535 rad/s2 
 
 #########################################################
 ############ Setting for the RDS service ################
@@ -105,11 +110,11 @@ delta = 0.05;
 # Some reference for controlling the non-holonomic base
 control_point = 0.18
 
-max_linear = MaxSpeed;
-min_linear = -MinSpeed;
+max_linear = MAX_SPEED;
+min_linear = -MIN_SPEED;
 absolute_angular_at_min_linear = 0.;
 absolute_angular_at_max_linear = 0.;
-absolute_angular_at_zero_linear = MaxAngular/W_ratio;
+absolute_angular_at_zero_linear = MAX_OMEGA/W_RATIO;
 linear_acceleration_limit = 1.5
 angular_acceleration_limit = 1.5
 
@@ -126,6 +131,7 @@ Ts = 1.0/100    # 100 Hz
 control_time = 0.1
 Damping_gain = 1           # 1 N-s/m 
 robot_mass = 15        # 120 kg
+collision_F_max = 200 # [N]
 
 # Global Variables for Compliant mode
 offset_ft_data = np.zeros((6,))
@@ -357,6 +363,7 @@ def ft_sensor_callback(data):
     #         tz_low,
     #         ])
 
+
 def damper_correction(ft_data):
     # Correcting based on trained SVR damping model
     global bumperModel, bumper_loc
@@ -392,38 +399,7 @@ def damper_correction(ft_data):
     return (Fx, Fy, Mz, Fmag, h, theta)
 
 
-def transform_to_bumper_surface(ft_data, h, theta):
-    transformed_data = np.zeros((6,))
-
-    # Fx
-    transformed_data[0] = (ft_data[0] * math.cos(theta)
-        - ft_data[1] * math.sin(theta))
-    
-    # Fy
-    transformed_data[1] = ft_data[2]
-
-    # Fz
-    transformed_data[2] = (- ft_data[0] * math.sin(theta)
-        - ft_data[1] * math.cos(theta))
-
-    # Mx
-    transformed_data[3] = (ft_data[3] * math.cos(theta)
-        - ft_data[4] * math.sin(theta)
-        - transformed_data[2] * h
-        + transformed_data[1] * bumper_R)
-    
-    # My
-    transformed_data[4] = (ft_data[5]
-        - transformed_data[0] * bumper_R)
-
-    # Mz
-    transformed_data[5] = (- ft_data[3] * math.sin(theta)
-        - ft_data[4] * math.cos(theta))
-    
-    return transformed_data
-
-
-def compliance_control(v_prev, omega_prev, Fmag, h, theta):
+def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     global control_time, bumper_loc
     # F = robot_mass \Delta \ddot{x} + Damping_gain \Delta \dot{x} + K \Delta x
     # And set reference to 0 and discretize w/ ZOH
@@ -436,19 +412,21 @@ def compliance_control(v_prev, omega_prev, Fmag, h, theta):
 
     sbeta = math.sin(beta)      # Small optimization
     cbeta = math.cos(beta)      # Small optimization
-    
-    a = ctheta / MaxSpeed
-    b = (stheta*cbeta - ctheta*sbeta) / MaxAngular * W_ratio * 5
 
     # Admittance Control
-    
     Ts_control = round((time.clock() - control_time),4)
     control_time = time.clock()
     
+    v_max = (collision_F_max * Ts_control) / (robot_mass * MAX_SPEED)
+    omega_max = (collision_F_max * Ts_control) / (robot_mass * (MAX_OMEGA/W_RATIO))
+    a = ctheta / v_max
+    b = (stheta*cbeta - ctheta*sbeta) / omega_max
+    
     v_eff_prev = (a * v_prev) + (b * omega_prev)
+    v_eff_cmd  = (a * v_cmd)  + (b * omega_cmd)
 
     v_eff_dot = (-Fmag - Damping_gain*v_eff_prev) / robot_mass
-    v_eff = v_eff_dot * Ts_control + v_eff_prev
+    v_eff = v_eff_dot * Ts_control + v_eff_cmd
 
     # # Calculate new v and omega
     # c_prev = (-b * v_prev) + (a * omega_prev)
@@ -557,8 +535,8 @@ def user_input_thread():
     Out_CP = round(ox, 4)
     # Runs the user input and returns Command_V and Command_W --> in 0-5k scale
     FSR_execution()
-    motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
-    motor_w = (2*Max_motor_v/(DSITANCE_CW)*Command_W/5000 - Max_motor_v/(DSITANCE_CW)) / W_ratio # In [RPM]
+    motor_v = 2*MAX_MOTOR_V*Command_V/5000 - MAX_MOTOR_V            # In [RPM]
+    motor_w = (2*MAX_MOTOR_V/(DISTANCE_CW)*Command_W/5000 - MAX_MOTOR_V/(DISTANCE_CW)) / W_RATIO # In [RPM]
 
     # Start lock
     User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
@@ -600,25 +578,25 @@ def enable_mbed():
 def transformTo_Lowevel(Desired_V, Desired_W):
     # A function to transform linear and angular velocities to output commands
     # print('received ', Command_V, Command_W)
-    global DSITANCE_CW, RADIUS, User_V, User_W, MaxSpeed, GEAR, Max_motor_v
+    global DISTANCE_CW, RADIUS, User_V, User_W, MAX_SPEED, GEAR, MAX_MOTOR_V
 
     # These lines should be commented to execute the RDS output
-    # motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
-    # motor_w = (2*Max_motor_v/(DSITANCE_CW)*Command_W/5000 - Max_motor_v/(DSITANCE_CW)) / W_ratio # In [RPM]
+    # motor_v = 2*MAX_MOTOR_V*Command_V/5000 - MAX_MOTOR_V            # In [RPM]
+    # motor_w = (2*MAX_MOTOR_V/(DISTANCE_CW)*Command_W/5000 - MAX_MOTOR_V/(DISTANCE_CW)) / W_RATIO # In [RPM]
     # User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
     # User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
 
     # Using the desired velocity (linearn adn angular) --> transform to motor speed
 
-    wheel_L = Desired_V - (DSITANCE_CW * Desired_W)    # Output in [m/s]
-    wheel_R = Desired_V + (DSITANCE_CW * Desired_W)    # Output in [m/s]
+    wheel_L = Desired_V - (DISTANCE_CW * Desired_W)    # Output in [m/s]
+    wheel_R = Desired_V + (DISTANCE_CW * Desired_W)    # Output in [m/s]
     # print ('Wheels Vel =', wheel_L, wheel_R)
 
     # motor_v = round(((Desired_V*GEAR)/RADIUS)/(np.pi/30),8) 
     # motor_w = round(((Desired_W*GEAR)/RADIUS)/(np.pi/30),8) 
 
-    # rpm_L = motor_v - DSITANCE_CW*motor_w
-    # rpm_R = motor_v + DSITANCE_CW*motor_w
+    # rpm_L = motor_v - DISTANCE_CW*motor_w
+    # rpm_R = motor_v + DISTANCE_CW*motor_w
     # Transforming from rad/s to [RPM]
     motor_l = (wheel_L/RADIUS) * GEAR *(30/np.pi)
     motor_r = (wheel_R/RADIUS) * GEAR *(30/np.pi)
@@ -735,11 +713,11 @@ def rds_service():
         # # Minimal distance to obstacles
         # delta = 0.08;
         # clearance_from_axle_of_final_reference_point = 0.15;
-        # max_linear = MaxSpeed;
-        # min_linear = -MinSpeed;
+        # max_linear = MAX_SPEED;
+        # min_linear = -MIN_SPEED;
         # absolute_angular_at_min_linear = 0.;
         # absolute_angular_at_max_linear = 0.;
-        # absolute_angular_at_zero_linear = MaxAngular/W_ratio;
+        # absolute_angular_at_zero_linear = MAX_OMEGA/W_RATIO;
         # linear_acceleration_limit = 1.1
         # angular_acceleration_limit = 1.5
 
@@ -894,8 +872,8 @@ def control():
         Out_CP = round(ox, 6);
 
         FSR_execution()  # Runs the user input with Out_CP and returns Command_V and Command_W --> in 0-5k scale
-        motor_v = 2*Max_motor_v*Command_V/5000 - Max_motor_v            # In [RPM]
-        motor_w = (2*Max_motor_v/(DSITANCE_CW)*Command_W/5000 - Max_motor_v/(DSITANCE_CW)) / W_ratio # In [RPM]
+        motor_v = 2*MAX_MOTOR_V*Command_V/5000 - MAX_MOTOR_V            # In [RPM]
+        motor_w = (2*MAX_MOTOR_V/(DISTANCE_CW)*Command_W/5000 - MAX_MOTOR_V/(DISTANCE_CW)) / W_RATIO # In [RPM]
         User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),6)
         User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),6)
 
@@ -924,7 +902,7 @@ def control():
         svr_data[1] = Fy
         svr_data[2] = Mz
         if abs(Fmag) > 15:
-            [compliant_V, compliant_W] = compliance_control(Corrected_V, Corrected_W, Fmag, h, theta)
+            [compliant_V, compliant_W] = compliance_control(last_v, last_w, Corrected_V, Corrected_W, Fmag, h, theta)
         else:
             (compliant_V, compliant_W) = (Corrected_V, Corrected_W)
         Output_V = round(compliant_V,6)
@@ -941,15 +919,15 @@ def control():
     #     Comand_DAC0 = ZERO_LW
     #     Comand_DAC1 = ZERO_RW
 
-    if Output_V > MaxSpeed:
-        Output_V = MaxSpeed
-    elif Output_V < -MinSpeed:
-        Output_V = -MinSpeed
+    if Output_V > MAX_SPEED:
+        Output_V = MAX_SPEED
+    elif Output_V < -MIN_SPEED:
+        Output_V = -MIN_SPEED
 
-    if Output_W > MaxAngular:
-        Output_W = MaxAngular
-    elif Output_W < -MaxAngular:
-        Output_W = -MaxAngular
+    if Output_W > MAX_OMEGA:
+        Output_W = MAX_OMEGA
+    elif Output_W < -MAX_OMEGA:
+        Output_W = -MAX_OMEGA
 
     last_v = Output_V
     last_w = Output_W
@@ -961,6 +939,7 @@ def control():
     # print ('FSR_read: %s, FSR_read: %s, FSR_read: %s, FSR_read: %s,')
 
     counter1 += 1  # for estiamting frequency
+
 
 def control_node():
     global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Xin
