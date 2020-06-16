@@ -44,6 +44,9 @@ PID_LIST+="$! "
 eval "rostopic echo -p /qolo/compliance/bumper_loc \
     &> ${LOG_FOLDER}/compliance/bumper_loc.csv &"
 PID_LIST+="$! "
+eval "rostopic echo -p /qolo/corrected_velocity \
+    &> ${LOG_FOLDER}/compliance/corr_velocity.csv &"
+PID_LIST+="$! "
 
 # eval "rosbag record -a \
     # -O ${LOG_FOLDER}/compliant_test \
