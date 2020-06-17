@@ -407,7 +407,7 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     ctheta = math.cos(theta)    # Small optimization
 
     # Position wrt center of rotatiion
-    R = math.sqrt((bumper_R*stheta)**2 + (bumper_l + bumper_R*ctheta)**2 )
+    O = math.sqrt((bumper_R*stheta)**2 + (bumper_l + bumper_R*ctheta)**2 )
     beta = math.atan2(bumper_R * stheta, bumper_l + bumper_R * ctheta)
 
     sbeta = math.sin(beta)      # Small optimization
@@ -418,15 +418,13 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     Ts_control = Ts
     control_time = time.clock()
     
-    v_max = (collision_F_max * Ts_control) / (robot_mass * MAX_SPEED)
-    omega_max = (collision_F_max * Ts_control) / (robot_mass * (MAX_OMEGA/W_RATIO))
-    a = ctheta / v_max
-    b = (stheta*cbeta - ctheta*sbeta) / omega_max
+    a = ctheta
+    b = O * (stheta*cbeta - ctheta*sbeta)
     
     v_eff_prev = (a * v_prev) + (b * omega_prev)
     v_eff_cmd  = (a * v_cmd)  + (b * omega_cmd)
 
-    v_eff_dot = (-Fmag + Damping_gain*v_eff_prev) / robot_mass
+    v_eff_dot = (-Fmag - Damping_gain*v_eff_prev) / robot_mass
     v_eff = v_eff_dot * Ts_control + v_eff_cmd
 
     # # Calculate new v and omega
@@ -445,9 +443,33 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
         return (v_eff/a, omega_cmd)
 
     # Calculate new v and omega in parameterized form
-    # t = 0.5     # \in [0,1]
+    v_max = MAX_SPEED
+    omega_max = (MAX_OMEGA/W_RATIO)
+    
+    a = -1.0 / v_max
+    b = (stheta*cbeta - ctheta*sbeta) / omega_max
+
+    v_eff_max = (-collision_F_max * Ts_control) / robot_mass
+    V = v_eff / v_eff_max
+
+    _ = V - a*omega_cmd / b
+    if _ > omega_max:
+        t_max = (omega_max - omega_cmd) / (_ - omega_cmd)
+    elif _ < -omega_max:
+        t_max = (-omega_max - omega_cmd) / (_ - omega_cmd)
+    else:
+        t_max = 1.0
+
+    _ = V - b*v_cmd / a
+    if _ > v_max:
+        t_min = (v_max - omega_cmd) / (_ - omega_cmd)
+    elif _ < -v_max:
+        t_min = (-v_max - omega_cmd) / (_ - omega_cmd)
+    else:
+        t_min = 0.0
+
     __from_range = [0.0, np.pi]
-    __to_range = [0.0, 1.0]
+    __to_range = [t_min, t_max]
     __x = np.abs(theta)
     t = __to_range[0] + ((__x - __from_range[0]) * (__to_range[1]-__to_range[0]) / (__from_range[1]-__from_range[0]))
     bumper_loc[3] = t
