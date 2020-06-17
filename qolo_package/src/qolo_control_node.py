@@ -408,7 +408,7 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
 
     # Position wrt center of rotatiion
     R = math.sqrt((bumper_R*stheta)**2 + (bumper_l + bumper_R*ctheta)**2 )
-    beta = math.atan2(bumper_R * stheta, bumper_l)
+    beta = math.atan2(bumper_R * stheta, bumper_l + bumper_R * ctheta)
 
     sbeta = math.sin(beta)      # Small optimization
     cbeta = math.cos(beta)      # Small optimization
