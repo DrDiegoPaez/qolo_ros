@@ -74,8 +74,8 @@ backward_coefficient = 0.5
 # DAC1 --> Right Wheel Velocity
 # DAC2 --> Enable Qolo Motion
 THRESHOLD_V = 1500;
-ZERO_LW = 2550 #2750;
-ZERO_RW = 2550 #2650;
+ZERO_LW = 2600 #2750;
+ZERO_RW = 2500 #2650;
 High_DAC = 5000;
 MBED_Enable = mraa.Gpio(36) #11 17
 MBED_Enable.dir(mraa.DIR_OUT)
@@ -129,8 +129,8 @@ bumper_l = 0.2425      # (210+32.5) mm
 bumper_R = 0.33 # 330 mm
 Ts = 1.0/50    # 100 Hz
 control_time = 0.1
-Damping_gain = 100          # 1 N-s/m 
-robot_mass = 20        # 120 kg
+Damping_gain = 10         # 1 N-s/m 
+robot_mass = 10        # 120 kg
 collision_F_max = 200 # [N]
 
 # Global Variables for Compliant mode
@@ -433,15 +433,6 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     # v = (a*v_eff - b*c_prev) / den
     # omega = (-b*v_eff + a*c_prev) / den
 
-    # Ensure non-zero 'a' and 'b'
-    eps = 0.01
-    if (abs(a) < eps):
-        # return (v_prev, v_eff/b)
-        return (v_cmd, v_eff/b)
-    if (abs(b) < eps):
-        # return (v_eff/a, omega_prev)
-        return (v_eff/a, omega_cmd)
-
     # Calculate new v and omega in parameterized form
     v_max = MAX_SPEED
     omega_max = (MAX_OMEGA/W_RATIO)
@@ -451,6 +442,15 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
 
     v_eff_max = (-collision_F_max * Ts_control) / robot_mass
     V = v_eff / v_eff_max
+
+    # Ensure non-zero 'a' and 'b'
+    eps = 0.01
+    if (abs(a) < eps):
+        # return (v_prev, v_eff/b)
+        return (v_cmd, V/b)
+    if (abs(b) < eps):
+        # return (v_eff/a, omega_prev)
+        return (V/a, omega_cmd)
 
     _ = V - a*omega_cmd / b
     if _ > omega_max:
@@ -477,8 +477,8 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     # v = t * v_prev + (1-t) * (v_eff - b*omega_prev) / a
     # omega = t * (v_eff - a*v_prev) / b + (1-t) * omega_prev
 
-    v = t * v_cmd + (1-t) * (v_eff - b*omega_cmd) / a
-    omega = t * (v_eff - a*v_cmd) / b + (1-t) * omega_cmd
+    v = t * v_cmd + (1-t) * (V - b*omega_cmd) / a
+    omega = t * (V - a*v_cmd) / b + (1-t) * omega_cmd
     return (v, omega)
     
 
