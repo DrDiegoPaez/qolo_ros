@@ -129,7 +129,7 @@ bumper_l = 0.2425      # (210+32.5) mm
 bumper_R = 0.33 # 330 mm
 Ts = 1.0/50    # 100 Hz
 control_time = 0.1
-Damping_gain = 10         # 1 N-s/m 
+Damping_gain = 10          # 1 N-s/m 
 robot_mass = 10        # 120 kg
 collision_F_max = 200 # [N]
 
@@ -423,6 +423,7 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     
     v_eff_prev = (a * v_prev) + (b * omega_prev)
     v_eff_cmd  = (a * v_cmd)  + (b * omega_cmd)
+    # v_eff_max = (collision_F_max * Ts_control) / robot_mass
 
     v_eff_dot = (-Fmag - Damping_gain*v_eff_prev) / robot_mass
     v_eff = v_eff_dot * Ts_control + v_eff_cmd
@@ -437,11 +438,10 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     v_max = MAX_SPEED
     omega_max = (MAX_OMEGA/W_RATIO)
     
-    a = -1.0 / v_max
+    a = 1.0 / v_max
     b = (stheta*cbeta - ctheta*sbeta) / omega_max
 
-    v_eff_max = (-collision_F_max * Ts_control) / robot_mass
-    V = v_eff / v_eff_max
+    V = v_eff
 
     # Ensure non-zero 'a' and 'b'
     eps = 0.01
