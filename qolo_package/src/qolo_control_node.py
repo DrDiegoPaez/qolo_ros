@@ -423,9 +423,10 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     
     v_eff_prev = (a * v_prev) + (b * omega_prev)
     v_eff_cmd  = (a * v_cmd)  + (b * omega_cmd)
+    v_eff_max = (collision_F_max * Ts_control) / robot_mass
 
     v_eff_dot = (-Fmag - Damping_gain*v_eff_prev) / robot_mass
-    v_eff = v_eff_dot * Ts_control + v_eff_cmd
+    v_eff = v_eff_dot * Ts_control / v_eff_max + v_eff_cmd
 
     # # Calculate new v and omega
     # c_prev = (-b * v_prev) + (a * omega_prev)
@@ -446,10 +447,9 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     v_max = MAX_SPEED
     omega_max = (MAX_OMEGA/W_RATIO)
     
-    a = -1.0 / v_max
+    a = 1.0 / v_max
     b = (stheta*cbeta - ctheta*sbeta) / omega_max
 
-    v_eff_max = (-collision_F_max * Ts_control) / robot_mass
     V = v_eff / v_eff_max
 
     _ = V - a*omega_cmd / b
