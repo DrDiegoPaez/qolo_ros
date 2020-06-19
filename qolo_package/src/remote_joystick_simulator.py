@@ -28,6 +28,7 @@ import tornado.httpserver
 import tornado.websocket
 import tornado.ioloop
 import tornado.web
+import numpy as np
 # FLAG for fully manual control (TRUE) or shared control (FALSE)
 #Tonado server port
 try:
@@ -79,8 +80,8 @@ class WSHandler(tornado.websocket.WebSocketHandler):
     # print (result)
     Output = [((float(i)/100)) for i in result]
     Ctime = round(time.clock(),4)
-    publishJoystick(Ctime,Output[1]*Max_V, Output[0]*Max_W)
-    print ('Joystick =', Output[1]*Max_V, Output[0]*Max_W)
+    publishJoystick(Ctime,Output[1]*Max_V, ((Output[0]*Max_W)*180./np.pi ))
+    print ('Joystick =', Output[1]*Max_V, ((Output[0]*Max_W)*180./np.pi))
 
 
   def on_close(self):
