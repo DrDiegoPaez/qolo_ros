@@ -71,10 +71,16 @@ eval "rostopic echo -p /qolo/corrected_velocity \
     &> ${LOG_FOLDER}/compliance/corr_velocity.csv &"
 PID_LIST+="$! "
 
+
 eval "rosbag record -a \
     -O ${LOG_FOLDER}/compliant_test \
     &> /dev/null &"
 PID_LIST+="$! "
+
+# eval "rosbag record -a \
+    # -O ${LOG_FOLDER}/compliant_test \
+    # &> /dev/null &"
+ # PID_LIST+="$! "
 
 # Wait till all pids to be finished or killed
 echo "All PIDs : ${PID_LIST}"
