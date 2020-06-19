@@ -239,7 +239,7 @@ def trajectory_service(t):
 
 def main():
    global tf_listener, qolo_twist, trajectory_xyt, qolo_pose
-   rospy.init_node('qolo_ds_trajectory')
+   # rospy.init_node('qolo_ds_trajectory')
    tf_listener = tf.TransformListener()
    # command_publisher = rospy.Publisher('qolo/twist_cmd', Twist, queue_size=1)
    odometry_qolo = rospy.Subscriber("/qolo/odom",Odometry,odom_callback, queue_size=1)
@@ -253,6 +253,8 @@ def main():
    qolo_twist.angular.z = 0
    # end_time = trajectory_xyt[-1][2]
    print('Trajectory time: ',time_limit)
+   rospy.init_node('qolo_ds_trajectory', anonymous=True)
+   rate = rospy.Rate(50) #  50 hz
    start_time = time.time()
    while not rospy.is_shutdown():
       current_t = time.time() - start_time
