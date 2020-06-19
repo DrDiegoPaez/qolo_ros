@@ -206,11 +206,19 @@ def publish_command(command_linear, command_angular, t):
    command_publisher.publish(data_remote)
    rospy.loginfo(data_remote)
 
+def publish_qolo_tf(x, y, phi):
+   br = tf.TransformBroadcaster()
+   br.sendTransform((x, y, 0),
+                     tf.transformations.quaternion_from_euler(0, 0, phi),
+                     rospy.Time.now(),
+                     "tf_qolo",
+                     "tf_qolo_world")
 
 def trajectory_service(t):
    # print "Waiting for RDS Service"
    try:
       (x, y, phi) = get_pose()
+      publish_qolo_tf(x, y, phi)
       (Trajectory_V, Trajectory_W) = ds_generation(x,y,phi)
       if ~DEBUG_FLAG:
          publish_command(Trajectory_V, Trajectory_W, t)
