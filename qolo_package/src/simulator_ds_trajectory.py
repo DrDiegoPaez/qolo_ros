@@ -7,6 +7,7 @@
 import time
 import math
 import rospy
+import signal
 # from rds_network_ros.srv import * #VelocityCommandCorrectionRDS
 import tf
 from std_msgs.msg import Float32MultiArray
@@ -17,13 +18,13 @@ import numpy as np
 from scipy.interpolate import UnivariateSpline
 import dynamical_system_representation as ds
 #import matplotlib.pyplot as plt
-pub_remote = rospy.Publisher('qolo/twist_cmd', Twist, queue_size=1)
+command_publisher = rospy.Publisher('qolo/twist_cmd', Twist, queue_size=1)
 # data_remote = Float32MultiArray()
 qolo_twist = Twist()
 
 dx_prev = np.array([[0.0], [0.0]])
 dx = np.array([[0.0], [0.0]])
-qolo_pose = np.array([0. 0. 0.])
+qolo_pose = np.array([0., 0., 0.])
 
 DEBUG_FLAG = False
 MaxSpeed = 1.5 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
@@ -39,11 +40,9 @@ time_limit = 60
 Attractor = np.array([[30.0+control_point], [0.0]])
 
 tf_listener = None
-command_publisher = None
 t_lost_tf = -1.0
 previous_command_linear = None
 previous_command_angular = None
-data_remote = Float32MultiArray()
 
 def create_spline_curve(XYT):
    return [
@@ -242,7 +241,7 @@ def main():
    global tf_listener, qolo_twist, trajectory_xyt, qolo_pose
    rospy.init_node('qolo_ds_trajectory')
    tf_listener = tf.TransformListener()
-   command_publisher = rospy.Publisher('qolo/twist_cmd', Twist, queue_size=1)
+   # command_publisher = rospy.Publisher('qolo/twist_cmd', Twist, queue_size=1)
    odometry_qolo = rospy.Subscriber("/qolo/odom",Odometry,odom_callback, queue_size=1)
    qolo_twist = Twist()
    # qolo_twist.header = make_header("tf_qolo") # for visualization
@@ -266,6 +265,20 @@ def main():
          publish_command(0., 0., 0.)
          time.sleep(0.5)
          break
+# for interruptions
+def exit(signum, frame):
+    # Stop_Thread_Flag = True
+    # cleanup_stop_thread()
+    print('---> You chose to interrupt')
+    quit()
+
+# for interruption
+signal.signal(signal.SIGINT, exit)
+signal.signal(signal.SIGTERM, exit)
 
 if __name__ == '__main__':
-   main()
+   try:
+      main()
+   except rospy.ROSInterruptException:
+      time.sleep(0.1)
+      pass
