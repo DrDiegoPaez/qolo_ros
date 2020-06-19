@@ -129,13 +129,8 @@ bumper_l = 0.2425      # (210+32.5) mm
 bumper_R = 0.33 # 330 mm
 Ts = 1.0/50    # 100 Hz
 control_time = 0.1
-<<<<<<< HEAD
 Damping_gain = 0.1          # 1 N-s/m 
 robot_mass = 2        # 120 kg
-=======
-Damping_gain = 10          # 1 N-s/m 
-robot_mass = 10        # 120 kg
->>>>>>> cc0cb8d8ccad93d18334da0fbe41baa2af455d8e
 collision_F_max = 200 # [N]
 
 # Global Variables for Compliant mode
@@ -444,11 +439,7 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     omega_max = (MAX_OMEGA/W_RATIO)
     
     a = 1.0 / v_max
-<<<<<<< HEAD
     b = -(stheta*cbeta - ctheta*sbeta) / omega_max
-=======
-    b = (stheta*cbeta - ctheta*sbeta) / omega_max
->>>>>>> cc0cb8d8ccad93d18334da0fbe41baa2af455d8e
 
     V = v_eff
 
