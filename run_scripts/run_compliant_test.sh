@@ -25,6 +25,29 @@ eval ". /home/qolo/collision_ws/src/rokubimini_interface/run_rokubimini_ros.sh -
 PID_LIST+="$! "
 sleep 5
 
+#----- Launch and record realsense camera -----
+echo "Launching RealSense Camera..."
+eval "source devel/setup.bash"
+eval "roslaunch realsense2_camera rs_qolo_front.launch &"
+PID_LIST+="$! "
+
+# eval "rosbag record -q \
+#     -O ${LOG_FOLDER}/camera \
+#     -e '/camera_front/(.*)' \
+#     &> /dev/null &"
+# PID_LIST+="$! "
+
+sleep 10
+
+eval "rostopic echo -p /camera_front/accel/sample \
+    &> ${LOG_FOLDER}/imu_accel.csv &"
+PID_LIST+="$! "
+eval "rostopic echo -p /camera_front/gyro/sample \
+    &> ${LOG_FOLDER}/imu_gyro.csv &"
+PID_LIST+="$! "
+
+sleep 5
+
 #----- Launch qolo control -----
 eval ". devel/setup.bash"
 eval "roslaunch qolo compliance_qolo.launch &"
@@ -46,6 +69,12 @@ eval "rostopic echo -p /qolo/compliance/bumper_loc \
 PID_LIST+="$! "
 eval "rostopic echo -p /qolo/corrected_velocity \
     &> ${LOG_FOLDER}/compliance/corr_velocity.csv &"
+PID_LIST+="$! "
+
+
+eval "rosbag record -a \
+    -O ${LOG_FOLDER}/compliant_test \
+    &> /dev/null &"
 PID_LIST+="$! "
 
 # eval "rosbag record -a \

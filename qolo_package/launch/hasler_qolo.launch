@@ -2,7 +2,9 @@
 <!-- <include file="$(find qolo)/launch/qolo_joystick.launch"/> 
 <include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>
     -->  
-    
+  
+   <include file="$(find qolo)/launch/joystick_qolo.launch"/>
+
    <include file="$(find qolo)/launch/rear_lidar-lrf.launch"/> 
 
    <node name="qolo_remote" pkg="qolo" type="qolo_hasler_node.py" />
