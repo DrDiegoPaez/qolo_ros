@@ -19,7 +19,7 @@ echo "Launching RealSense Camera..."
 eval "roslaunch realsense2_camera rs_qolo_front.launch \
     &> /dev/null &"
 PID_LIST+="$! "
-sleep 1
+sleep 10
 #eval "rosbag record -q \
 #    -O ${LOG_FOLDER}/camera \
 #    -e '/camera_rear/(.*)' \

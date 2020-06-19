@@ -43,15 +43,21 @@ except PermissionError:
     rospy.logerr("Run the script as sudo...")
 
 REMOTE_MODE = True
+JOYSTICK_MODE = False
 SHARED_MODE = False
 COMPLIANCE_FLAG = False
-JOYSTICK_MODE = False
+
 
 PORT = 8080
 control_type ='embodied'
 threadLock = threading.Lock()
 FLAG_debug = True
 Stop_Thread_Flag = False
+
+Joystick_V = 0.
+Joystick_W = 0.
+FlagJoystick = False
+time_joystick = 0.
 
 conv = converter.AD_DA()
 
@@ -81,7 +87,7 @@ MinSpeed = MaxSpeed*backward_coefficient
 MaxAngular = 4.124
 W_ratio = 4 # Ratio of the maximum angular speed (232 deg/s)
 
-Max_motor_v = (MaxSpeed/ (RADIUS*(2*np.pi))) *60*GEAR # max motor speed: 1200 rpm
+Max_motor_v = 1200 # max motor speed: 1200 rpm
 
 # Setting for the RDS service
 # Some reference for controlling the non-holonomic base
@@ -288,6 +294,30 @@ def callback_remote(data):
         FlagRemote = True
         time_msg = data.data[0]
     time_msg = data.data[0]
+
+def callback_joystick_mode(msg):
+    global JOYSTICK_MODE, REMOTE_MODE
+
+    if msg.data is True:
+        JOYSTICK_MODE = True
+        REMOTE_MODE = False
+    else:
+        JOYSTICK_MODE = False
+        REMOTE_MODE = True
+
+def callback_joystick(data):
+    global Joystick_V, Joystick_W, FlagJoystick, time_joystick
+    # temp_dat = Float32MultiArray()
+    # temp_dat.layout.dim.append(MultiArrayDimension())
+    # temp_dat.layout.dim[0].size = 2
+    # temp_dat.data = [0]*2
+    # print(time_msg)
+    if time_msg != 0:
+        Joystick_V = round(data.data[1],6)
+        Joystick_W =  round(data.data[2],6)
+        FlagJoystick = True
+        time_joystick = data.data[0]
+    time_joystick = data.data[0]
 
 ## Compliant control functions
 def ft_sensor_callback(data):
@@ -779,8 +809,12 @@ def control():
             Count_msg_lost = 0
         
         if Count_msg_lost <10:
-            User_V = Remote_V
-            User_W = Remote_W
+            if JOYSTICK_MODE:
+                User_V = Joystick_V
+                User_W = Joystick_W
+            else:
+                User_V = Remote_V
+                User_W = Remote_W
         else:
             User_V = 0.
             User_W = 0.
@@ -964,14 +998,17 @@ def control_node():
     else:
         print('Starting WITHOUT FT Sensing')
     
-    if JOYSTICK_MODE:
-        sub_remote = rospy.Subscriber("qolo/remote_joystick", Float32MultiArray, callback_remote, queue_size=1)
-        control_type = 'joystick'
-    elif REMOTE_MODE:
-        sub_remote = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
-        control_type = 'remote'
-    else:
-        control_type = 'embodied'
+    # if JOYSTICK_MODE:
+    sub_joystick = rospy.Subscriber("qolo/remote_joystick", Float32MultiArray, callback_joystick, queue_size=1)
+    sub_joystick_flag = rospy.Subscriber("qolo/joystick_mode", Bool, callback_joystick_mode, queue_size=1)
+        # control_type = 'joystick'
+    # elif REMOTE_MODE:
+    sub_remote = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
+
+            
+    # control_type = 'remote'
+    # else:
+        # control_type = 'embodied'
     
     if SHARED_MODE:
         print('STARTING SHARED CONTROL MODE')
@@ -979,8 +1016,8 @@ def control_node():
         print('STARTING MANUAL MODE')
 
     while not rospy.is_shutdown():
-
-        control()   # Function of control for Qolo
+        # Function of control for Qolo
+        control()   
         # # Checking emergency inputs
         # threadLock.acquire()
         RemoteE = conv.ReadChannel(7, conv.data_format.voltage)

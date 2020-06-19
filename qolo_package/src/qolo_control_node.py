@@ -74,8 +74,8 @@ backward_coefficient = 0.5
 # DAC1 --> Right Wheel Velocity
 # DAC2 --> Enable Qolo Motion
 THRESHOLD_V = 1500;
-ZERO_LW = 2550 #2750;
-ZERO_RW = 2550 #2650;
+ZERO_LW = 2600 #2750;
+ZERO_RW = 2500 #2650;
 High_DAC = 5000;
 MBED_Enable = mraa.Gpio(36) #11 17
 MBED_Enable.dir(mraa.DIR_OUT)
@@ -89,10 +89,10 @@ MIN_SPEED = MAX_SPEED*backward_coefficient
 MAX_OMEGA = 4.124
 W_RATIO = 3.5 # Ratio of the maximum angular speed (232 deg/s)
 
-MAX_MOTOR_V = 1200 # max motor speed: 1200 rpm
+MAX_MOTOR_V = 1200.0 # max motor speed: 1200 rpm
 
-MAX_WHEEL_VEL = (95/60)*(2*pi)
-WHEEL_ACC = (((4/60)*(2*np.pi))/GEAR)/(1/400) # Maximum wheel acceleration = 13.2557 rad/s2
+MAX_WHEEL_VEL = (95.0/60.0)*(2*np.pi)
+WHEEL_ACC = (((4.0/60.0)*(2*np.pi))/GEAR)/(1.0/400.0) # Maximum wheel acceleration = 13.2557 rad/s2
 LINEAR_ACC = WHEEL_ACC * RADIUS # Maximum Robot's linear acceleration = 2.0149 m/s2
 ANGULAR_ACC = LINEAR_ACC / DISTANCE_CW # Maximum Robot's angular acceleration = 7.3535 rad/s2 
 
@@ -127,10 +127,10 @@ compliant_W =0.
 
 bumper_l = 0.2425      # (210+32.5) mm
 bumper_R = 0.33 # 330 mm
-Ts = 1.0/100    # 100 Hz
+Ts = 1.0/50    # 100 Hz
 control_time = 0.1
-Damping_gain = 1           # 1 N-s/m 
-robot_mass = 15        # 120 kg
+Damping_gain = 0.1          # 1 N-s/m 
+robot_mass = 2        # 120 kg
 collision_F_max = 200 # [N]
 
 # Global Variables for Compliant mode
@@ -407,26 +407,23 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     ctheta = math.cos(theta)    # Small optimization
 
     # Position wrt center of rotatiion
-    R = math.sqrt((bumper_R*stheta)**2 + (bumper_l + bumper_R*ctheta)**2 )
-    beta = math.atan2(bumper_R * stheta, bumper_l)
+    O = math.sqrt((bumper_R*stheta)**2 + (bumper_l + bumper_R*ctheta)**2 )
+    beta = math.atan2(bumper_R * stheta, bumper_l + bumper_R * ctheta)
 
     sbeta = math.sin(beta)      # Small optimization
     cbeta = math.cos(beta)      # Small optimization
-    
-    a = ctheta / MAX_SPEED
-    b = (stheta*cbeta - ctheta*sbeta) / MAX_OMEGA * W_RATIO * 5
 
     # Admittance Control
     Ts_control = round((time.clock() - control_time),4)
+    Ts_control = Ts
     control_time = time.clock()
     
-    v_max = (collision_F_max * Ts_control) / (robot_mass * MAX_SPEED)
-    omega_max = (collision_F_max * Ts_control) / (robot_mass * (MAX_OMEGA/W_RATIO))
-    a = ctheta / v_max
-    b = (stheta*cbeta - ctheta*sbeta) / omega_max
+    a = ctheta
+    b = O * (stheta*cbeta - ctheta*sbeta)
     
     v_eff_prev = (a * v_prev) + (b * omega_prev)
     v_eff_cmd  = (a * v_cmd)  + (b * omega_cmd)
+    # v_eff_max = (collision_F_max * Ts_control) / robot_mass
 
     v_eff_dot = (-Fmag - Damping_gain*v_eff_prev) / robot_mass
     v_eff = v_eff_dot * Ts_control + v_eff_cmd
@@ -437,23 +434,51 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     # v = (a*v_eff - b*c_prev) / den
     # omega = (-b*v_eff + a*c_prev) / den
 
+    # Calculate new v and omega in parameterized form
+    v_max = MAX_SPEED
+    omega_max = (MAX_OMEGA/W_RATIO)
+    
+    a = 1.0 / v_max
+    b = -(stheta*cbeta - ctheta*sbeta) / omega_max
+
+    V = v_eff
+
     # Ensure non-zero 'a' and 'b'
     eps = 0.01
     if (abs(a) < eps):
-        return (v_prev, v_eff/b)
+        # return (v_prev, v_eff/b)
+        return (v_cmd, V/b)
     if (abs(b) < eps):
-        return (v_eff/a, omega_prev)
+        # return (v_eff/a, omega_prev)
+        return (V/a, omega_cmd)
 
-    # Calculate new v and omega in parameterized form
-    # t = 0.5     # \in [0,1]
+    _ = V - a*omega_cmd / b
+    if _ > omega_max:
+        t_max = (omega_max - omega_cmd) / (_ - omega_cmd)
+    elif _ < -omega_max:
+        t_max = (-omega_max - omega_cmd) / (_ - omega_cmd)
+    else:
+        t_max = 1.0
+
+    _ = V - b*v_cmd / a
+    if _ > v_max:
+        t_min = (v_max - omega_cmd) / (_ - omega_cmd)
+    elif _ < -v_max:
+        t_min = (-v_max - omega_cmd) / (_ - omega_cmd)
+    else:
+        t_min = 0.0
+
     __from_range = [0.0, np.pi]
-    __to_range = [0.0, 1.0]
+    __to_range = [t_min, t_max]
     __x = np.abs(theta)
     t = __to_range[0] + ((__x - __from_range[0]) * (__to_range[1]-__to_range[0]) / (__from_range[1]-__from_range[0]))
     bumper_loc[3] = t
 
-    v = t * v_prev + (1-t) * (v_eff - b*omega_prev) / a
-    omega = t * (v_eff - a*v_prev) / b + (1-t) * omega_prev
+    # v = t * v_prev + (1-t) * (v_eff - b*omega_prev) / a
+    # omega = t * (v_eff - a*v_prev) / b + (1-t) * omega_prev
+
+    v = t * v_cmd + (1-t) * (V - b*omega_cmd) / a
+    omega = t * (V - a*v_cmd) / b + (1-t) * omega_cmd
     return (v, omega)
     
 
@@ -905,7 +930,7 @@ def control():
         svr_data[1] = Fy
         svr_data[2] = Mz
         if abs(Fmag) > 15:
-            [compliant_V, compliant_W] = compliance_control(last_v, last_w, Corrected_V, Corrected_W, Fmag, h, theta)
+            [compliant_V, compliant_W] = compliance_control(compliant_V, compliant_W, Corrected_V, Corrected_W, Fmag, h, theta)
         else:
             (compliant_V, compliant_W) = (Corrected_V, Corrected_W)
         Output_V = round(compliant_V,6)
@@ -1032,7 +1057,7 @@ def control_node():
 
     dat_cor_vel = Float32MultiArray()
     dat_cor_vel.layout.dim.append(MultiArrayDimension())
-    dat_cor_vel.layout.dim[0].label = 'Velocities: User[2], Corrected_OA[2], Corrected_Compliance[2], RDS_dT'
+    dat_cor_vel.layout.dim[0].label = 'Velocities: User[2] Corrected_OA[2] Corrected_Compliance[2] RDS_dT'
     dat_cor_vel.layout.dim[0].size = 7
     dat_cor_vel.data = [0]*7
 
@@ -1047,7 +1072,7 @@ def control_node():
 
     dat_compliance_bumper_loc = Float32MultiArray()
     dat_compliance_bumper_loc.layout.dim.append(MultiArrayDimension())
-    dat_compliance_bumper_loc.layout.dim[0].label = 'Bumper: F_mag, theta, h ; param'
+    dat_compliance_bumper_loc.layout.dim[0].label = 'Bumper: F_mag theta h ; param'
     dat_compliance_bumper_loc.layout.dim[0].size = 4
     dat_compliance_bumper_loc.data = [0]*4
 
