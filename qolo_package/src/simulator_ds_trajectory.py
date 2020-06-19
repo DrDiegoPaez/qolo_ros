@@ -17,23 +17,26 @@ import numpy as np
 from scipy.interpolate import UnivariateSpline
 import dynamical_system_representation as ds
 #import matplotlib.pyplot as plt
+pub_remote = rospy.Publisher('qolo/twist_cmd', Twist, queue_size=1)
+# data_remote = Float32MultiArray()
+qolo_twist = Twist()
 
 dx_prev = np.array([[0.0], [0.0]])
 dx = np.array([[0.0], [0.0]])
 qolo_pose = np.array([0. 0. 0.])
 
 DEBUG_FLAG = False
-MaxSpeed = 1.5/2 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
-MaxAngular = 4.124/4
+MaxSpeed = 1.5 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
+MaxAngular = 4.124
 D_angular = 10
 D_linear = 10
 
-ref_vel = 0.8
+ref_vel = 1.2
 control_point = 0.9
 stop_distance = 0.5
-time_limit = 90
+time_limit = 60
 
-Attractor = np.array([[10.0+control_point], [0.0]])
+Attractor = np.array([[30.0+control_point], [0.0]])
 
 tf_listener = None
 command_publisher = None
@@ -78,7 +81,6 @@ def plot_spline_curve(spline_curve, time_vector, data_xyt):
 
 def odom_callback(msg):
     global qolo_pose
-    
     qolo_pose[0] = (msg.pose.pose.position.x)
     qolo_pose[1] = (msg.pose.pose.position.y)
     qolo_pose[2] = (msg.pose.pose.orientation.z)
@@ -203,12 +205,15 @@ def ds_generation(x,y,phi):
       print ("Exception during tf lookup ...")
 
 
-def publish_command(command_linear, command_angular, t):
-   global data_remote, command_publisher
-   Ctime = round(time.clock(),4)
-   data_remote.data = [Ctime,command_linear,command_angular]
-   command_publisher.publish(data_remote)
-   rospy.loginfo(data_remote)
+def publish_command(Vel,Omega,time):
+    global command_publisher, qolo_twist
+    # data_remote.data = [time,Vel,Omega]
+    qolo_twist.linear.x = Vel
+    qolo_twist.angular.z = Omega*180./np.pi
+
+    command_publisher.publish(qolo_twist)
+    rospy.loginfo(qolo_twist)
+
 
 def publish_qolo_tf(x, y, phi):
    br = tf.TransformBroadcaster()
@@ -234,16 +239,19 @@ def trajectory_service(t):
 
 
 def main():
-   global tf_listener, command_publisher, data_remote, trajectory_xyt, qolo_pose
+   global tf_listener, qolo_twist, trajectory_xyt, qolo_pose
    rospy.init_node('qolo_ds_trajectory')
    tf_listener = tf.TransformListener()
-   command_publisher = rospy.Publisher('qolo/remote_commands',Float32MultiArray, queue_size=1)
+   command_publisher = rospy.Publisher('qolo/twist_cmd', Twist, queue_size=1)
    odometry_qolo = rospy.Subscriber("/qolo/odom",Odometry,odom_callback, queue_size=1)
-   data_remote.layout.dim.append(MultiArrayDimension())
-   data_remote.layout.dim[0].label = 'Trajectory Commands [V, W]'
-   data_remote.layout.dim[0].size = 3
-   data_remote.data = [0]*3
-
+   qolo_twist = Twist()
+   # qolo_twist.header = make_header("tf_qolo") # for visualization
+   qolo_twist.linear.x = 0
+   qolo_twist.linear.y = 0
+   qolo_twist.linear.z = 0
+   qolo_twist.angular.x = 0
+   qolo_twist.angular.y = 0
+   qolo_twist.angular.z = 0
    # end_time = trajectory_xyt[-1][2]
    print('Trajectory time: ',time_limit)
    start_time = time.time()
