@@ -442,7 +442,6 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     b = -(stheta*cbeta - ctheta*sbeta) / omega_max
 
     V = v_eff
-
     # Ensure non-zero 'a' and 'b'
     eps = 0.01
     if (abs(a) < eps):

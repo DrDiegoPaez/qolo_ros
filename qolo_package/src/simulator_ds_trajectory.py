@@ -253,7 +253,7 @@ def main():
    qolo_twist.angular.z = 0
    # end_time = trajectory_xyt[-1][2]
    print('Trajectory time: ',time_limit)
-   rospy.init_node('qolo_ds_trajectory', anonymous=True)
+   rospy.init_node('qolo_simulator_ds', anonymous=True)
    rate = rospy.Rate(50) #  50 hz
    start_time = time.time()
    while not rospy.is_shutdown():
