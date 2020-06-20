@@ -36,7 +36,7 @@ D_linear = 10
 ref_vel = 1.2
 control_point = 0.9
 stop_distance = 0.5
-time_limit = 60
+time_limit = 15
 
 Attractor = np.array([[30.0+control_point], [0.0]])
 
@@ -360,9 +360,9 @@ def main():
          publish_command(0., 0., 0.)
          print ('End of Trajectory set to --[0 , 0]')
          time.sleep(0.5)
-         publish_command(0., 0., 0.)
-         time.sleep(0.5)
-         break
+         # publish_command(0., 0., 0.)
+         # time.sleep(0.5)
+         # break
 # for interruptions
 def exit(signum, frame):
     # Stop_Thread_Flag = True
