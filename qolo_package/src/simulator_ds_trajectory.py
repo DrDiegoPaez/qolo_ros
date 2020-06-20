@@ -17,6 +17,7 @@ from geometry_msgs.msg import *
 import numpy as np
 from scipy.interpolate import UnivariateSpline
 import dynamical_system_representation as ds
+from rds_network_ros.srv import *
 #import matplotlib.pyplot as plt
 command_publisher = rospy.Publisher('qolo/twist_cmd', Twist, queue_size=1)
 # data_remote = Float32MultiArray()
@@ -44,6 +45,102 @@ tf_listener = None
 t_lost_tf = -1.0
 previous_command_linear = None
 previous_command_angular = None
+
+#########################################################
+############ Setting for the RDS service ################
+#########################################################
+
+# y_coordinate_of_reference_point_for_command_limits = 0.5;
+# Gain to this point
+weight_scaling_of_reference_point_for_command_limits = 0.;
+# Some gain for velocity after proximity reaches limits
+tau = 1.5;
+# Minimal distance to obstacles
+delta = 0.05;
+# Some reference for controlling the non-holonomic base
+control_point_rds = 0.17;
+
+max_linear = MaxSpeed;
+min_linear = -MaxSpeed;
+absolute_angular_at_min_linear = 0.;
+absolute_angular_at_max_linear = 0.;
+absolute_angular_at_zero_linear = MaxAngular/W_ratio;
+linear_acceleration_limit = 2.0
+angular_acceleration_limit = 7.0
+
+Corrected_V = 0.;
+Corrected_W = 0.;
+cycle = 0.1;
+
+def rds_service(User_V, User_W):
+    global cycle, Corrected_V, Corrected_W
+    # print "Waiting for RDS Service"
+    rospy.wait_for_service('rds_velocity_command_correction')
+    try:
+        RDS = rospy.ServiceProxy('rds_velocity_command_correction',VelocityCommandCorrectionRDS)
+
+        request = VelocityCommandCorrectionRDSRequest()
+        # y_coordinate_of_reference_point_for_command_limits = 0.5;
+        # # Gain to this point
+        # weight_scaling_of_reference_point_for_command_limits = 0.;
+        # # Some gain for velocity after proximity reaches limits
+        # tau = 2.;
+        # # Minimal distance to obstacles
+        # delta = 0.08;
+        # clearance_from_axle_of_final_reference_point = 0.15;
+        # max_linear = MaxSpeed;
+        # min_linear = -MinSpeed;
+        # absolute_angular_at_min_linear = 0.;
+        # absolute_angular_at_max_linear = 0.;
+        # absolute_angular_at_zero_linear = MaxAngular/W_ratio;
+        # linear_acceleration_limit = 1.1
+        # angular_acceleration_limit = 1.5
+
+        request.nominal_command.linear = User_V;
+        request.nominal_command.angular = User_W;
+        request.capsule_center_front_y = 0.035;
+        request.capsule_center_rear_y = -0.50;
+        request.capsule_radius = 0.45;
+        
+        request.reference_point_y = control_point_rds;
+
+        request.rds_tau = tau;  # Time horizon for velocity obstacles
+        request.rds_delta = delta;
+        request.vel_lim_linear_min = min_linear;
+        request.vel_lim_linear_max = max_linear;
+        request.vel_lim_angular_abs_max = absolute_angular_at_zero_linear;
+        request.vel_linear_at_angular_abs_max = 0.1;
+        request.acc_limit_linear_abs_max = linear_acceleration_limit;
+        request.acc_limit_angular_abs_max = angular_acceleration_limit;
+
+        # // shall rds consider lrf measurements?
+        request.lrf_point_obstacles = True;
+        # // for generating constraints due to raw lrf scan points,
+        # // shall rds use the VO-based or the alternative (prior) approach?
+        request.lrf_alternative_rds = False;
+        # // how shall rds choose the base velocity for determining the convex approximate VO
+        # // 0 : use zero velocity (ensures that the final halfplane contains the VO, if the VO does not contain the origin)
+        # // 1 : use the velocity which rds computed previously
+        # // any other integer: use the nominal velocity (from the current nominal command)
+        request.vo_tangent_base_command = 2;
+        # // shall rds map the base velocity to the tangent point the same way as ORCA for determining the convex approximate VO?
+        request.vo_tangent_orca_style = False;
+
+        if cycle==0:
+            delta_time = 0.005;
+        else:
+            delta_time = time.clock() - cycle;
+
+        request.dt = delta_time #0.01 #delta_time
+
+        response = RDS(request)
+        Corrected_V = round(response.corrected_command.linear,6)
+        Corrected_W = round(response.corrected_command.angular,6)
+
+        cycle = time.clock()
+    except:
+        Corrected_V = 0.
+        Corrected_W = 0.
 
 def create_spline_curve(XYT):
    return [
@@ -225,14 +322,15 @@ def publish_qolo_tf(x, y, phi):
 
 def trajectory_service(t):
    # print "Waiting for RDS Service"
-   global qolo_x
+   global qolo_x, Corrected_V, Corrected_W
    try:
       # (x, y, phi) = get_pose()
       (x, y, phi) =  qolo_pose[0], qolo_pose[1], qolo_pose[2]
       publish_qolo_tf(x, y, phi)
       (Trajectory_V, Trajectory_W) = ds_generation(x,y,phi)
+      rds_service(Trajectory_V, Trajectory_W)
       if ~DEBUG_FLAG:
-         publish_command(Trajectory_V, Trajectory_W, t)
+         publish_command(Corrected_V, Corrected_W, t)
    except:
         publish_command(0., 0., 0.)
         print ('No Pose Setting [V,W] = [0, 0]')
