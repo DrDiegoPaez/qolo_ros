@@ -19,6 +19,8 @@ from scipy.interpolate import UnivariateSpline
 import dynamical_system_representation as ds
 from rds_network_ros.srv import *
 
+from metrics_evaluation import RobotMetricsEvaluation
+
 #import matplotlib.pyplot as plt
 command_publisher = rospy.Publisher('qolo/twist_cmd', Twist, queue_size=1)
 # data_remote = Float32MultiArray()
@@ -41,6 +43,8 @@ stop_distance = 0.1
 time_limit = 90
 
 Attractor = np.array([[40.0+control_point], [0.0]])
+
+robot_metrics_eval = RobotMetricsEvaluation(Attractor[0,0], Attractor[1,0])
 
 #tf_listener = tf.TransformListener()
 tf_listener = None
@@ -330,10 +334,11 @@ def publish_qolo_tf(x, y, phi):
 
 def trajectory_service(t):
    # print "Waiting for RDS Service"
-   global qolo_x, Corrected_V, Corrected_W
+   global qolo_x, Corrected_V, Corrected_W, robot_metrics_eval
    try:
       # (x, y, phi) = get_pose()
       (x, y, phi) =  qolo_pose[0], qolo_pose[1], qolo_pose[2]
+      robot_metrics_eval.update(x, y, t)
       publish_qolo_tf(x, y, phi)
       (Trajectory_V, Trajectory_W) = ds_generation(x,y,phi)
       rds_service(Trajectory_V, Trajectory_W)
@@ -393,6 +398,8 @@ def main():
          # break
 # for interruptions
 def exit(signum, frame):
+    global robot_metrics_eval
+    robot_metrics_eval.print_result()
     # Stop_Thread_Flag = True
     # cleanup_stop_thread()
     print('---> You chose to interrupt')
@@ -408,3 +415,4 @@ if __name__ == '__main__':
    except rospy.ROSInterruptException:
       time.sleep(0.1)
       pass
+   robot_metrics_eval.print_result()
