@@ -18,6 +18,7 @@ import numpy as np
 from scipy.interpolate import UnivariateSpline
 import dynamical_system_representation as ds
 from rds_network_ros.srv import *
+
 #import matplotlib.pyplot as plt
 command_publisher = rospy.Publisher('qolo/twist_cmd', Twist, queue_size=1)
 # data_remote = Float32MultiArray()
@@ -26,19 +27,20 @@ qolo_twist = Twist()
 dx_prev = np.array([[0.0], [0.0]])
 dx = np.array([[0.0], [0.0]])
 qolo_pose = np.array([0., 0., 0.])
+Start_pose = np.array([0., 0., 0.])
 
 DEBUG_FLAG = False
-MaxSpeed = 1.5 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
+MaxSpeed = 1.8 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
 MaxAngular = 4.124
 D_angular = 10
 D_linear = 10
 
 ref_vel = 1.2
 control_point = 0.9
-stop_distance = 0.5
-time_limit = 15
+stop_distance = 0.1
+time_limit = 90
 
-Attractor = np.array([[30.0+control_point], [0.0]])
+Attractor = np.array([[40.0+control_point], [0.0]])
 
 #tf_listener = tf.TransformListener()
 tf_listener = None
@@ -64,7 +66,7 @@ max_linear = MaxSpeed;
 min_linear = -MaxSpeed;
 absolute_angular_at_min_linear = 0.;
 absolute_angular_at_max_linear = 0.;
-absolute_angular_at_zero_linear = MaxAngular/W_ratio;
+absolute_angular_at_zero_linear = MaxAngular;
 linear_acceleration_limit = 2.0
 angular_acceleration_limit = 7.0
 
@@ -181,7 +183,13 @@ def odom_callback(msg):
     qolo_pose[0] = (msg.pose.pose.position.x)
     qolo_pose[1] = (msg.pose.pose.position.y)
     qolo_pose[2] = (msg.pose.pose.orientation.z)
-    rate.sleep()
+    # rate.sleep()
+
+def pose_callback(msg):
+    global qolo_pose, Start_pose
+    qolo_pose[0] = (msg.linear.y - Start_pose[0])
+    qolo_pose[1] = (msg.linear.x - Start_pose[1])
+    qolo_pose[2] = ((msg.angular.z)*np.pi/180.) - Start_pose[2]
 
 
 def get_pose():
@@ -306,7 +314,7 @@ def publish_command(Vel,Omega,time):
     global command_publisher, qolo_twist
     # data_remote.data = [time,Vel,Omega]
     qolo_twist.linear.x = Vel
-    qolo_twist.angular.z = Omega*180./np.pi
+    qolo_twist.angular.z = -Omega*180./np.pi
 
     command_publisher.publish(qolo_twist)
     rospy.loginfo(qolo_twist)
@@ -329,6 +337,7 @@ def trajectory_service(t):
       publish_qolo_tf(x, y, phi)
       (Trajectory_V, Trajectory_W) = ds_generation(x,y,phi)
       rds_service(Trajectory_V, Trajectory_W)
+      (Corrected_V, Corrected_W) = Trajectory_V, Trajectory_W
       if ~DEBUG_FLAG:
          publish_command(Corrected_V, Corrected_W, t)
    except:
@@ -339,8 +348,9 @@ def trajectory_service(t):
 def main():
    global tf_listener, qolo_twist, trajectory_xyt, qolo_pose
    rospy.init_node('qolo_simulator_ds', anonymous=True)
-   rate = rospy.Rate(50) #  50 hz
-   odometry_qolo = rospy.Subscriber("/qolo/odom",Odometry,odom_callback, queue_size=1)
+   rate = rospy.Rate(100) #  50 hz
+   pose_qolo = rospy.Subscriber("/qolo/pose",Twist,pose_callback, queue_size=1)
+   #odometry_qolo = rospy.Subscriber("/qolo/odom",Odometry,odom_callback, queue_size=1)
    qolo_twist = Twist()
    # qolo_twist.header = make_header("tf_qolo") # for visualization
    qolo_twist.linear.x = 0
@@ -349,14 +359,32 @@ def main():
    qolo_twist.angular.x = 0
    qolo_twist.angular.y = 0
    qolo_twist.angular.z = 0
-   # end_time = trajectory_xyt[-1][2]
+   time.sleep(0.5)
+   
+   # Setting start pose to current one (if wanted)
+   # (Start_pose[0], Start_pose[1], Start_pose[2]) = qolo_pose[0], qolo_pose[1], qolo_pose[2]
+   # Setting Start pose to simulator initial pose
+   (Start_pose[0], Start_pose[1], Start_pose[2]) = -20, 0, (-270)*np.pi/180.
    print('Trajectory time: ',time_limit)
    start_time = time.time()
+   print('Start time: ',start_time)
+   print('Start pose: ',Start_pose[0],Start_pose[1],Start_pose[2])
+   time.sleep(2.0)
+   GoalFlag = False
    while not rospy.is_shutdown():
       current_t = time.time() - start_time
-      if current_t <= time_limit:
-         trajectory_service(current_t)
+      if (current_t <= time_limit) or GoalFlag:
+          trajectory_service(current_t)
+          dx = Attractor-qolo_pose
+          dx_mag = np.sqrt(np.sum(dx**2))
+          if dx_mag <= stop_distance:
+            GoalFlag=True
+
+          #print('current time: ',current_t)
+          #print('current pose: ',qolo_pose[0],qolo_pose[1],qolo_pose[2])
+          #time.sleep(0.5)
       else:
+         publish_qolo_tf(qolo_pose[0],qolo_pose[1],qolo_pose[2])
          publish_command(0., 0., 0.)
          print ('End of Trajectory set to --[0 , 0]')
          time.sleep(0.5)
