@@ -37,7 +37,7 @@ MaxAngular = 4.124
 D_angular = 10
 D_linear = 10
 
-ref_vel = 1.2
+ref_vel = 1.5
 control_point = 0.9
 stop_distance = 0.1
 time_limit = 90
@@ -104,20 +104,20 @@ def rds_service(User_V, User_W):
 
         request.nominal_command.linear = User_V;
         request.nominal_command.angular = User_W;
-        request.capsule_center_front_y = 0.035;
+        request.capsule_center_front_y = 0.2;
         request.capsule_center_rear_y = -0.50;
-        request.capsule_radius = 0.45;
+        request.capsule_radius = 0.3;
         
         request.reference_point_y = control_point_rds;
 
         request.rds_tau = tau;  # Time horizon for velocity obstacles
         request.rds_delta = delta;
-        request.vel_lim_linear_min = min_linear;
-        request.vel_lim_linear_max = max_linear;
-        request.vel_lim_angular_abs_max = absolute_angular_at_zero_linear;
+        request.vel_lim_linear_min = -0.75;
+        request.vel_lim_linear_max = 1.5;
+        request.vel_lim_angular_abs_max = 4.0;
         request.vel_linear_at_angular_abs_max = 0.1;
-        request.acc_limit_linear_abs_max = linear_acceleration_limit;
-        request.acc_limit_angular_abs_max = angular_acceleration_limit;
+        request.acc_limit_linear_abs_max = 2.0;
+        request.acc_limit_angular_abs_max = 7.0;
 
         # // shall rds consider lrf measurements?
         request.lrf_point_obstacles = True;
@@ -128,9 +128,9 @@ def rds_service(User_V, User_W):
         # // 0 : use zero velocity (ensures that the final halfplane contains the VO, if the VO does not contain the origin)
         # // 1 : use the velocity which rds computed previously
         # // any other integer: use the nominal velocity (from the current nominal command)
-        request.vo_tangent_base_command = 2;
+        request.vo_tangent_base_command = 0;
         # // shall rds map the base velocity to the tangent point the same way as ORCA for determining the convex approximate VO?
-        request.vo_tangent_orca_style = False;
+        request.vo_tangent_orca_style = True;
 
         if cycle==0:
             delta_time = 0.005;
