@@ -28,7 +28,7 @@ sleep 5
 #----- Launch and record realsense camera -----
 echo "Launching RealSense Camera..."
 eval "source devel/setup.bash"
-eval "roslaunch realsense2_camera rs_qolo_front.launch &"
+eval "roslaunch realsense2_camera rs_qolo_front_test.launch &"
 PID_LIST+="$! "
 
 # eval "rosbag record -q \
