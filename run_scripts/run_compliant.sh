@@ -1,7 +1,13 @@
 #!/bin/bash
 #----- Ctrl-C stop -----
+_kill() {
+    echo "Killing all subprocesses"
+    for PID in ${PID_LIST[@]};do
+        kill -INT $PID
+    done
+}
 trap "exit" INT TERM ERR
-trap "kill -INT 0" EXIT
+trap _kill EXIT
 
 #----- Get Test Number -----
 TEST_NO=0
