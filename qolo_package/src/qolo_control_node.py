@@ -438,8 +438,8 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     v_max = MAX_SPEED
     omega_max = (MAX_OMEGA/W_RATIO)
     
-    a = 1.0 / v_max
-    b = -(stheta*cbeta - ctheta*sbeta) / omega_max
+    a = 1.0 
+    b = -(stheta*cbeta - ctheta*sbeta) / omega_max * v_max
 
     V = v_eff
     # Ensure non-zero 'a' and 'b'
