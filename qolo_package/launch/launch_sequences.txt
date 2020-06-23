@@ -8,21 +8,6 @@ ssh -X qolo@192.168.13.XXX
 1 terminal
 	rosocre
 
-2 terminal:
-	cd ~/catkin_ws/
-	sudo -s
-	. devel/setup.bash
-
-Option 1: Main Qolo controller
-	roslaunch qolo qolo.launch
-
-Option 2: Remote Command Control
-	roslaunch qolo remote_qolo.launch
-	
-Option 3: Hasler Control Commands
-	roslaunch qolo hasler_qolo.launch
-
-
 3 terminal:
 
 		OR only rear LIDAR
@@ -43,12 +28,26 @@ Option 3: Hasler Control Commands
  	sudo -s
  	./src/qolo_ros/run_scripts/run_compliant.sh
 
+2 terminal:
+	cd ~/catkin_ws/
+	sudo -s
+	. devel/setup.bash
+
+Option 1: Main Qolo controller
+	roslaunch qolo qolo.launch
+
+Option 2: Compliance Command Control
+	roslaunch qolo compliance_qolo.launch 
+	
+Option 3: Hasler Control Commands
+	roslaunch qolo hasler_qolo.launch
+
 
  4 terminal:
  	cd catkin_ws/
  	sudo -s
 	. devel/setup.bash
- 	./src/scripts/record_imu.sh
+ 	./src/qolo_ros/run_scripts/record_imu.sh
 
 
  5. terminal: Trajectory tracking

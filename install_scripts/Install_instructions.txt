@@ -1,5 +1,3 @@
-
-
 ============= ROS Setup for Multiple PCs ========================
 
 Main PC (110):
