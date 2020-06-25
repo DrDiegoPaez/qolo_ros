@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 #########  ROS version of Trajectory Tracking with safety ##########
-##### Author: Diego F. Paez G. 
-##### Using 
+##### Author: Diego F. Paez G. & David Gonon
+##### Preliminar version: David Gonon
 ##### Data: 2020/05/18
 
 import time
@@ -21,7 +21,7 @@ dx = np.array([[0.0], [0.0]])
 
 DEBUG_FLAG = False
 MaxSpeed = 1.5/2 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
-MaxAngular = 4.124/8
+MaxAngular = 4.124/4
 D_angular = 10
 D_linear = 10
 
@@ -38,7 +38,6 @@ t_lost_tf = -1.0
 previous_command_linear = None
 previous_command_angular = None
 data_remote = Float32MultiArray()
-
 
 def get_pose():
    global tf_listener
@@ -67,6 +66,9 @@ def ds_generation(x,y,phi):
          print(" Current X, Y, Phi = ",p_ref_global[0,0],p_ref_global[1,0], np.rad2deg(phi))
       
       dx = ds.linearAttractor_const(p_ref_global, Attractor, ref_vel, stop_distance)
+      ## Call here Modulated DS
+      # dx = ds.modulation( ) 
+
       v_command_p_ref_global = dx
       
       if DEBUG_FLAG:
@@ -116,6 +118,7 @@ def trajectory_service(t):
    # print "Waiting for RDS Service"
    try:
       (x, y, phi) = get_pose()
+
       (Trajectory_V, Trajectory_W) = ds_generation(x,y,phi)
       if ~DEBUG_FLAG:
          publish_command(Trajectory_V, Trajectory_W, t)

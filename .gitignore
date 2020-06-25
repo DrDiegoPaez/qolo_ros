@@ -33,3 +33,8 @@
 
 # Robot configuration
 *.json
+
+# Python Files
+__pycache__/
+*.py[cod]
+*$py.class
