@@ -1,93 +1,55 @@
 #!/usr/bin/env python
 import rospy
-from crowdbotsim.msg import CrowdStamped
 import math
-import signal
-import sys
+from os.path import expanduser
 
-reached_goal_radius = 1.0
-reached_goal_time = None
-initial_timestamp = None
-mean_velocities = None
-duration = 0.0
+class RobotMetricsEvaluation:
+    def __init__(self, goal_x, goal_y):
+        self.goal_x = goal_x
+        self.goal_y = goal_y
+        self.reached_goal_radius = 1.0
+        self.reached_goal_time = None
+        self.initial_timestamp = None
+        self.mean_velocity = 0.0
+        self.duration = 0.0
+        self.previous_x = None
+        self.previous_y = None
 
-def print_result_reaching_time():
-    mean = 0.0
-    N = 0
-    for rgt in reached_goal_time:
-        if rgt != None:
-            mean += rgt
-            N += 1
-    mean /= N
-    std = 0.0
-    for rgt in reached_goal_time:
-        if rgt != None:
-            std += (rgt-mean)*(rgt-mean)
-    std = math.sqrt(1.0/(N - 1.0)*std)
-    print ("-----Result for reaching time-------")
-    print ("Total number of agents: ", len(reached_goal_time))
-    print ("Number of agents that reached their goal: ", N)
-    print ("For those, average reaching time: ", mean)
-    print ("With standard deviation: ", std)
+    def print_result(self):
+        if self.reached_goal_time == None:
+            print ("Did not reach the goal")
+        else:
+            print ("Time to reach the goal: ", self.reached_goal_time)
+        print ("Mean velocity: ", self.mean_velocity)
+        with open(expanduser('~/Robot_Metrics_Evaluation.txt'), 'w+') as file:
+            if self.reached_goal_time == None:
+                file.write("Did not reach the goal\n")
+            else:
+                file.write('Time to reach the goal: ' + str(self.reached_goal_time) + "\n")
+            file.write('Mean velocity: ' + str(self.mean_velocity) + "\n")
 
-def print_result_mean_velocity():
-    mean = 0.0
-    for mv in mean_velocities:
-        mean += mv
-    mean /= len(mean_velocities)
-    std = 0.0
-    for mv in mean_velocities:
-        std += (mv-mean)*(mv-mean)
-    std = math.sqrt(1.0/(len(mean_velocities) - 1.0)*std)
-    print ("-----Result for mean velocities-------")
-    print ("Total number of agents: ", len(mean_velocities))
-    print ("For those, average velocity: ", mean)
-    print ("With standard deviation: ", std)  
+    def update(self, position_x, position_y, time_now):
+        if self.initial_timestamp == None:
+            self.initial_timestamp =time_now
 
-def signal_handler(sig, frame):
-    print_result_reaching_time()
-    sys.exit(0)
+        t = time_now - self.initial_timestamp
 
-signal.signal(signal.SIGINT, signal_handler)
-
-def callback(msg):
-    global reached_goal_time
-    global initial_timestamp
-    global duration
-    global mean_velocities
-    if reached_goal_time == None:
-        reached_goal_time = [None]*len(msg.crowd)
-    if initial_timestamp == None:
-        initial_timestamp = msg.header.stamp
-    for i in range(msg.crowd):
-        ped = msg.crowd[i]
-        diff_x = ped.position.x - ped.goal.x
-        diff_y = ped.position.y - ped.goal.y
+        diff_x = position_x - self.goal_x
+        diff_y = position_y - self.goal_y
         distance = math.sqrt(diff_y*diff_y + diff_x*diff_x)
-        if distance < reached_goal_radius and reached_goal_time[i] == None:
-            reached_goal_time[i] = msg.header.stamp - initial_timestamp
+        if distance < self.reached_goal_radius and self.reached_goal_time == None:
+            self.reached_goal_time = t
 
-    if mean_velocities == None:
-        mean_velocities = [0.0]*len(msg.crowd)
+        dt = t - self.duration
+        w_old = self.duration/(dt + self.duration)
+        w_new = dt/(dt + self.duration)
 
-    dt = msg.header.stamp - initial_timestamp - duration
-    for i in range(msg.crowd):
-        ped = msg.crowd[i]
-        w_old = duration/(dt + duration)
-        w_new = dt/(dt + duration)
-        v_x2 = ped.velocity.linear.x*ped.velocity.linear.x
-        v_y2 = ped.velocity.linear.y*ped.velocity.linear.y
-        v_z2 = ped.velocity.linear.z*ped.velocity.linear.z
-        v = math.sqrt(v_x2 + v_y2 + v_z2)
-        mean_velocities[i] = w_old*mean_velocities[i] + w_new*v
+        if self.previous_y != None:
+            v_x = (position_x - self.previous_x)/dt
+            v_y = (position_y - self.previous_y)/dt
+            v = math.sqrt(v_x*v_x + v_y*v_y)
+            self.mean_velocity = w_old*self.mean_velocity + w_new*v
 
-    duration = msg.header.stamp - initial_timestamp
-
-
-def listener():
-    rospy.init_node('listener', anonymous=True)
-    rospy.Subscriber("crowd", CrowdStamped, callback)
-    rospy.spin()
-
-if __name__ == '__main__':
-    listener()
+        self.previous_x = position_x
+        self.previous_y = position_y
+        self.duration = t

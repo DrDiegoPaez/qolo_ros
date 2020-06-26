@@ -19,6 +19,8 @@ from scipy.interpolate import UnivariateSpline
 import dynamical_system_representation as ds
 from rds_network_ros.srv import *
 
+from metrics_evaluation import RobotMetricsEvaluation
+
 #import matplotlib.pyplot as plt
 command_publisher = rospy.Publisher('qolo/twist_cmd', Twist, queue_size=1)
 # data_remote = Float32MultiArray()
@@ -35,12 +37,14 @@ MaxAngular = 4.124
 D_angular = 10
 D_linear = 10
 
-ref_vel = 1.2
+ref_vel = 1.5
 control_point = 0.9
 stop_distance = 0.1
 time_limit = 90
 
 Attractor = np.array([[40.0+control_point], [0.0]])
+
+robot_metrics_eval = RobotMetricsEvaluation(Attractor[0,0], Attractor[1,0])
 
 #tf_listener = tf.TransformListener()
 tf_listener = None
@@ -100,20 +104,20 @@ def rds_service(User_V, User_W):
 
         request.nominal_command.linear = User_V;
         request.nominal_command.angular = User_W;
-        request.capsule_center_front_y = 0.035;
+        request.capsule_center_front_y = 0.2;
         request.capsule_center_rear_y = -0.50;
-        request.capsule_radius = 0.45;
+        request.capsule_radius = 0.3;
         
         request.reference_point_y = control_point_rds;
 
         request.rds_tau = tau;  # Time horizon for velocity obstacles
         request.rds_delta = delta;
-        request.vel_lim_linear_min = min_linear;
-        request.vel_lim_linear_max = max_linear;
-        request.vel_lim_angular_abs_max = absolute_angular_at_zero_linear;
+        request.vel_lim_linear_min = -0.75;
+        request.vel_lim_linear_max = 1.5;
+        request.vel_lim_angular_abs_max = 4.0;
         request.vel_linear_at_angular_abs_max = 0.1;
-        request.acc_limit_linear_abs_max = linear_acceleration_limit;
-        request.acc_limit_angular_abs_max = angular_acceleration_limit;
+        request.acc_limit_linear_abs_max = 2.0;
+        request.acc_limit_angular_abs_max = 7.0;
 
         # // shall rds consider lrf measurements?
         request.lrf_point_obstacles = True;
@@ -124,9 +128,9 @@ def rds_service(User_V, User_W):
         # // 0 : use zero velocity (ensures that the final halfplane contains the VO, if the VO does not contain the origin)
         # // 1 : use the velocity which rds computed previously
         # // any other integer: use the nominal velocity (from the current nominal command)
-        request.vo_tangent_base_command = 2;
+        request.vo_tangent_base_command = 0;
         # // shall rds map the base velocity to the tangent point the same way as ORCA for determining the convex approximate VO?
-        request.vo_tangent_orca_style = False;
+        request.vo_tangent_orca_style = True;
 
         if cycle==0:
             delta_time = 0.005;
@@ -330,10 +334,11 @@ def publish_qolo_tf(x, y, phi):
 
 def trajectory_service(t):
    # print "Waiting for RDS Service"
-   global qolo_x, Corrected_V, Corrected_W
+   global qolo_x, Corrected_V, Corrected_W, robot_metrics_eval
    try:
       # (x, y, phi) = get_pose()
       (x, y, phi) =  qolo_pose[0], qolo_pose[1], qolo_pose[2]
+      robot_metrics_eval.update(x, y, t)
       publish_qolo_tf(x, y, phi)
       (Trajectory_V, Trajectory_W) = ds_generation(x,y,phi)
       rds_service(Trajectory_V, Trajectory_W)
@@ -393,6 +398,8 @@ def main():
          # break
 # for interruptions
 def exit(signum, frame):
+    global robot_metrics_eval
+    robot_metrics_eval.print_result()
     # Stop_Thread_Flag = True
     # cleanup_stop_thread()
     print('---> You chose to interrupt')
@@ -408,3 +415,4 @@ if __name__ == '__main__':
    except rospy.ROSInterruptException:
       time.sleep(0.1)
       pass
+   robot_metrics_eval.print_result()

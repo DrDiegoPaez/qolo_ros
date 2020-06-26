@@ -28,7 +28,7 @@ sleep 5
 #----- Launch and record realsense camera -----
 echo "Launching RealSense Camera..."
 eval "source devel/setup.bash"
-eval "roslaunch realsense2_camera rs_qolo_front.launch &"
+eval "roslaunch realsense2_camera rs_qolo_front_test.launch &"
 PID_LIST+="$! "
 
 # eval "rosbag record -q \
@@ -70,7 +70,6 @@ PID_LIST+="$! "
 eval "rostopic echo -p /qolo/corrected_velocity \
     &> ${LOG_FOLDER}/compliance/corr_velocity.csv &"
 PID_LIST+="$! "
-
 
 eval "rosbag record -a \
     -O ${LOG_FOLDER}/compliant_test \

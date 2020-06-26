@@ -131,7 +131,7 @@ Ts = 1.0/50    # 100 Hz
 control_time = 0.1
 Damping_gain = 0.1          # 1 N-s/m 
 robot_mass = 2        # 120 kg
-collision_F_max = 200 # [N]
+collision_F_max = 45 # [N]
 
 # Global Variables for Compliant mode
 offset_ft_data = np.zeros((6,))
@@ -423,9 +423,12 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     
     v_eff_prev = (a * v_prev) + (b * omega_prev)
     v_eff_cmd  = (a * v_cmd)  + (b * omega_cmd)
-    # v_eff_max = (collision_F_max * Ts_control) / robot_mass
+    
+    eff_robot_mass = robot_mass
+    if (abs(v_eff_cmd) > (collision_F_max * Ts_control) / robot_mass):
+        eff_robot_mass = (collision_F_max * Ts_control) / abs(v_eff_cmd)
 
-    v_eff_dot = (-Fmag - Damping_gain*v_eff_prev) / robot_mass
+    v_eff_dot = (-Fmag - Damping_gain*v_eff_prev) / eff_robot_mass
     v_eff = v_eff_dot * Ts_control + v_eff_cmd
 
     # # Calculate new v and omega
@@ -438,8 +441,8 @@ def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
     v_max = MAX_SPEED
     omega_max = (MAX_OMEGA/W_RATIO)
     
-    a = 1.0 / v_max
-    b = -(stheta*cbeta - ctheta*sbeta) / omega_max
+    a = 1.0 
+    b = -(stheta*cbeta - ctheta*sbeta) / omega_max * v_max
 
     V = v_eff
     # Ensure non-zero 'a' and 'b'
