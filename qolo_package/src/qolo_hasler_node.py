@@ -863,13 +863,10 @@ def control():
         RDS_time = round((time.clock() - t1),4)
         t1 = time.clock()
     
-    # Debugging the speed controller
-    # if counter1 < 20:
-    #     Comand_DAC0 = 4000
-    #     Comand_DAC1 = 4000
-    # else:
-    #     Comand_DAC0 = ZERO_LW
-    #     Comand_DAC1 = ZERO_RW
+    if math.isnan(Output_V):
+        Output_V = 0.
+    if math.isnan(Output_W):
+        Output_W = 0.
 
     if Output_V > MaxSpeed:
         Output_V = MaxSpeed
