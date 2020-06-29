@@ -34,6 +34,8 @@ from std_msgs.msg import MultiArrayLayout, MultiArrayDimension, Header
 from rds_network_ros.srv import *
 # from builtins import PermissionError
 
+from logger import Logger
+
 # FLAG for fully manual control (TRUE) or shared control (FALSE)
 #Tonado server port
 try:
@@ -985,6 +987,7 @@ def control_node():
         bumperModel = BumperModel()
         rospy.loginfo("SVR models loaded")
         lp_filter = MultiLowPassFilter(size=6)
+        logger = Logger()
 
 
     ########### Starting Communication and MBED Board ###########
@@ -1179,6 +1182,10 @@ def control_node():
         dat_compliance_bumper_loc.data[2] = bumper_loc[2]
         dat_compliance_bumper_loc.data[3] = bumper_loc[3]
 
+        logger.log('svr', *svr_data)
+        logger.log('bumper_loc', *bumper_loc)
+        logger.log('raw', *ft_data)
+
         # rospy.loginfo(RosMassage)
         pub_emg.publish(FlagEmergency)
         pub_vel.publish(dat_vel)
@@ -1198,6 +1205,8 @@ def control_node():
     # Stop_Thread_Flag = True
     # thread_user.raise_exception()
     # thread_user.join()
+
+    logger.exit()
 
 # for interruption
 signal.signal(signal.SIGINT, exit)
