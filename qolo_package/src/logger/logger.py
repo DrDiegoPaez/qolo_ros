@@ -1,23 +1,35 @@
 import csv
+import os
+
+import rospy
 
 class Logger:
     def __init__(self):
+        self.folder = os.environ.get("LOG_FOLDER")
         self.topics = {}
-        self.file = open(filename, 'w')
-        self.csv_writer = csv.writer(self.file)
         
     def log(self, topic, *data):
-        self.get_writer().writerow(data)
+        self.get_writer(topic).writerow(
+            (rospy.get_rostime(),) + data
+        )
 
     def get_writer(self, topic):
         _, writer = self.topics.get(topic, [None, None])
 
         if writer is None:
-            f = open(filename, 'w')
+            f = open(os.path.join(self.folder, topic+".csv"), 'w')
             writer = csv.writer(f)
             self.topics[topic] = (f, writer)
 
         return writer
+
+    def init_topic(self, topic, subfolder="", header=None):
+        f = open(os.path.join(self.folder, subfolder, topic+".csv"), 'w')
+        writer = csv.writer(f)
+        self.topics[topic] = (f, writer)
+
+        if header is not None:
+            writer.writerow(header)
 
     def exit(self):
         for f, _ in self.topics.values():

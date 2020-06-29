@@ -53,7 +53,7 @@ COMPLIANCE_FLAG = True
 # For using remote app Joystick
 JOYSTICK_MODE = True
 # For using DS or trajectory tracking
-REMOTE_MODE = True
+REMOTE_MODE = False
 # For zero output to the wheels
 TESTING_MODE = False
 
@@ -133,7 +133,7 @@ Ts = 1.0/50    # 100 Hz
 control_time = 0.1
 Damping_gain = 0.1          # 1 N-s/m 
 robot_mass = 2        # 120 kg
-collision_F_max = 45 # [N]
+collision_F_max = 25 # [N]
 
 # Global Variables for Compliant mode
 offset_ft_data = np.zeros((6,))
@@ -186,6 +186,7 @@ DA_time = 0.
 RDS_time = 0.
 Compute_time = 0. 
 FSR_time = 0.
+Compliance_time = 0.
 User_V = 0.;
 User_W = 0.;
 Out_CP = 0.;
@@ -387,12 +388,6 @@ def damper_correction(ft_data):
         ))
 
     Fmag = Fx*np.sin(theta) + Fy*np.cos(theta)
-    
-    rospy.loginfo(
-        "\n\tFx = {}\n\tFy = {}\n\tMz = {}\n\ttheta = {}\n\tFmag = {}\n-------------------------\n".format(
-            Fx, Fy, Mz, theta, Fmag
-        )
-    )
 
     bumper_loc[0] = Fmag
     bumper_loc[1] = theta
@@ -867,12 +862,13 @@ def control():
     global Rcenter, Count_msg_lost, time_msg, last_msg
     global Command_V, Command_W, Comand_DAC0, Comand_DAC1, User_V, User_W, Output_V, Output_W, last_w, last_v, Corrected_V, Corrected_W
     global counter1, compliant_V, compliant_W, raw_ft_data, ft_data, svr_data, offset_ft_data
-    global DA_time, RDS_time, Compute_time, FSR_time
+    global DA_time, RDS_time, Compute_time, FSR_time, Compliance_time
     
     # Replace with a node subsription
     global Xin, Xin_temp, FsrZero, FsrK, Out_CP
     if FLAG_debug:
         t1 = time.clock()
+        t_start = t1
 
     if JOYSTICK_MODE or REMOTE_MODE:
         if time_msg == last_msg:
@@ -911,7 +907,7 @@ def control():
 
 
     if FLAG_debug:
-        FSR_time = round((time.clock() - t1),4)
+        FSR_time = round((time.clock() - t1),6)
         t1 = time.clock()
 
     if SHARED_MODE:
@@ -923,7 +919,7 @@ def control():
         Corrected_W = User_W
 
     if FLAG_debug:
-        RDS_time = round((time.clock() - t1),4)
+        RDS_time = round((time.clock() - t1),6)
         t1 = time.clock()
 
     if COMPLIANCE_FLAG:
@@ -942,6 +938,10 @@ def control():
     else:
         Output_V = Corrected_V
         Output_W = Corrected_W
+
+    if FLAG_debug:
+        Compliance_time = round((time.clock() - t1),6)
+        t1 = time.clock()
 
     if math.isnan(Output_V):
         Output_V = 0.
@@ -964,7 +964,9 @@ def control():
     Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Output_V, Output_W)
     write_DA(Comand_DAC0, Comand_DAC1)
     if FLAG_debug:
-        DA_time = round((time.clock() - t1),4)
+        DA_time = round((time.clock() - t1),6)
+
+        Compute_time = round((time.clock() - t_start),6)
     # print ('FSR_read: %s, FSR_read: %s, FSR_read: %s, FSR_read: %s,')
 
     counter1 += 1  # for estiamting frequency
@@ -973,7 +975,7 @@ def control():
 def control_node():
     global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Xin
     global RemoteE, ComError
-    global DA_time, RDS_time, Compute_time, FSR_time, extra_time,last_msg, time_msg
+    global DA_time, RDS_time, Compute_time, FSR_time, Compliance_time, extra_time,last_msg, time_msg
     global compliant_V, compliant_W, offset_ft_data, bumperModel, lp_filter
     prevT = 0
     FlagEmergency=False
@@ -987,7 +989,13 @@ def control_node():
         bumperModel = BumperModel()
         rospy.loginfo("SVR models loaded")
         lp_filter = MultiLowPassFilter(size=6)
-        logger = Logger()
+    
+    logger = Logger()
+    logger.init_topic("raw", "compliance", ["t", "Fx", "Fy", "Fz", "Mx", "My", "Mz"])
+    logger.init_topic("svr", "compliance", ["t", "Fx", "Fy", "Mz"])
+    logger.init_topic("bumper_loc", "compliance", ["t", "Fmag", "theta(rad)", "h", "p"])
+    logger.init_topic("corr_velocity", "compliance", ["t", "v_user", "omega_user", "v_OA", "omega_OA", "v_compliance", "omega_compliance"])
+    logger.init_topic("timings", "compliance", ["t", "DA_time", "RDS_time", "Compute_time", "FSR_time", "Compliance_time", "Cycle_time"])
 
 
     ########### Starting Communication and MBED Board ###########
@@ -1019,15 +1027,16 @@ def control_node():
     pub_vel = rospy.Publisher('qolo/velocity', Float32MultiArray, queue_size=1)
     pub_cor_vel = rospy.Publisher('qolo/corrected_velocity', Float32MultiArray, queue_size=1)
     pub_emg = rospy.Publisher('qolo/emergency', Bool, queue_size=1)
+    
     pub_user = rospy.Publisher('qolo/user_input', Float32MultiArray, queue_size=1)
+
     pub_compliance_raw = rospy.Publisher('qolo/compliance/raw', WrenchStamped, queue_size=1)
     pub_compliance_svr = rospy.Publisher('qolo/compliance/svr', WrenchStamped, queue_size=1)
     pub_compliance_bumper_loc = rospy.Publisher('qolo/compliance/bumper_loc', Float32MultiArray, queue_size=1)
-    
     pub_mess = rospy.Publisher('qolo/message', String, queue_size=1)
-    rospy.init_node('qolo_control', anonymous=True)
-    rate = rospy.Rate(50) #  100 hz
 
+    rospy.init_node('qolo_control', anonymous=True)
+    rate = rospy.Rate(200) #  100 hz
     
     def make_header(name):
         header = Header()
@@ -1114,6 +1123,7 @@ def control_node():
         print('STARTING MANUAL MODE')
 
     while not rospy.is_shutdown():
+        prevT = time.clock()
 
         control()   # Function of control for Qolo
         # # Checking emergency inputs
@@ -1143,15 +1153,12 @@ def control_node():
                     time_msg=0.
                 time.sleep(0.1)
                 # threadLock.release()
-
-        cycle_T = time.clock() - prevT
-        prevT = time.clock()
-        now = datetime.datetime.now()
-        current_time = now.strftime("%H:%M:%S")
+        # now = datetime.datetime.now()
+        # current_time = now.strftime("%H:%M:%S")
         # RosMassage = "%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s" % (current_time, cycle_T, RDS_time,Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Out_CP,Send_DAC0, Send_DAC1, User_V, User_W, feasible, Output_V, Output_W)
         # RosMassage = "%s %s %s %s %s %s %s %s" % (cycle_T, RDS_time, DA_time, feasible, User_V, User_W, round(Output_V,4), round(Output_W,4) )
-        RosMassage = "%s %s %s %s %s" % (User_V, User_W, Output_V, Output_W, RDS_time)
-        dat_wheels.data = [Send_DAC0, Send_DAC1]
+        # RosMassage = "%s %s %s %s %s" % (User_V, User_W, Output_V, Output_W, RDS_time)
+        # dat_wheels.data = [Send_DAC0, Send_DAC1]
         dat_vel.data = [time_msg, User_V, User_W, Output_V, Output_W]
         
         qolo_twist.header = make_header("tf_qolo")
@@ -1159,47 +1166,51 @@ def control_node():
         qolo_twist.twist.angular.z = Output_W
         
         dat_cor_vel.data = [User_V, User_W, Corrected_V, Corrected_W, compliant_V, compliant_W, RDS_time]
-        dat_user.data = [Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Out_CP]
+        # dat_user.data = [Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Out_CP]
         
 
         #### CHANGE THIS TO WRENCH TYPE ##############
 
-        dat_compliance_raw.header = make_header("tf_ft_front")
-        dat_compliance_raw.wrench.force.x = ft_data[0]
-        dat_compliance_raw.wrench.force.y = ft_data[1]
-        dat_compliance_raw.wrench.force.z = ft_data[2]
-        dat_compliance_raw.wrench.torque.x = ft_data[3]
-        dat_compliance_raw.wrench.torque.y = ft_data[4]
-        dat_compliance_raw.wrench.torque.z = ft_data[5]
+        # dat_compliance_raw.header = make_header("tf_ft_front")
+        # dat_compliance_raw.wrench.force.x = ft_data[0]
+        # dat_compliance_raw.wrench.force.y = ft_data[1]
+        # dat_compliance_raw.wrench.force.z = ft_data[2]
+        # dat_compliance_raw.wrench.torque.x = ft_data[3]
+        # dat_compliance_raw.wrench.torque.y = ft_data[4]
+        # dat_compliance_raw.wrench.torque.z = ft_data[5]
 
-        dat_compliance_svr.header = make_header("tf_ft_front")
-        dat_compliance_svr.wrench.force.x = svr_data[0]
-        dat_compliance_svr.wrench.force.y = svr_data[1]
-        dat_compliance_svr.wrench.torque.z = svr_data[2]
+        # dat_compliance_svr.header = make_header("tf_ft_front")
+        # dat_compliance_svr.wrench.force.x = svr_data[0]
+        # dat_compliance_svr.wrench.force.y = svr_data[1]
+        # dat_compliance_svr.wrench.torque.z = svr_data[2]
 
-        dat_compliance_bumper_loc.data[0] = bumper_loc[0]
-        dat_compliance_bumper_loc.data[1] = bumper_loc[1] * 180 / np.pi
-        dat_compliance_bumper_loc.data[2] = bumper_loc[2]
-        dat_compliance_bumper_loc.data[3] = bumper_loc[3]
+        # dat_compliance_bumper_loc.data[0] = bumper_loc[0]
+        # dat_compliance_bumper_loc.data[1] = bumper_loc[1] * 180 / np.pi
+        # dat_compliance_bumper_loc.data[2] = bumper_loc[2]
+        # dat_compliance_bumper_loc.data[3] = bumper_loc[3]
+
+        cycle_T = time.clock() - prevT
 
         logger.log('svr', *svr_data)
         logger.log('bumper_loc', *bumper_loc)
         logger.log('raw', *ft_data)
+        logger.log('corr_velocity', User_V, User_W, Corrected_V, Corrected_W, compliant_V, compliant_W)
+        logger.log('timings', DA_time, RDS_time, Compute_time, FSR_time, Compliance_time, cycle_T)
 
         # rospy.loginfo(RosMassage)
         pub_emg.publish(FlagEmergency)
         pub_vel.publish(dat_vel)
         pub_twist.publish(qolo_twist)
         pub_cor_vel.publish(dat_cor_vel)
-        pub_wheels.publish(dat_wheels)
-        pub_user.publish(dat_user)
-        pub_compliance_raw.publish(dat_compliance_raw)
-        pub_compliance_svr.publish(dat_compliance_svr)
-        pub_compliance_bumper_loc.publish(dat_compliance_bumper_loc)
+        # pub_wheels.publish(dat_wheels)
+        # pub_user.publish(dat_user)
+        # pub_compliance_raw.publish(dat_compliance_raw)
+        # pub_compliance_svr.publish(dat_compliance_svr)
+        # pub_compliance_bumper_loc.publish(dat_compliance_bumper_loc)
 
         # rospy.loginfo(dat_user)
-        rospy.loginfo(RosMassage)
-        pub_mess.publish(RosMassage)
+        # rospy.loginfo(RosMassage)
+        # pub_mess.publish(RosMassage)
         rate.sleep()
 
     # Stop_Thread_Flag = True

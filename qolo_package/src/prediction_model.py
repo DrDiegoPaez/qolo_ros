@@ -44,7 +44,7 @@ class SVR:
         if x.shape[1] != 6:
             raise ValueError(
                 "Input shape of {:d} is different from expected dimension of {:d}".format(
-                    x.shape[1], self.in_dim
+                    x.shape[1], 6
                 )
             )
         x = np.delete(x, 2, 1)
