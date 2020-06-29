@@ -940,14 +940,11 @@ def control():
     else:
         Output_V = Corrected_V
         Output_W = Corrected_W
-    
-    # Debugging the speed controller
-    # if counter1 < 20:
-    #     Comand_DAC0 = 4000
-    #     Comand_DAC1 = 4000
-    # else:
-    #     Comand_DAC0 = ZERO_LW
-    #     Comand_DAC1 = ZERO_RW
+
+    if math.isnan(Output_V):
+        Output_V = 0.
+    if math.isnan(Output_W):
+        Output_W = 0.
 
     if Output_V > MAX_SPEED:
         Output_V = MAX_SPEED
