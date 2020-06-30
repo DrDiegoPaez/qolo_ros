@@ -6,7 +6,7 @@
 
   <include file="$(find qolo)/launch/joystick_qolo.launch"/>
   
-  <node name="qolo_control" pkg="qolo" type="qolo_control_node.py" />
+  <node name="qolo_control" pkg="qolo" type="qolo_control_node_copy.py" />
 
   <!-- Only for static tests without slam  -->
 

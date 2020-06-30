@@ -782,9 +782,11 @@ def control():
     if COMPLIANCE_FLAG:
         # ft_data = lp_filter.filter(raw_ft_data - offset_ft_data)
         ft_data = (raw_ft_data - offset_ft_data)
-        compliance_control.step(ft_data, 
-                                   compliant_V, compliant_W,
-                                   Corrected_V, Corrected_W)
+        (compliant_V, compliant_W) = compliance_control.step(
+            ft_data, 
+            compliant_V, compliant_W,
+            Corrected_V, Corrected_W
+        )
         Output_V = round(compliant_V,6)
         Output_W = round(compliant_W,6)
     else:

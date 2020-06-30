@@ -37,12 +37,13 @@ class AdmittanceController:
 
         # Loggers
         if logger:
-            logger.init_topic("svr", "compliance", ["t", "Fx", "Fy", "Mz"])
-            logger.init_topic("bumper_loc", "compliance", ["t", "Fmag", "theta(rad)", "h", "p"])
+            self.logger = logger
+            self.logger.init_topic("svr", "compliance", ["t", "Fx", "Fy", "Mz"])
+            self.logger.init_topic("bumper_loc", "compliance", ["t", "Fmag", "theta(rad)", "h", "p"])
 
 
     def step(self, ft_data, v_prev, omega_prev, v_cmd, omega_cmd):
-        data = np.reshape(np.delete(ft_data, 2, 1), (1,-1))
+        data = np.delete(np.reshape(ft_data, (1,-1)), 2, 1)
         self.damper_correction(data)
         if abs(self._Fmag) > 15:
             return self.get_control(v_prev, omega_prev, v_cmd, omega_cmd)
@@ -50,18 +51,18 @@ class AdmittanceController:
             return (v_cmd, omega_cmd)
 
     def log(self):
-        logger.log('svr', self._Fx, self._Fy, self._Mz)
-        logger.log('bumper_loc', self._Fmag, self._theta, self._h, self._p)
+        self.logger.log('svr', self._Fx, self._Fy, self._Mz)
+        self.logger.log('bumper_loc', self._Fmag, self._theta, self._h, self._p)
 
     def damper_correction(self, data):
         # Correcting based on trained SVR damping model
         # corr_ft_data = bumperModel.predict(ft_data)
         # ft_data_temp = ft_data
-        (self._Fx, self._Fy, self._Mz) = bumperModel.predict(data)
+        (self._Fx, self._Fy, self._Mz) = self.bumper_model.predict(data)
 
         self._h = 0.1
 
-        (a, b, c) = (self._Fx, self._Fy, self._Mz/bumper_R)
+        (a, b, c) = (self._Fx, self._Fy, self._Mz/self.bumper_R)
         temp = a**2 + b**2 - c**2
         if temp > 0:
             self._theta = np.real(-1j * np.log(
@@ -84,7 +85,7 @@ class AdmittanceController:
 
         # Position wrt center of rotatiion
         O = np.sqrt((self.bumper_R*stheta)**2 + (self.bumper_l + self.bumper_R*ctheta)**2 )
-        beta = np.atan2(self.bumper_R * stheta, self.bumper_l + self.bumper_R*ctheta)
+        beta = np.arctan2(self.bumper_R * stheta, self.bumper_l + self.bumper_R*ctheta)
 
         sbeta = np.sin(beta)      # Small optimization
         cbeta = np.cos(beta)      # Small optimization
@@ -115,18 +116,18 @@ class AdmittanceController:
             return (V/a, omega_cmd)
 
         _ = V - a*omega_cmd / b
-        if _ > omega_max:
-            t_max = (omega_max - omega_cmd) / (_ - omega_cmd)
-        elif _ < -omega_max:
-            t_max = (-omega_max - omega_cmd) / (_ - omega_cmd)
+        if _ > self.omega_max:
+            t_max = (self.omega_max - omega_cmd) / (_ - omega_cmd)
+        elif _ < -self.omega_max:
+            t_max = (-self.omega_max - omega_cmd) / (_ - omega_cmd)
         else:
             t_max = 1.0
 
         _ = V - b*v_cmd / a
-        if _ > v_max:
-            t_min = (v_max - omega_cmd) / (_ - omega_cmd)
-        elif _ < -v_max:
-            t_min = (-v_max - omega_cmd) / (_ - omega_cmd)
+        if _ > self.v_max:
+            t_min = (self.v_max - omega_cmd) / (_ - omega_cmd)
+        elif _ < -self.v_max:
+            t_min = (-self.v_max - omega_cmd) / (_ - omega_cmd)
         else:
             t_min = 0.0
 
