@@ -5,7 +5,7 @@ import rospy
 
 class Logger:
     def __init__(self):
-        self.folder = os.environ.get("LOG_FOLDER")
+        self.folder = os.environ.get("LOG_FOLDER", "csv_logs")
         self.topics = {}
         
     def log(self, topic, *data):

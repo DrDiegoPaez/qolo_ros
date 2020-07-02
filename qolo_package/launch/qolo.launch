@@ -1,9 +1,11 @@
 <launch>
-  <!--  <include file="$(find qolo)/launch/rear_lidar-lrf.launch"/> -->
+  <!--  <include file="$(find qolo)/launch/rear_lidar-lrf.launch"/> 
+
+      <include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>
+      
+      -->
 
   <include file="$(find qolo)/launch/joystick_qolo.launch"/>
-
-  <include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>
   
   <node name="qolo_control" pkg="qolo" type="qolo_control_node.py" />
 

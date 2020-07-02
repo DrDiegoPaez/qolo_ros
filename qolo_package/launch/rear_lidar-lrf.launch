@@ -58,7 +58,7 @@
     
     <!--  <node name="lidar_channels_to_lrf_node" pkg="rds_ros" type="lidar_channels_to_lrf_node" /> -->
 
-    <!--     <include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>   -->
+    <include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>
 
   </group>
 
