@@ -72,7 +72,7 @@ backward_coefficient = 0.5
 # DAC1 --> Right Wheel Velocity
 # DAC2 --> Enable Qolo Motion
 THRESHOLD_V = 1500;
-ZERO_LW = 2650 #2750;
+ZERO_LW = 2500 #2750;
 ZERO_RW = 2500 #2650;
 High_DAC = 5000;
 MBED_Enable = mraa.Gpio(36) #11 17
