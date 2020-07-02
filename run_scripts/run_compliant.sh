@@ -21,24 +21,24 @@ echo "Current Test Number : ${TEST_NO}"
 eval ". devel/setup.bash"
 
 #----- Launch and record realsense camera -----
-echo "Launching RealSense Camera..."
-eval "roslaunch realsense2_camera rs_qolo_front.launch \
-    &> /dev/null &"
-PID_LIST+="$! "
-sleep 10
-#eval "rosbag record -q \
-#    -O ${LOG_FOLDER}/camera \
-#    -e '/camera_rear/(.*)' \
-#    &> /dev/null &"
+# echo "Launching RealSense Camera..."
+# eval "roslaunch realsense2_camera rs_qolo_front.launch \
+#     &> /dev/null &"
 # PID_LIST+="$! "
+# sleep 10
+# #eval "rosbag record -q \
+# #    -O ${LOG_FOLDER}/camera \
+# #    -e '/camera_rear/(.*)' \
+# #    &> /dev/null &"
+# # PID_LIST+="$! "
 
-eval "rostopic echo -p /camera/accel/sample \
-    &> ${LOG_FOLDER}/imu/accel.csv &"
-PID_LIST+="$! "
-eval "rostopic echo -p /camera/gyro/sample \
-    &> ${LOG_FOLDER}/imu/gyro.csv &"
-PID_LIST+="$! "
-sleep 5
+# eval "rostopic echo -p /camera/accel/sample \
+#     &> ${LOG_FOLDER}/imu/accel.csv &"
+# PID_LIST+="$! "
+# eval "rostopic echo -p /camera/gyro/sample \
+#     &> ${LOG_FOLDER}/imu/gyro.csv &"
+# PID_LIST+="$! "
+# sleep 5
 
 
 # # --------- Launching node for remote control access ------- # #
