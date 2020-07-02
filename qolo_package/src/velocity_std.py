@@ -86,4 +86,16 @@ def compute_mean_and_std(filename):
 	    # show the results
 	    show(p)
 
-for f in all_filenames:
+
+v_lines = [[],[],[]]
+std_lines = [[],[],[]]
+
+for j in range(5):
+	for i in range(3):
+		mean, std = compute_mean_and_std(all_filenames[j*3+i])
+		v_lines[i].append(mean)
+		std_lines[i].append(std)
+
+v_des = [0.5, 0.7, 0.9, 1.2, 1.5]
+rho = [0.2, 0.6, 1.0]
+
