@@ -25,7 +25,10 @@ class Logger:
         return writer
 
     def init_topic(self, topic, subfolder="", header=None):
-        f = open(os.path.join(self.folder, subfolder, topic+".csv"), 'w')
+        parent_dir = os.path.join(self.folder, subfolder)
+        if not os.path.exists(parent_dir):
+            os.makedirs(parent_dir)
+        f = open(os.path.join(parent_dir, topic+".csv"), 'w')
         writer = csv.writer(f)
         self.topics[topic] = (f, writer)
 

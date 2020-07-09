@@ -35,6 +35,7 @@ from rds_network_ros.srv import *
 # from builtins import PermissionError
 
 from logger import Logger
+from compliance_controller import AdmittanceController
 
 # FLAG for fully manual control (TRUE) or shared control (FALSE)
 #Tonado server port
@@ -64,6 +65,9 @@ FLAG_debug = True
 Stop_Thread_Flag = False
 
 conv = converter.AD_DA()
+
+# Logger
+logger = Logger()
 
 # coefficient for vmax and wmax(outout curve)
 forward_coefficient = 1
@@ -127,13 +131,7 @@ angular_acceleration_limit = 1.5
 compliant_V =0.
 compliant_W =0.
 
-bumper_l = 0.2425      # (210+32.5) mm
-bumper_R = 0.33 # 330 mm
-Ts = 1.0/50    # 100 Hz
-control_time = 0.1
-Damping_gain = 0.1          # 1 N-s/m 
-robot_mass = 2        # 120 kg
-collision_F_max = 25 # [N]
+compliance_control = None
 
 # Global Variables for Compliant mode
 offset_ft_data = np.zeros((6,))
@@ -320,7 +318,6 @@ def callback_remote(data):
 
 ## Compliant control functions
 def ft_sensor_callback(data):
-    # data.wrench.serialize_numpy(raw_ft_data, np)
     global raw_ft_data, filtered_ft_data, init_ft_data, initialising_ft
     _x = data.wrench
     raw_ft_data = np.array([
@@ -339,146 +336,6 @@ def ft_sensor_callback(data):
         init_ft_data['Mx'] = np.append(init_ft_data['Mx'], _x.torque.x)
         init_ft_data['My'] = np.append(init_ft_data['My'], _x.torque.y)
         init_ft_data['Mz'] = np.append(init_ft_data['Mz'], _x.torque.z)
-    # else:
-    #     filter_data['Fx'] = np.append(filter_data['Fx'], _x.force.x)
-    #     filter_data['Fy'] = np.append(filter_data['Fy'], _x.force.y)
-    #     filter_data['Fz'] = np.append(filter_data['Fz'], _x.force.z)
-    #     filter_data['Mx'] = np.append(filter_data['Mx'], _x.torque.x)
-    #     filter_data['My'] = np.append(filter_data['My'], _x.torque.y)
-    #     filter_data['Mz'] = np.append(filter_data['Mz'], _x.torque.z)
-
-    #     fs = 400 #sampling frequency
-    #     fc = 30 # Cut-off frequency of the filter
-    #     w = fc / (fs / 2) # Normalize the frequency
-    #     b, a = signal.butter(5, w, 'low')
-    #     fx_low = signal.lfilter(b, a, filter_data['Fx']) #Forward filter
-    #     fy_low = signal.lfilter(b, a, filter_data['Fy']) #Forward filter
-    #     fz_low = signal.lfilter(b, a, filter_data['Fz']) #Forward filter
-    #     tx_low = signal.lfilter(b, a, filter_data['Mx']) #Forward filter
-    #     ty_low = signal.lfilter(b, a, filter_data['My']) #Forward filter
-    #     tz_low = signal.lfilter(b, a, filter_data['Mz']) #Forward filter
-    #     filtered_ft_data = np.array([
-    #         fx_low,
-    #         fy_low,
-    #         fz_low,
-    #         tx_low,
-    #         ty_low,
-    #         tz_low,
-    #         ])
-
-
-def damper_correction(ft_data):
-    # Correcting based on trained SVR damping model
-    global bumperModel, bumper_loc
-    # corr_ft_data = bumperModel.predict(ft_data)
-    # ft_data_temp = ft_data
-    (Fx, Fy, Mz) = bumperModel.predict(np.reshape(ft_data, (1,-1)))
-    h = 0.1
-    (a, b, c) = (Fx, Fy, Mz/bumper_R)
-    temp = a**2 + b**2 - c**2
-    if temp > 0:
-        theta = np.real(-1j * np.log(
-            (c + 1j*np.sqrt(temp)) /
-            (a + 1j*b)
-        ))
-    else:
-        theta = np.real(-1j * np.log(
-            (c - np.sqrt(-temp)) /
-            (a + 1j*b)
-        ))
-
-    Fmag = Fx*np.sin(theta) + Fy*np.cos(theta)
-
-    bumper_loc[0] = Fmag
-    bumper_loc[1] = theta
-    bumper_loc[2] = h
-
-    return (Fx, Fy, Mz, Fmag, h, theta)
-
-
-def compliance_control(v_prev, omega_prev, v_cmd, omega_cmd, Fmag, h, theta):
-    global control_time, bumper_loc
-    # F = robot_mass \Delta \ddot{x} + Damping_gain \Delta \dot{x} + K \Delta x
-    # And set reference to 0 and discretize w/ ZOH
-    stheta = math.sin(theta)    # Small optimization
-    ctheta = math.cos(theta)    # Small optimization
-
-    # Position wrt center of rotatiion
-    O = math.sqrt((bumper_R*stheta)**2 + (bumper_l + bumper_R*ctheta)**2 )
-    beta = math.atan2(bumper_R * stheta, bumper_l + bumper_R * ctheta)
-
-    sbeta = math.sin(beta)      # Small optimization
-    cbeta = math.cos(beta)      # Small optimization
-
-    # Admittance Control
-    Ts_control = round((time.clock() - control_time),4)
-    Ts_control = Ts
-    control_time = time.clock()
-    
-    a = ctheta
-    b = O * (stheta*cbeta - ctheta*sbeta)
-    
-    v_eff_prev = (a * v_prev) + (b * omega_prev)
-    v_eff_cmd  = (a * v_cmd)  + (b * omega_cmd)
-    
-    eff_robot_mass = robot_mass
-    if (abs(v_eff_cmd) > (collision_F_max * Ts_control) / robot_mass):
-        eff_robot_mass = (collision_F_max * Ts_control) / abs(v_eff_cmd)
-
-    v_eff_dot = (-Fmag - Damping_gain*v_eff_prev) / eff_robot_mass
-    v_eff = v_eff_dot * Ts_control + v_eff_cmd
-
-    # # Calculate new v and omega
-    # c_prev = (-b * v_prev) + (a * omega_prev)
-    # den = a**2 - b**2
-    # v = (a*v_eff - b*c_prev) / den
-    # omega = (-b*v_eff + a*c_prev) / den
-
-    # Calculate new v and omega in parameterized form
-    v_max = MAX_SPEED
-    omega_max = (MAX_OMEGA/W_RATIO)
-    
-    a = 1.0 
-    b = -(stheta*cbeta - ctheta*sbeta) / omega_max * v_max
-
-    V = v_eff
-    # Ensure non-zero 'a' and 'b'
-    eps = 0.01
-    if (abs(a) < eps):
-        # return (v_prev, v_eff/b)
-        return (v_cmd, V/b)
-    if (abs(b) < eps):
-        # return (v_eff/a, omega_prev)
-        return (V/a, omega_cmd)
-
-    _ = V - a*omega_cmd / b
-    if _ > omega_max:
-        t_max = (omega_max - omega_cmd) / (_ - omega_cmd)
-    elif _ < -omega_max:
-        t_max = (-omega_max - omega_cmd) / (_ - omega_cmd)
-    else:
-        t_max = 1.0
-
-    _ = V - b*v_cmd / a
-    if _ > v_max:
-        t_min = (v_max - omega_cmd) / (_ - omega_cmd)
-    elif _ < -v_max:
-        t_min = (-v_max - omega_cmd) / (_ - omega_cmd)
-    else:
-        t_min = 0.0
-
-    __from_range = [0.0, np.pi]
-    __to_range = [t_min, t_max]
-    __x = np.abs(theta)
-    t = __to_range[0] + ((__x - __from_range[0]) * (__to_range[1]-__to_range[0]) / (__from_range[1]-__from_range[0]))
-    bumper_loc[3] = t
-
-    # v = t * v_prev + (1-t) * (v_eff - b*omega_prev) / a
-    # omega = t * (v_eff - a*v_prev) / b + (1-t) * omega_prev
-
-    v = t * v_cmd + (1-t) * (V - b*omega_cmd) / a
-    omega = t * (V - a*v_cmd) / b + (1-t) * omega_cmd
-    return (v, omega)
     
 
 # read data from ADDA board
@@ -861,7 +718,7 @@ def control():
     # global r1, r2, r3, r4, r5, r6, r7, r8
     global Rcenter, Count_msg_lost, time_msg, last_msg
     global Command_V, Command_W, Comand_DAC0, Comand_DAC1, User_V, User_W, Output_V, Output_W, last_w, last_v, Corrected_V, Corrected_W
-    global counter1, compliant_V, compliant_W, raw_ft_data, ft_data, svr_data, offset_ft_data
+    global counter1, compliant_V, compliant_W, raw_ft_data, ft_data, svr_data, offset_ft_data, compliance_control
     global DA_time, RDS_time, Compute_time, FSR_time, Compliance_time
     
     # Replace with a node subsription
@@ -925,14 +782,11 @@ def control():
     if COMPLIANCE_FLAG:
         # ft_data = lp_filter.filter(raw_ft_data - offset_ft_data)
         ft_data = (raw_ft_data - offset_ft_data)
-        [Fx, Fy, Mz, Fmag, h, theta] = damper_correction(ft_data)
-        svr_data[0] = Fx
-        svr_data[1] = Fy
-        svr_data[2] = Mz
-        if abs(Fmag) > 15:
-            [compliant_V, compliant_W] = compliance_control(compliant_V, compliant_W, Corrected_V, Corrected_W, Fmag, h, theta)
-        else:
-            (compliant_V, compliant_W) = (Corrected_V, Corrected_W)
+        (compliant_V, compliant_W) = compliance_control.step(
+            ft_data, 
+            compliant_V, compliant_W,
+            Corrected_V, Corrected_W
+        )
         Output_V = round(compliant_V,6)
         Output_W = round(compliant_W,6)
     else:
@@ -976,7 +830,7 @@ def control_node():
     global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Xin
     global RemoteE, ComError
     global DA_time, RDS_time, Compute_time, FSR_time, Compliance_time, extra_time,last_msg, time_msg
-    global compliant_V, compliant_W, offset_ft_data, bumperModel, lp_filter
+    global compliant_V, compliant_W, offset_ft_data, bumperModel, lp_filter, compliance_control
     prevT = 0
     FlagEmergency=False
     # threadLock = threading.Lock()
@@ -984,17 +838,23 @@ def control_node():
     
     # Call the calibration File
     # load_calibration()
-    logger = Logger()
     if COMPLIANCE_FLAG:
-        rospy.loginfo("loading SVR models")
-        bumperModel = BumperModel()
-        rospy.loginfo("SVR models loaded")
-        lp_filter = MultiLowPassFilter(size=6)
-        logger.init_topic("raw", "compliance", ["t", "Fx", "Fy", "Fz", "Mx", "My", "Mz"])
-        logger.init_topic("svr", "compliance", ["t", "Fx", "Fy", "Mz"])
-        logger.init_topic("bumper_loc", "compliance", ["t", "Fmag", "theta(rad)", "h", "p"])
-        logger.init_topic("corr_velocity", "compliance", ["t", "v_user", "omega_user", "v_OA", "omega_OA", "v_compliance", "omega_compliance"])
-        logger.init_topic("timings", "compliance", ["t", "DA_time", "RDS_time", "Compute_time", "FSR_time", "Compliance_time", "Cycle_time"])
+        compliance_control = AdmittanceController(
+            v_max=MAX_SPEED,
+            omega_max=(MAX_OMEGA/W_RATIO),
+            bumper_l=0.2425,
+            bumper_R=0.33,
+            Ts=1.0/50,
+            Damping_gain=0.1,
+            robot_mass=2,
+            collision_F_max=25,
+            logger=logger
+        )
+    
+    logger.init_topic("raw", "compliance", ["t", "Fx", "Fy", "Fz", "Mx", "My", "Mz"])
+    logger.init_topic("corr_velocity", "compliance", ["t", "v_user", "omega_user", "v_OA", "omega_OA", "v_compliance", "omega_compliance"])
+    logger.init_topic("timings", "compliance", ["t", "DA_time", "RDS_time", "Compute_time", "FSR_time", "Compliance_time", "Cycle_time"])
+
 
     ########### Starting Communication and MBED Board ###########
 
@@ -1028,10 +888,10 @@ def control_node():
     
     pub_user = rospy.Publisher('qolo/user_input', Float32MultiArray, queue_size=1)
 
-    pub_compliance_raw = rospy.Publisher('qolo/compliance/raw', WrenchStamped, queue_size=1)
-    pub_compliance_svr = rospy.Publisher('qolo/compliance/svr', WrenchStamped, queue_size=1)
-    pub_compliance_bumper_loc = rospy.Publisher('qolo/compliance/bumper_loc', Float32MultiArray, queue_size=1)
-    pub_mess = rospy.Publisher('qolo/message', String, queue_size=1)
+    # pub_compliance_raw = rospy.Publisher('qolo/compliance/raw', WrenchStamped, queue_size=1)
+    # pub_compliance_svr = rospy.Publisher('qolo/compliance/svr', WrenchStamped, queue_size=1)
+    # pub_compliance_bumper_loc = rospy.Publisher('qolo/compliance/bumper_loc', Float32MultiArray, queue_size=1)
+    # pub_mess = rospy.Publisher('qolo/message', String, queue_size=1)
 
     rospy.init_node('qolo_control', anonymous=True)
     rate = rospy.Rate(200) #  100 hz
@@ -1075,16 +935,6 @@ def control_node():
     dat_wheels.layout.dim[0].label = 'Wheels Output'
     dat_wheels.layout.dim[0].size = 2
     dat_wheels.data = [0]*2
-
-    dat_compliance_raw = WrenchStamped()
-    dat_compliance_svr = WrenchStamped()
-
-    dat_compliance_bumper_loc = Float32MultiArray()
-    dat_compliance_bumper_loc.layout.dim.append(MultiArrayDimension())
-    dat_compliance_bumper_loc.layout.dim[0].label = 'Bumper: F_mag theta h ; param'
-    dat_compliance_bumper_loc.layout.dim[0].size = 4
-    dat_compliance_bumper_loc.data = [0]*4
-
 
     if COMPLIANCE_FLAG:
         ftsub = rospy.Subscriber("/rokubi_node_front/ft_sensor_measurements",WrenchStamped,ft_sensor_callback, queue_size=1)
@@ -1189,12 +1039,11 @@ def control_node():
 
         cycle_T = time.clock() - prevT
 
-        # logger.log('svr', *svr_data)
-        # logger.log('bumper_loc', *bumper_loc)
-        # logger.log('raw', *ft_data)
-        # logger.log('corr_velocity', User_V, User_W, Corrected_V, Corrected_W, compliant_V, compliant_W)
-        # logger.log('timings', DA_time, RDS_time, Compute_time, FSR_time, Compliance_time, cycle_T)
-
+        if COMPLIANCE_FLAG:
+            compliance_control.log()
+        logger.log('raw', *ft_data)
+        logger.log('corr_velocity', User_V, User_W, Corrected_V, Corrected_W, compliant_V, compliant_W)
+        logger.log('timings', DA_time, RDS_time, Compute_time, FSR_time, Compliance_time, cycle_T)
 
         # rospy.loginfo(RosMassage)
         pub_emg.publish(FlagEmergency)
