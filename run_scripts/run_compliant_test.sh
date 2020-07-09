@@ -44,13 +44,9 @@ sleep 5
 
 #----- Launch qolo control -----
 eval ". devel/setup.bash"
-eval "roslaunch qolo compliance_qolo.launch log_foler:=${LOG_FOLDER} &"
+eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
 PID_LIST+="$! "
 sleep 15
-
-echo ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-echo "Starting recording compliance test..."
-echo ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
 
 # eval "rostopic echo -p /qolo/compliance/raw \
 #     &> ${LOG_FOLDER}/compliance/raw.csv &"
