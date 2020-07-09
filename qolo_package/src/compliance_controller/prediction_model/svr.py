@@ -27,6 +27,9 @@ class SVR:
                 "\n\tUse SVR.predict_all() for multiple input samples"
             )
 
+        if x.shape[1] == 6:
+            x = np.delete(x, 2, 1)
+        
         if x.shape[1] != self.in_size:
             raise ValueError(
                 "Input shape of {:d} is different from expected dimension of {:d}".format(
@@ -40,4 +43,4 @@ class SVR:
         K = np.exp(- np.sum(_temp**2, axis=1))
 
         y = np.sum(self.alpha * K) + self.bias
-        return y
+        return [y]

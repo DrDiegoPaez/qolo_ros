@@ -42,9 +42,13 @@ class AdmittanceController:
             self.logger.init_topic("bumper_loc", "compliance", ["t", "Fmag", "theta(rad)", "h", "p"])
 
 
-    def step(self, ft_data, v_prev, omega_prev, v_cmd, omega_cmd):
-        data = np.delete(np.reshape(ft_data, (1,-1)), 2, 1)
+    def step(self, ft_data, v_prev, omega_prev, v_cmd, omega_cmd, svr_data=None):
+        data = np.reshape(ft_data, (1,-1))
         self.damper_correction(data)
+        if svr_data is not None:
+            svr_data[0] = self._Fx
+            svr_data[1] = self._Fy
+            svr_data[2] = self._Mz
         if abs(self._Fmag) > 15:
             return self.get_control(v_prev, omega_prev, v_cmd, omega_cmd)
         else:

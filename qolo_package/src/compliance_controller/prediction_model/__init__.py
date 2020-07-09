@@ -3,7 +3,7 @@
 This module implements prediction model for bumper damping.
 """
 
-__all__ = ['SVR', 'BumperModel']
+__all__ = ['SVR', 'NN', 'BumperModel']
 __version__ = '0.1'
 __author__ = 'Vaibhav Gupta'
 

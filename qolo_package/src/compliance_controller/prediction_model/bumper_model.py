@@ -11,11 +11,19 @@ class BumperModel:
         if folder is None:
             folder = os.path.dirname(__file__)
 
+        # self.models = [
+        #     SVR(os.path.join(folder, 'trainedModels_Fx.npz')),
+        #     SVR(os.path.join(folder, 'trainedModels_Fy.npz')),
+        #     SVR(os.path.join(folder, 'trainedModels_Tz.npz'))
+        # ]
+
         self.models = [
-            SVR(os.path.join(folder, 'trainedModels_Fx.npz')),
-            SVR(os.path.join(folder, 'trainedModels_Fy.npz')),
-            SVR(os.path.join(folder, 'trainedModels_Tz.npz'))
+            NN(os.path.join(folder, 'trainedModels_nn.tflite'))
         ]
     
     def predict(self, x):
-        return [model.predict(x) for model in self.models]
+        return [
+            out
+            for model in self.models
+            for out in model.predict(x)
+        ]
