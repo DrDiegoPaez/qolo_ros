@@ -14,19 +14,20 @@ class RobotMetricsEvaluation:
         self.duration = 0.0
         self.previous_x = None
         self.previous_y = None
+        self.velocities = []
+        self.t_steps = []
 
-    def print_result(self):
+    def print_result(self, filename):
         if self.reached_goal_time == None:
             print ("Did not reach the goal")
         else:
             print ("Time to reach the goal: ", self.reached_goal_time)
         print ("Mean velocity: ", self.mean_velocity)
-        with open(expanduser('~/Robot_Metrics_Evaluation.txt'), 'w+') as file:
-            if self.reached_goal_time == None:
-                file.write("Did not reach the goal\n")
-            else:
-                file.write('Time to reach the goal: ' + str(self.reached_goal_time) + "\n")
-            file.write('Mean velocity: ' + str(self.mean_velocity) + "\n")
+        with open(expanduser('~/Desktop/'+filename), 'w+') as file:
+            for v in self.velocities:
+                file.write("%f\n" % v)
+            for dt in self.t_steps:
+                file.write("%f\n" % dt)
 
     def update(self, position_x, position_y, time_now):
         if self.initial_timestamp == None:
@@ -48,6 +49,8 @@ class RobotMetricsEvaluation:
             v_x = (position_x - self.previous_x)/dt
             v_y = (position_y - self.previous_y)/dt
             v = math.sqrt(v_x*v_x + v_y*v_y)
+            self.velocities.append(v)
+            self.t_steps.append(dt)
             self.mean_velocity = w_old*self.mean_velocity + w_new*v
 
         self.previous_x = position_x
