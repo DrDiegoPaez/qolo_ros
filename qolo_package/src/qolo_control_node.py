@@ -1,4 +1,5 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
+
 #########  Qolo Main Code for Shared / Embodied / Remore Control ##########
 ##### Author: Diego F. Paez G.
 ##### Embodied sensirg: Chen Yang
@@ -24,8 +25,6 @@ import datetime
 # from scipy import signal
 import rospy
 import threading
-from prediction_model import BumperModel
-from filters import MultiLowPassFilter
 
 from geometry_msgs.msg import Wrench, WrenchStamped, Vector3, PoseStamped, Quaternion, Twist, TwistStamped
 from std_msgs.msg import String, Bool, Float32MultiArray, Float32, Int32MultiArray
@@ -34,8 +33,11 @@ from std_msgs.msg import MultiArrayLayout, MultiArrayDimension, Header
 from rds_network_ros.srv import *
 # from builtins import PermissionError
 
+from filters import MultiLowPassFilter
 from logger import Logger
 from compliance_controller import AdmittanceController
+
+from termcolor import colored
 
 # FLAG for fully manual control (TRUE) or shared control (FALSE)
 #Tonado server port
@@ -43,18 +45,19 @@ try:
     os.nice(-10)
 except PermissionError:
     # Need to run via sudo for high priority
-    rospy.logerr("Cannot set niceness for the process...")
-    rospy.logerr("Run the script as sudo...")
+    print(colored("Cannot set niceness for the process...", "red"))
+    print(colored("Run the script as sudo...", "red"))
+
 K_vel = 0.5
 CONSTANT_VEL = False
 # For testing collision avoidance 
-SHARED_MODE = False
+SHARED_MODE = rospy.get_param("/qolo_control/shared_mode", False)
 # For testing collision control
-COMPLIANCE_FLAG = False
+COMPLIANCE_FLAG = rospy.get_param("/qolo_control/compliance_flag", False)
 # For using remote app Joystick
-JOYSTICK_MODE = True
+JOYSTICK_MODE = rospy.get_param("/qolo_control/joystick_mode", True)
 # For using DS or trajectory tracking
-REMOTE_MODE = False
+REMOTE_MODE = rospy.get_param("/qolo_control/remote_mode", False)
 # For zero output to the wheels
 TESTING_MODE = False
 
@@ -67,7 +70,8 @@ Stop_Thread_Flag = False
 conv = converter.AD_DA()
 
 # Logger
-logger = Logger()
+logger = Logger(rospy.get_param("/qolo_control/log_folder", "csv_logs"))
+print(colored("Logging folder is '{}'".format(logger.folder), "yellow"))
 
 # coefficient for vmax and wmax(outout curve)
 forward_coefficient = 1
@@ -80,7 +84,7 @@ backward_coefficient = 0.5
 # DAC1 --> Right Wheel Velocity
 # DAC2 --> Enable Qolo Motion
 THRESHOLD_V = 1500;
-ZERO_LW = 2600 #2750;
+ZERO_LW = 2700 #2750;
 ZERO_RW = 2500 #2650;
 High_DAC = 5000;
 MBED_Enable = mraa.Gpio(36) #11 17
@@ -969,6 +973,10 @@ def control_node():
         print('STARTING SHARED CONTROL MODE')
     else:
         print('STARTING MANUAL MODE')
+
+    print(colored(":"*80, "green"))
+    print(colored("Ready to start experiment...", "green"))
+    print(colored(":"*80, "green"))
 
     while not rospy.is_shutdown():
         prevT = time.clock()

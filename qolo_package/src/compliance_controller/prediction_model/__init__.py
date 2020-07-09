@@ -8,5 +8,6 @@ __version__ = '0.1'
 __author__ = 'Vaibhav Gupta'
 
 from .svr import SVR
+from .nn import NN
 from .bumper_model import BumperModel
 

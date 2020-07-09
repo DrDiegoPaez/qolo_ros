@@ -1,5 +1,5 @@
 import numpy as np
-from prediction_model import BumperModel
+from .prediction_model import BumperModel
 
 class AdmittanceController:
     def __init__(

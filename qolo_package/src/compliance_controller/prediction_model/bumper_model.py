@@ -4,6 +4,7 @@ import numpy as np
 import os
 
 from . import SVR
+from . import NN
 
 class BumperModel:
     def __init__(self, folder=None):

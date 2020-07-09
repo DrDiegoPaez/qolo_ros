@@ -34,7 +34,7 @@ class AD_DA:
         self.gpio_3 = mraa.Gpio(29) #12 18
         self.gpio_4 = mraa.Gpio(32) #11 17
         self.gpio_5 = mraa.Gpio(11) #15 22
-        self.gpio_6 = mraa.Gpio(07) #16 23 
+        self.gpio_6 = mraa.Gpio(7) #16 23 
         self.gpio_7 = mraa.Gpio(12) #12 18
         self.gpio_8 = mraa.Gpio(18) #11 17
         self.gpio_1.dir(mraa.DIR_OUT)
@@ -57,17 +57,17 @@ class AD_DA:
     def _start_adc(self):
         id = self._ReadChipID()
         if (id != 3):
-            print "Error, ASD1256 Chip ID =", id
+            print("Error, ASD1256 Chip ID =", id)
         else:
-            print "Ok, ASD1256 Chip ID =", id
+            print("Ok, ASD1256 Chip ID =", id)
         self._CfgADC(self._GAIN.GAIN_1, self._DRATE_E.SPS_100)  # drate 100
 
     def _start_adc1(self):
         id = self._ReadChipID1()
         if (id != 3):
-            print "Error, ASD1256 Chip ID =", id
+            print("Error, ASD1256 Chip ID =", id)
         else:
-            print "Ok, ASD1256 Chip ID =", id
+            print("Ok, ASD1256 Chip ID =", id)
         self._CfgADC1(self._GAIN.GAIN_1, self._DRATE_E.SPS_100)  # drate 100
 
     class _GAIN(IntEnum):
@@ -255,14 +255,14 @@ class AD_DA:
             
     def _SetChannel(self,ch):
         if (ch > 7):
-            print "Max channel up to 7"
+            print("Max channel up to 7")
             return
         self._WriteReg(self._REG.MUX, (ch << 4) | (1 << 3))
         time.sleep(0.005)
 
     def _SetChannel_1(self,ch):
         if (ch > 7):
-            print "Max channel up to 15"
+            print("Max channel up to 15")
             return
         self._WriteReg1(self._REG.MUX, (ch << 4) | (1 << 3))
         time.sleep(0.005)
