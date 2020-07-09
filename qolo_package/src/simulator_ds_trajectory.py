@@ -38,9 +38,10 @@ D_angular = 10
 D_linear = 10
 
 ref_vel = 1.5
+density = 1.0
 control_point = 0.9
 stop_distance = 0.1
-time_limit = 90
+time_limit = 1090
 
 Attractor = np.array([[40.0+control_point], [0.0]])
 
@@ -399,7 +400,7 @@ def main():
 # for interruptions
 def exit(signum, frame):
     global robot_metrics_eval
-    robot_metrics_eval.print_result()
+    robot_metrics_eval.print_result("v%f-d%f.txt" % (ref_vel, density))
     # Stop_Thread_Flag = True
     # cleanup_stop_thread()
     print('---> You chose to interrupt')
@@ -415,4 +416,4 @@ if __name__ == '__main__':
    except rospy.ROSInterruptException:
       time.sleep(0.1)
       pass
-   robot_metrics_eval.print_result()
+   robot_metrics_eval.print_result("v%f-d%f.txt" % (ref_vel, density))
