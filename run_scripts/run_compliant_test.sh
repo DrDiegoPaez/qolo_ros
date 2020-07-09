@@ -15,7 +15,6 @@ while [ -d "csv_logs/test${TEST_NO}" ]; do
    TEST_NO=$(( $TEST_NO + 1 ))
 done
 LOG_FOLDER="$(pwd)/csv_logs/test${TEST_NO}"
-export LOG_FOLDER
 eval "mkdir -p ${LOG_FOLDER}/compliance"
 echo "Current Test Number : ${TEST_NO}"
 
@@ -45,7 +44,7 @@ sleep 5
 
 #----- Launch qolo control -----
 eval ". devel/setup.bash"
-eval "roslaunch qolo compliance_qolo.launch &"
+eval "roslaunch qolo compliance_qolo.launch log_foler:=${LOG_FOLDER} &"
 PID_LIST+="$! "
 sleep 15
 
