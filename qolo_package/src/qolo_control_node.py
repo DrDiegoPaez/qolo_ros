@@ -47,7 +47,7 @@ except PermissionError:
 K_vel = 0.5
 CONSTANT_VEL = False
 # For testing collision avoidance 
-SHARED_MODE = True
+SHARED_MODE = False
 # For testing collision control
 COMPLIANCE_FLAG = False
 # For using remote app Joystick
@@ -984,19 +984,17 @@ def control_node():
     
     # Call the calibration File
     # load_calibration()
+    logger = Logger()
     if COMPLIANCE_FLAG:
         rospy.loginfo("loading SVR models")
         bumperModel = BumperModel()
         rospy.loginfo("SVR models loaded")
         lp_filter = MultiLowPassFilter(size=6)
-    
-
-    logger = Logger()
-    logger.init_topic("raw", "compliance", ["t", "Fx", "Fy", "Fz", "Mx", "My", "Mz"])
-    logger.init_topic("svr", "compliance", ["t", "Fx", "Fy", "Mz"])
-    logger.init_topic("bumper_loc", "compliance", ["t", "Fmag", "theta(rad)", "h", "p"])
-    logger.init_topic("corr_velocity", "compliance", ["t", "v_user", "omega_user", "v_OA", "omega_OA", "v_compliance", "omega_compliance"])
-    logger.init_topic("timings", "compliance", ["t", "DA_time", "RDS_time", "Compute_time", "FSR_time", "Compliance_time", "Cycle_time"])
+        logger.init_topic("raw", "compliance", ["t", "Fx", "Fy", "Fz", "Mx", "My", "Mz"])
+        logger.init_topic("svr", "compliance", ["t", "Fx", "Fy", "Mz"])
+        logger.init_topic("bumper_loc", "compliance", ["t", "Fmag", "theta(rad)", "h", "p"])
+        logger.init_topic("corr_velocity", "compliance", ["t", "v_user", "omega_user", "v_OA", "omega_OA", "v_compliance", "omega_compliance"])
+        logger.init_topic("timings", "compliance", ["t", "DA_time", "RDS_time", "Compute_time", "FSR_time", "Compliance_time", "Cycle_time"])
 
     ########### Starting Communication and MBED Board ###########
 
@@ -1191,11 +1189,11 @@ def control_node():
 
         cycle_T = time.clock() - prevT
 
-        logger.log('svr', *svr_data)
-        logger.log('bumper_loc', *bumper_loc)
-        logger.log('raw', *ft_data)
-        logger.log('corr_velocity', User_V, User_W, Corrected_V, Corrected_W, compliant_V, compliant_W)
-        logger.log('timings', DA_time, RDS_time, Compute_time, FSR_time, Compliance_time, cycle_T)
+        # logger.log('svr', *svr_data)
+        # logger.log('bumper_loc', *bumper_loc)
+        # logger.log('raw', *ft_data)
+        # logger.log('corr_velocity', User_V, User_W, Corrected_V, Corrected_W, compliant_V, compliant_W)
+        # logger.log('timings', DA_time, RDS_time, Compute_time, FSR_time, Compliance_time, cycle_T)
 
 
         # rospy.loginfo(RosMassage)
