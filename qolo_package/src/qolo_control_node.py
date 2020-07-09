@@ -259,7 +259,7 @@ def exit(signum, frame):
     conv.SET_DAC1(0, conv.data_format.voltage)
     # Stop_Thread_Flag = True
     # cleanup_stop_thread()
-    print('----> You chose to interrupt')
+    print(colored('----> You chose to interrupt', "red"))
     quit()
 
 class FSR_thread (threading.Thread):
@@ -789,7 +789,8 @@ def control():
         (compliant_V, compliant_W) = compliance_control.step(
             ft_data, 
             compliant_V, compliant_W,
-            Corrected_V, Corrected_W
+            Corrected_V, Corrected_W,
+            svr_data
         )
         Output_V = round(compliant_V,6)
         Output_W = round(compliant_W,6)
@@ -893,7 +894,7 @@ def control_node():
     pub_user = rospy.Publisher('qolo/user_input', Float32MultiArray, queue_size=1)
 
     # pub_compliance_raw = rospy.Publisher('qolo/compliance/raw', WrenchStamped, queue_size=1)
-    # pub_compliance_svr = rospy.Publisher('qolo/compliance/svr', WrenchStamped, queue_size=1)
+    pub_compliance_svr = rospy.Publisher('qolo/compliance/svr', WrenchStamped, queue_size=1)
     # pub_compliance_bumper_loc = rospy.Publisher('qolo/compliance/bumper_loc', Float32MultiArray, queue_size=1)
     # pub_mess = rospy.Publisher('qolo/message', String, queue_size=1)
 
@@ -939,6 +940,15 @@ def control_node():
     dat_wheels.layout.dim[0].label = 'Wheels Output'
     dat_wheels.layout.dim[0].size = 2
     dat_wheels.data = [0]*2
+    
+    # dat_compliance_raw = WrenchStamped()
+    dat_compliance_svr = WrenchStamped()
+
+    # dat_compliance_bumper_loc = Float32MultiArray()
+    # dat_compliance_bumper_loc.layout.dim.append(MultiArrayDimension())
+    # dat_compliance_bumper_loc.layout.dim[0].label = 'Bumper: F_mag theta h ; param'
+    # dat_compliance_bumper_loc.layout.dim[0].size = 4
+    # dat_compliance_bumper_loc.data = [0]*4
 
     if COMPLIANCE_FLAG:
         ftsub = rospy.Subscriber("/rokubi_node_front/ft_sensor_measurements",WrenchStamped,ft_sensor_callback, queue_size=1)
@@ -984,8 +994,8 @@ def control_node():
         control()   # Function of control for Qolo
         # # Checking emergency inputs
         # threadLock.acquire()
-        RemoteE = conv.ReadChannel(7, conv.data_format.voltage)
-        ComError = conv.ReadChannel(6, conv.data_format.voltage)
+        RemoteE = conv.ReadChannel(7, conv.data_format.voltage) # THRESHOLD_V - 1 # conv.ReadChannel(7, conv.data_format.voltage)
+        ComError = conv.ReadChannel(6, conv.data_format.voltage) # THRESHOLD_V + 1 # conv.ReadChannel(6, conv.data_format.voltage)
         # threadLock.release()
         # print('Comerror', ComError)
         if ComError<=THRESHOLD_V:
@@ -1035,10 +1045,10 @@ def control_node():
         # dat_compliance_raw.wrench.torque.y = ft_data[4]
         # dat_compliance_raw.wrench.torque.z = ft_data[5]
 
-        # dat_compliance_svr.header = make_header("tf_ft_front")
-        # dat_compliance_svr.wrench.force.x = svr_data[0]
-        # dat_compliance_svr.wrench.force.y = svr_data[1]
-        # dat_compliance_svr.wrench.torque.z = svr_data[2]
+        dat_compliance_svr.header = make_header("tf_ft_front")
+        dat_compliance_svr.wrench.force.x = svr_data[0]
+        dat_compliance_svr.wrench.force.y = svr_data[1]
+        dat_compliance_svr.wrench.torque.z = svr_data[2]
 
         # dat_compliance_bumper_loc.data[0] = bumper_loc[0]
         # dat_compliance_bumper_loc.data[1] = bumper_loc[1] * 180 / np.pi
@@ -1061,7 +1071,7 @@ def control_node():
         # pub_wheels.publish(dat_wheels)
         # pub_user.publish(dat_user)
         # pub_compliance_raw.publish(dat_compliance_raw)
-        # pub_compliance_svr.publish(dat_compliance_svr)
+        pub_compliance_svr.publish(dat_compliance_svr)
         # pub_compliance_bumper_loc.publish(dat_compliance_bumper_loc)
 
         # rospy.loginfo(dat_user)

@@ -60,7 +60,7 @@ class AD_DA:
             print("Error, ASD1256 Chip ID =", id)
         else:
             print("Ok, ASD1256 Chip ID =", id)
-        self._CfgADC(self._GAIN.GAIN_1, self._DRATE_E.SPS_100)  # drate 100
+        self._CfgADC(self._GAIN.GAIN_1, self._DRATE_E.SPS_30000)  # drate 100
 
     def _start_adc1(self):
         id = self._ReadChipID1()
@@ -68,7 +68,7 @@ class AD_DA:
             print("Error, ASD1256 Chip ID =", id)
         else:
             print("Ok, ASD1256 Chip ID =", id)
-        self._CfgADC1(self._GAIN.GAIN_1, self._DRATE_E.SPS_100)  # drate 100
+        self._CfgADC1(self._GAIN.GAIN_1, self._DRATE_E.SPS_30000)  # drate 100
 
     class _GAIN(IntEnum):
         GAIN_1 = 0
@@ -220,12 +220,11 @@ class AD_DA:
         return read
 
     def _Send8Bit(self,data):
-        time.sleep(0.0001)
+        # time.sleep(0.0001)
         self._spi.xfer2([data])
 
     def _Receive8Bit(self,bytes):
-        read = self._spi.readbytes(bytes)
-        return read
+        return self._spi.readbytes(bytes)
 
     def _ReadData(self):
         self._CS_ADC_0()
@@ -288,20 +287,20 @@ class AD_DA:
 
     def _LoadChannel(self,ch):
         self._SetChannel(ch)
-        time.sleep(0.00005)  # bsp_DelayUS(5)
+        # time.sleep(0.00005)  # bsp_DelayUS(5)
         self._WriteCmd(self._CMD.SYNC)
-        time.sleep(0.00005)  # bsp_DelayUS(5)
+        # time.sleep(0.00005)  # bsp_DelayUS(5)
         self._WriteCmd(self._CMD.WAKEUP)
-        time.sleep(0.00005)  # bsp_DelayUS(25)
+        # time.sleep(0.00005)  # bsp_DelayUS(25)
         return self._ReadData()
 
     def _LoadChannel_board1(self,ch):
         self._SetChannel_1(ch)
-        time.sleep(0.00005)  # bsp_DelayUS(5)
+        # time.sleep(0.00005)  # bsp_DelayUS(5)
         self._WriteCmd1(self._CMD.SYNC)
-        time.sleep(0.00005)  # bsp_DelayUS(5)
+        # time.sleep(0.00005)  # bsp_DelayUS(5)
         self._WriteCmd1(self._CMD.WAKEUP)
-        time.sleep(0.00005)  # bsp_DelayUS(25)
+        # time.sleep(0.00005)  # bsp_DelayUS(25)
         return self._ReadData1()
 
     def _WaitDRDY(self):
