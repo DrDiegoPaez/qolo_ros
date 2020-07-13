@@ -121,7 +121,7 @@ class AdmittanceController:
         if (abs(b) < eps):
             return (V/a, omega_cmd)
 
-        _ = V - a*omega_cmd / b
+        _ = V - a*v_cmd / b
         if _ > self.omega_max:
             t_max = (self.omega_max - omega_cmd) / (_ - omega_cmd)
         elif _ < -self.omega_max:
@@ -129,7 +129,7 @@ class AdmittanceController:
         else:
             t_max = 1.0
 
-        _ = V - b*v_cmd / a
+        _ = V - b*omega_cmd / a
         if _ > self.v_max:
             t_min = (self.v_max - omega_cmd) / (_ - omega_cmd)
         elif _ < -self.v_max:
