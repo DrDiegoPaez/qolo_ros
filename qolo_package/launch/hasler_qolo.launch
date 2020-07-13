@@ -5,7 +5,7 @@
   
    <include file="$(find qolo)/launch/joystick_qolo.launch"/>
 
-   <include file="$(find qolo)/launch/rear_lidar-lrf.launch"/> 
+   <include file="$(find qolo)/launch/rear_lidar-slam.launch"/> 
 
    <node name="qolo_remote" pkg="qolo" type="qolo_hasler_node.py" />
 

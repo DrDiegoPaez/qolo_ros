@@ -4,7 +4,7 @@
     <arg name="compliance_flag" default="true" />
     <arg name="joystick_mode" default="true" />
     <arg name="remote_mode" default="false" />
-<!--  <include file="$(find qolo)/launch/rear_lidar-lrf.launch"/> 
+<!--  <include file="$(find qolo)/launch/rear_lidar-slam.launch"/> 
 
     <include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>
         -->

@@ -973,9 +973,11 @@ def control_node():
     if JOYSTICK_MODE:
         sub_remote = rospy.Subscriber("qolo/remote_joystick", Float32MultiArray, callback_remote, queue_size=1)
         control_type = 'joystick'
+        print('Subscribed to JOYSTICK Mode')
     elif REMOTE_MODE:
         sub_remote = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
         control_type = 'remote'
+        print('Subscribed to REMOTE Mode')
     else:
         control_type = 'embodied'
     
