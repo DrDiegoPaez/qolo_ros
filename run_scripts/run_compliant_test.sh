@@ -44,7 +44,8 @@ sleep 5
 
 #----- Launch qolo control -----
 eval ". devel/setup.bash"
-eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
+# eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
+eval "roslaunch qolo qolo_test.launch log_folder:=${LOG_FOLDER} &"
 PID_LIST+="$! "
 sleep 15
 

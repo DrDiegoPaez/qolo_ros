@@ -5,7 +5,7 @@
 ##### Embodied sensirg: Chen Yang
 ##### Data: 2019/10/01
 
-import HighPrecision_ADDA_Double as converter
+from ADDA import ADDA as converter
 import time
 import math
 import os
@@ -48,7 +48,7 @@ except PermissionError:
     print(colored("Cannot set niceness for the process...", "red"))
     print(colored("Run the script as sudo...", "red"))
 
-K_vel = 0.5
+K_vel = 0.
 CONSTANT_VEL = False
 # For testing collision avoidance 
 SHARED_MODE = rospy.get_param("/qolo_control/shared_mode", False)
@@ -84,7 +84,7 @@ backward_coefficient = 0.5
 # DAC1 --> Right Wheel Velocity
 # DAC2 --> Enable Qolo Motion
 THRESHOLD_V = 1500;
-ZERO_LW = 2700 #2750;
+ZERO_LW = 2500 #2750;
 ZERO_RW = 2500 #2650;
 High_DAC = 5000;
 MBED_Enable = mraa.Gpio(36) #11 17
@@ -320,7 +320,7 @@ def callback_remote(data):
         time_msg = data.data[0]
     time_msg = data.data[0]
 
-## Compliant control functions
+## Compliant control functionschannels
 def ft_sensor_callback(data):
     global raw_ft_data, filtered_ft_data, init_ft_data, initialising_ft
     _x = data.wrench
@@ -490,8 +490,8 @@ def transformTo_Lowevel(Desired_V, Desired_W):
     motor_r = (wheel_R/RADIUS) * GEAR *(30/np.pi)
     # print ('Motor Vel =', motor_l, motor_r)    
     # Transforming velocities to mV [0-5000]
-    Command_L = round( ( + 5000*motor_l/2400), 6)
-    Command_R = round ( (ZERO_RW + 5000*motor_r/2400), 6)
+    Command_L = round( (ZERO_LW + 5000*motor_l/2400), 6)
+    Command_R = round( (ZERO_RW + 5000*motor_r/2400), 6)
     
 
     return Command_L, Command_R
@@ -523,7 +523,7 @@ def write_DA(Write_DAC0,Write_DAC1):
         send_DAC2 = High_DAC
 
     # threadLock.acquire()
-    conv.SetChannel(0, Send_DAC0)
+    conv.SetChannel(3, Send_DAC0)
     conv.SetChannel(1, Send_DAC1)
     conv.SetChannel(2, send_DAC2)
     # threadLock.release()
@@ -744,9 +744,6 @@ def control():
         else:
             User_V = 0.
             User_W = 0.
-    elif CONSTANT_VEL:
-        User_V = K_vel
-        User_W = 0.
     else:
         read_FSR()
         # FSR Inputs calibration: 
@@ -766,6 +763,9 @@ def control():
         User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),6)
         User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),6)
 
+    if CONSTANT_VEL:
+        User_V = K_vel
+        User_W = 0.
 
     if FLAG_debug:
         FSR_time = round((time.clock() - t1),6)
@@ -819,6 +819,7 @@ def control():
 
     last_v = Output_V
     last_w = Output_W
+    print("(", Output_V, ",", Output_W, ")")
 
     Comand_DAC0, Comand_DAC1 = transformTo_Lowevel(Output_V, Output_W)
     write_DA(Comand_DAC0, Comand_DAC1)
@@ -971,7 +972,7 @@ def control_node():
         print('Starting WITHOUT FT Sensing')
     
     if JOYSTICK_MODE:
-        sub_remote = rospy.Subscriber("qolo/remote_joystick", Float32MultiArray, callback_remote, queue_size=1)
+        sub_remote = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
         control_type = 'joystick'
         print('Subscribed to JOYSTICK Mode')
     elif REMOTE_MODE:

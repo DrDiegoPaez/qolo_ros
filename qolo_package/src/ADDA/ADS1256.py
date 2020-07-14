@@ -1,5 +1,3 @@
-import RPi.GPIO as GPIO
-
 
 ScanMode = 0
 
@@ -150,8 +148,6 @@ class ADS1256:
         ScanMode = Mode
 
     def ADS1256_init(self):
-        if (self.adda.module_init() != 0):
-            return -1
         self.ADS1256_reset()
         id = self.ADS1256_ReadChipID()
         if id == 3 :
@@ -159,7 +155,7 @@ class ADS1256:
         else:
             print("ID Read failed   ")
             return -1
-        self.ADS1256_ConfigADC(ADS1256_GAIN_E['ADS1256_GAIN_1'], ADS1256_DRATE_E['ADS1256_30000SPS'])
+        self.ADS1256_ConfigADC(ADS1256_GAIN_E['ADS1256_GAIN_1'], ADS1256_DRATE_E['ADS1256_15000SPS'])
         return 0
         
     def ADS1256_Read_ADC_Data(self):
