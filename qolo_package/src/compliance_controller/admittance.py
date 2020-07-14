@@ -6,12 +6,13 @@ class AdmittanceController:
         self,
         v_max,
         omega_max,
-        bumper_l=0.2425,   # (210+32.5) mm
-        bumper_R=0.33,     # 330 mm
-        Ts=1.0/50,         # 50 Hz
-        Damping_gain=0.1,  # 1 N-s/m
-        robot_mass=2,      # 120 kg
-        collision_F_max=25,# [N]
+        bumper_l=0.2425,    # [m] (210+32.5) mm
+        bumper_R=0.33,      # [m] 330 mm
+        Ts=1.0/50,          # [s] 50 Hz
+        Damping_gain=0.1,   # [N-s/m]
+        robot_mass=2,       # [kg]
+        collision_F_max=25, # [N]
+        activation_F=15,    # [N]
         logger=None
     ):
         self.v_max = v_max
@@ -22,6 +23,7 @@ class AdmittanceController:
         self.Damping_gain = Damping_gain
         self.robot_mass = robot_mass
         self.collision_F_max = collision_F_max
+        self.activation_F = activation_F
 
         # Bumper Model
         self.bumper_model = BumperModel()
@@ -49,7 +51,7 @@ class AdmittanceController:
             svr_data[0] = self._Fx
             svr_data[1] = self._Fy
             svr_data[2] = self._Mz
-        if abs(self._Fmag) > 15:
+        if abs(self._Fmag) > self.activation_F:
             return self.get_control(v_prev, omega_prev, v_cmd, omega_cmd)
         else:
             return (v_cmd, omega_cmd)
@@ -119,7 +121,7 @@ class AdmittanceController:
         if (abs(b) < eps):
             return (V/a, omega_cmd)
 
-        _ = V - a*omega_cmd / b
+        _ = V - a*v_cmd / b
         if _ > self.omega_max:
             t_max = (self.omega_max - omega_cmd) / (_ - omega_cmd)
         elif _ < -self.omega_max:
@@ -127,7 +129,7 @@ class AdmittanceController:
         else:
             t_max = 1.0
 
-        _ = V - b*v_cmd / a
+        _ = V - b*omega_cmd / a
         if _ > self.v_max:
             t_min = (self.v_max - omega_cmd) / (_ - omega_cmd)
         elif _ < -self.v_max:
