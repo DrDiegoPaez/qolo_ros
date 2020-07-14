@@ -1,4 +1,3 @@
-import config
 import RPi.GPIO as GPIO
 
 
@@ -70,40 +69,41 @@ CMD = {
 }
 
 class ADS1256:
-    def __init__(self):
-        self.rst_pin = config.RST_PIN
-        self.cs_pin = config.CS_PIN
-        self.drdy_pin = config.DRDY_PIN
+    def __init__(self, adda, rst_pin, cs_pin, drdy_pin):
+        self.adda = adda
+        self.rst_pin = rst_pin
+        self.cs_pin = cs_pin
+        self.drdy_pin = drdy_pin
 
     # Hardware reset
     def ADS1256_reset(self):
-        config.digital_write(self.rst_pin, GPIO.HIGH)
-        config.delay_ms(200)
-        config.digital_write(self.rst_pin, GPIO.LOW)
-        config.delay_ms(200)
-        config.digital_write(self.rst_pin, GPIO.HIGH)
+        self.adda.digital_write(self.rst_pin, self.adda.HIGH)
+        self.adda.delay_ms(200)
+        self.adda.digital_write(self.rst_pin, self.adda.LOW)
+        self.adda.delay_ms(200)
+        self.adda.digital_write(self.rst_pin, self.adda.HIGH)
     
     def ADS1256_WriteCmd(self, reg):
-        config.digital_write(self.cs_pin, GPIO.LOW)#cs  0
-        config.spi_writebyte([reg])
-        config.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
+        self.adda.digital_write(self.cs_pin, self.adda.LOW)#cs  0
+        self.adda.spi_writebyte([reg])
+        self.adda.digital_write(self.cs_pin, self.adda.HIGH)#cs 1
     
     def ADS1256_WriteReg(self, reg, data):
-        config.digital_write(self.cs_pin, GPIO.LOW)#cs  0
-        config.spi_writebyte([CMD['CMD_WREG'] | reg, 0x00, data])
-        config.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
+        self.adda.digital_write(self.cs_pin, self.adda.LOW)#cs  0
+        self.adda.spi_writebyte([CMD['CMD_WREG'] | reg, 0x00, data])
+        self.adda.digital_write(self.cs_pin, self.adda.HIGH)#cs 1
         
     def ADS1256_Read_data(self, reg):
-        config.digital_write(self.cs_pin, GPIO.LOW)#cs  0
-        config.spi_writebyte([CMD['CMD_RREG'] | reg, 0x00])
-        data = config.spi_readbytes(1)
-        config.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
+        self.adda.digital_write(self.cs_pin, self.adda.LOW)#cs  0
+        self.adda.spi_writebyte([CMD['CMD_RREG'] | reg, 0x00])
+        data = self.adda.spi_readbytes(1)
+        self.adda.digital_write(self.cs_pin, self.adda.HIGH)#cs 1
 
         return data
         
     def ADS1256_WaitDRDY(self):
         for i in range(0,400000,1):
-            if(config.digital_read(self.drdy_pin) == 0):
+            if(self.adda.digital_read(self.drdy_pin) == 0):
                 break
         if(i >= 400000):
             print ("Time Out ...\r\n")      
@@ -124,12 +124,12 @@ class ADS1256:
         buf[2] = (0<<5) | (0<<3) | (gain<<0)
         buf[3] = drate
         
-        config.digital_write(self.cs_pin, GPIO.LOW)#cs  0
-        config.spi_writebyte([CMD['CMD_WREG'] | 0, 0x03])
-        config.spi_writebyte(buf)
+        self.adda.digital_write(self.cs_pin, self.adda.LOW)#cs  0
+        self.adda.spi_writebyte([CMD['CMD_WREG'] | 0, 0x03])
+        self.adda.spi_writebyte(buf)
         
-        config.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
-        config.delay_ms(1)
+        self.adda.digital_write(self.cs_pin, self.adda.HIGH)#cs 1
+        self.adda.delay_ms(1)
 
     def ADS1256_SetChannal(self, Channal):
         if Channal > 7:
@@ -150,7 +150,7 @@ class ADS1256:
         ScanMode = Mode
 
     def ADS1256_init(self):
-        if (config.module_init() != 0):
+        if (self.adda.module_init() != 0):
             return -1
         self.ADS1256_reset()
         id = self.ADS1256_ReadChipID()
@@ -164,12 +164,12 @@ class ADS1256:
         
     def ADS1256_Read_ADC_Data(self):
         self.ADS1256_WaitDRDY()
-        config.digital_write(self.cs_pin, GPIO.LOW)#cs  0
-        config.spi_writebyte([CMD['CMD_RDATA']])
-        # config.delay_ms(10)
+        self.adda.digital_write(self.cs_pin, self.adda.LOW)#cs  0
+        self.adda.spi_writebyte([CMD['CMD_RDATA']])
+        # self.adda.delay_ms(10)
 
-        buf = config.spi_readbytes(3)
-        config.digital_write(self.cs_pin, GPIO.HIGH)#cs 1
+        buf = self.adda.spi_readbytes(3)
+        self.adda.digital_write(self.cs_pin, self.adda.HIGH)#cs 1
         read = (buf[0]<<16) & 0xff0000
         read |= (buf[1]<<8) & 0xff00
         read |= (buf[2]) & 0xff
@@ -183,18 +183,18 @@ class ADS1256:
                 return 0
             self.ADS1256_SetChannal(Channel)
             self.ADS1256_WriteCmd(CMD['CMD_SYNC'])
-            # config.delay_ms(10)
+            # self.adda.delay_ms(10)
             self.ADS1256_WriteCmd(CMD['CMD_WAKEUP'])
-            # config.delay_ms(200)
+            # self.adda.delay_ms(200)
             Value = self.ADS1256_Read_ADC_Data()
         else:
             if(Channel>=4):
                 return 0
             self.ADS1256_SetDiffChannal(Channel)
             self.ADS1256_WriteCmd(CMD['CMD_SYNC'])
-            # config.delay_ms(10) 
+            # self.adda.delay_ms(10) 
             self.ADS1256_WriteCmd(CMD['CMD_WAKEUP'])
-            # config.delay_ms(10) 
+            # self.adda.delay_ms(10) 
             Value = self.ADS1256_Read_ADC_Data()
         return Value
         
