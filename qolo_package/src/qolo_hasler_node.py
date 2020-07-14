@@ -24,7 +24,7 @@ import datetime
 # from scipy import signal
 import rospy
 import threading
-from prediction_model import BumperModel
+# from prediction_model import BumperModel
 
 from geometry_msgs.msg import Wrench, WrenchStamped, Vector3, PoseStamped, Quaternion, Twist
 from std_msgs.msg import String, Bool, Float32MultiArray, Float32, Int32MultiArray
@@ -46,7 +46,6 @@ REMOTE_MODE = True
 JOYSTICK_MODE = False
 SHARED_MODE = False
 COMPLIANCE_FLAG = False
-
 
 PORT = 8080
 control_type ='embodied'
@@ -72,7 +71,7 @@ backward_coefficient = 0.5
 # DAC1 --> Right Wheel Velocity
 # DAC2 --> Enable Qolo Motion
 THRESHOLD_V = 1500;
-ZERO_LW = 2500 #2750;
+ZERO_LW = 2570 #2750;
 ZERO_RW = 2500 #2650;
 High_DAC = 5000;
 MBED_Enable = mraa.Gpio(36) #11 17
