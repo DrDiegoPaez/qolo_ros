@@ -972,7 +972,7 @@ def control_node():
         print('Starting WITHOUT FT Sensing')
     
     if JOYSTICK_MODE:
-        sub_remote = rospy.Subscriber("qolo/remote_joystick", Float32MultiArray, callback_remote, queue_size=1)
+        sub_remote = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
         control_type = 'joystick'
         print('Subscribed to JOYSTICK Mode')
     elif REMOTE_MODE:
