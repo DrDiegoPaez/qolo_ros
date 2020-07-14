@@ -10,11 +10,11 @@ ssh -X qolo@192.168.13.XXX
 
 3 terminal:
 
-		OR only rear LIDAR
- 	roslaunch qolo rear_lidar-lrf.launch
-
 		launching SLAM from rear pc
-	roslaunch hector_mapping mapping_qolo_rear.launch
+	roslaunch qolo rear_lidar-slam.launch
+	
+		OR only rear LIDAR
+ 	roslaunch qolo rear_lidar-cloud.launch
 
 		OR only RDS in the rear LIDAR
  	roslaunch rds_ros rds_rear_lrf_cloud.launch

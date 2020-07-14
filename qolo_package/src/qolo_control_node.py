@@ -84,7 +84,7 @@ backward_coefficient = 0.5
 # DAC1 --> Right Wheel Velocity
 # DAC2 --> Enable Qolo Motion
 THRESHOLD_V = 1500;
-ZERO_LW = 2700 #2750;
+ZERO_LW = 2580 #2750;
 ZERO_RW = 2500 #2650;
 High_DAC = 5000;
 MBED_Enable = mraa.Gpio(36) #11 17
@@ -126,7 +126,7 @@ absolute_angular_at_min_linear = 0.;
 absolute_angular_at_max_linear = 0.;
 absolute_angular_at_zero_linear = MAX_OMEGA/W_RATIO;
 linear_acceleration_limit = 1.5
-angular_acceleration_limit = 1.5
+angular_acceleration_limit = 4.5
 
 
 #########################################################
@@ -744,9 +744,6 @@ def control():
         else:
             User_V = 0.
             User_W = 0.
-    elif CONSTANT_VEL:
-        User_V = K_vel
-        User_W = 0.
     else:
         read_FSR()
         # FSR Inputs calibration: 
@@ -759,13 +756,15 @@ def control():
         if math.isnan(ox):
             ox = 0.
         Out_CP = round(ox, 6);
-
         FSR_execution()  # Runs the user input with Out_CP and returns Command_V and Command_W --> in 0-5k scale
         motor_v = 2*MAX_MOTOR_V*Command_V/5000 - MAX_MOTOR_V            # In [RPM]
         motor_w = (2*MAX_MOTOR_V/(DISTANCE_CW)*Command_W/5000 - MAX_MOTOR_V/(DISTANCE_CW)) / W_RATIO # In [RPM]
         User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),6)
         User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),6)
 
+    if CONSTANT_VEL:
+        User_V = 0.
+        User_W = K_vel
 
     if FLAG_debug:
         FSR_time = round((time.clock() - t1),6)
@@ -792,30 +791,32 @@ def control():
             Corrected_V, Corrected_W,
             svr_data
         )
-        Output_V = round(compliant_V,6)
-        Output_W = round(compliant_W,6)
     else:
-        Output_V = Corrected_V
-        Output_W = Corrected_W
+        compliant_V = Corrected_V
+        compliant_W = Corrected_W
 
     if FLAG_debug:
         Compliance_time = round((time.clock() - t1),6)
         t1 = time.clock()
 
-    if math.isnan(Output_V):
+    if math.isnan(compliant_V):
         Output_V = 0.
-    if math.isnan(Output_W):
+    if math.isnan(compliant_W):
         Output_W = 0.
 
-    if Output_V > MAX_SPEED:
+    if compliant_V > MAX_SPEED:
         Output_V = MAX_SPEED
-    elif Output_V < -MIN_SPEED:
+    elif compliant_V < -MIN_SPEED:
         Output_V = -MIN_SPEED
+    else:
+        Output_V = round(compliant_V,6)
 
-    if Output_W > MAX_OMEGA:
+    if compliant_W > MAX_OMEGA:
         Output_W = MAX_OMEGA
-    elif Output_W < -MAX_OMEGA:
+    elif compliant_W < -MAX_OMEGA:
         Output_W = -MAX_OMEGA
+    else:
+        Output_W = round(compliant_W,6)
 
     last_v = Output_V
     last_w = Output_W
@@ -971,11 +972,13 @@ def control_node():
         print('Starting WITHOUT FT Sensing')
     
     if JOYSTICK_MODE:
-        sub_remote = rospy.Subscriber("qolo/remote_joystick", Float32MultiArray, callback_remote, queue_size=1)
+        sub_remote = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
         control_type = 'joystick'
+        print('Subscribed to JOYSTICK Mode')
     elif REMOTE_MODE:
         sub_remote = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
         control_type = 'remote'
+        print('Subscribed to REMOTE Mode')
     else:
         control_type = 'embodied'
     
@@ -1024,7 +1027,7 @@ def control_node():
         # RosMassage = "%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s" % (current_time, cycle_T, RDS_time,Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Out_CP,Send_DAC0, Send_DAC1, User_V, User_W, feasible, Output_V, Output_W)
         # RosMassage = "%s %s %s %s %s %s %s %s" % (cycle_T, RDS_time, DA_time, feasible, User_V, User_W, round(Output_V,4), round(Output_W,4) )
         # RosMassage = "%s %s %s %s %s" % (User_V, User_W, Output_V, Output_W, RDS_time)
-        # dat_wheels.data = [Send_DAC0, Send_DAC1]
+        dat_wheels.data = [Send_DAC0, Send_DAC1]
         dat_vel.data = [time_msg, User_V, User_W, Output_V, Output_W]
         
         qolo_twist.header = make_header("tf_qolo")
@@ -1068,7 +1071,7 @@ def control_node():
         pub_vel.publish(dat_vel)
         pub_twist.publish(qolo_twist)
         pub_cor_vel.publish(dat_cor_vel)
-        # pub_wheels.publish(dat_wheels)
+        pub_wheels.publish(dat_wheels)
         # pub_user.publish(dat_user)
         # pub_compliance_raw.publish(dat_compliance_raw)
         pub_compliance_svr.publish(dat_compliance_svr)
