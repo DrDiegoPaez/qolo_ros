@@ -84,8 +84,8 @@ backward_coefficient = 0.5
 # DAC1 --> Right Wheel Velocity
 # DAC2 --> Enable Qolo Motion
 THRESHOLD_V = 1500;
-ZERO_LW = 2500 #2750;
-ZERO_RW = 2500 #2650;
+ZERO_LW = 0 #2750;
+ZERO_RW = 0 #2650;
 High_DAC = 5000;
 MBED_Enable = mraa.Gpio(36) #11 17
 MBED_Enable.dir(mraa.DIR_OUT)
@@ -127,7 +127,6 @@ absolute_angular_at_max_linear = 0.;
 absolute_angular_at_zero_linear = MAX_OMEGA/W_RATIO;
 linear_acceleration_limit = 1.5
 angular_acceleration_limit = 1.5
-
 
 #########################################################
 ############ Setting for Compliant Control ##############
@@ -178,8 +177,10 @@ Command_V = 2500
 Command_W = 2500
 Comand_DAC0 = 0
 Comand_DAC1 = 0
-Send_DAC0 = 0
-Send_DAC1 = 0 
+Send_DAC0 = 0.
+Send_DAC1 = 0.
+Send_DAC2 = 0.
+Send_DAC3 = 0.
 # rpm_L = 0;
 # rpm_R = 0;
 
@@ -448,6 +449,7 @@ def enable_mbed():
 
     StartFlag = 1
     conv.SetChannel(2, High_DAC)
+    conv.SetChannel(3, High_DAC)
     conv.SetChannel(0, ZERO_LW)
     conv.SetChannel(1, ZERO_RW)
 
@@ -468,11 +470,7 @@ def transformTo_Lowevel(Desired_V, Desired_W):
     # print('received ', Command_V, Command_W)
     global DISTANCE_CW, RADIUS, User_V, User_W, MAX_SPEED, GEAR, MAX_MOTOR_V
 
-    # These lines should be commented to execute the RDS output
-    # motor_v = 2*MAX_MOTOR_V*Command_V/5000 - MAX_MOTOR_V            # In [RPM]
-    # motor_w = (2*MAX_MOTOR_V/(DISTANCE_CW)*Command_W/5000 - MAX_MOTOR_V/(DISTANCE_CW)) / W_RATIO # In [RPM]
-    # User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
-    # User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
+
 
     # Using the desired velocity (linearn adn angular) --> transform to motor speed
 
@@ -490,42 +488,53 @@ def transformTo_Lowevel(Desired_V, Desired_W):
     motor_r = (wheel_R/RADIUS) * GEAR *(30/np.pi)
     # print ('Motor Vel =', motor_l, motor_r)    
     # Transforming velocities to mV [0-5000]
-    Command_L = round( (ZERO_LW + 5000*motor_l/2400), 6)
-    Command_R = round( (ZERO_RW + 5000*motor_r/2400), 6)
+    Command_L = round( (ZERO_LW + High_DAC*motor_l / MAX_MOTOR_V), 6)
+    Command_R = round( (ZERO_RW + High_DAC*motor_r / MAX_MOTOR_V), 6)
     
 
     return Command_L, Command_R
 
 
 def write_DA(Write_DAC0,Write_DAC1):
-    global Send_DAC0, Send_DAC1
-
+    global Send_DAC0, Send_DAC1, Send_DAC2, Send_DAC3
     # ADC Board output in mV [0-5000]
-    if Write_DAC0 > 4800:
-        Send_DAC0 = 4800
-    elif Write_DAC0 < 200:
-        Send_DAC0 = 200
+
+        # Inverting for sending absolute values of velocity
+    if Write_DAC0 < 0:
+        Write_DAC0 = -Write_DAC0
+        Send_DAC2 = 2500
+    else:
+        Send_DAC2 = 5000
+
+        # Inverting for sending absolute values of velocity
+    if Write_DAC1 < 0:
+        Write_DAC1 = -Write_DAC1
+        Send_DAC3 = 2500
+    else:
+        Send_DAC3 = 5000
+
+        # Capping the maximum values
+    if Write_DAC0 > 4900:
+        Send_DAC0 = 4900
     else:
         Send_DAC0 = Write_DAC0
 
-    if Write_DAC1 > 4800:
-        Send_DAC1 = 4800
-    elif Write_DAC1 < 200:
-        Send_DAC1 = 200
+    if Write_DAC1 > 4900:
+        Send_DAC1 = 4900
     else:
         Send_DAC1 = Write_DAC1
 
     if TESTING_MODE:
         Send_DAC0 = ZERO_LW
         Send_DAC1 = ZERO_RW
-        send_DAC2 = 0
-    else:
-        send_DAC2 = High_DAC
+        Send_DAC2 = 0
+        Send_DAC3 = 0
 
     # threadLock.acquire()
-    conv.SetChannel(3, Send_DAC0)
+    conv.SetChannel(2, Send_DAC2)
+    conv.SetChannel(3, Send_DAC3)
+    conv.SetChannel(0, Send_DAC0)
     conv.SetChannel(1, Send_DAC1)
-    conv.SetChannel(2, send_DAC2)
     # threadLock.release()
 
 
@@ -807,15 +816,23 @@ def control():
     if math.isnan(Output_W):
         Output_W = 0.
 
-    if Output_V > MAX_SPEED:
-        Output_V = MAX_SPEED
-    elif Output_V < -MIN_SPEED:
-        Output_V = -MIN_SPEED
+    # if compliant_V > MAX_SPEED:
+    #     Output_V = MAX_SPEED
+    # elif compliant_V < -MIN_SPEED:
+    #     Output_V = -MIN_SPEED
+    # else:
+    #     Output_V = round(compliant_V,6)
 
-    if Output_W > MAX_OMEGA:
-        Output_W = MAX_OMEGA
-    elif Output_W < -MAX_OMEGA:
-        Output_W = -MAX_OMEGA
+    Output_V = np.clip(Output_V, -MIN_SPEED, MAX_SPEED)
+
+    # if compliant_W > MAX_OMEGA:
+    #     Output_W = MAX_OMEGA
+    # elif compliant_W < -MAX_OMEGA:
+    #     Output_W = -MAX_OMEGA
+    # else:
+    #     Output_W = round(compliant_W,6)
+
+    Output_W = np.clip(Output_W, -MAX_OMEGA, MAX_OMEGA)
 
     last_v = Output_V
     last_w = Output_W
@@ -833,7 +850,7 @@ def control():
 
 
 def control_node():
-    global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Xin
+    global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Send_DAC2, Send_DAC3, Xin
     global RemoteE, ComError
     global DA_time, RDS_time, Compute_time, FSR_time, Compliance_time, extra_time,last_msg, time_msg
     global compliant_V, compliant_W, offset_ft_data, bumperModel, lp_filter, compliance_control
@@ -939,7 +956,7 @@ def control_node():
     dat_wheels = Float32MultiArray()
     dat_wheels.layout.dim.append(MultiArrayDimension())
     dat_wheels.layout.dim[0].label = 'Wheels Output'
-    dat_wheels.layout.dim[0].size = 2
+    dat_wheels.layout.dim[0].size = 4
     dat_wheels.data = [0]*2
     
     # dat_compliance_raw = WrenchStamped()
@@ -1010,6 +1027,7 @@ def control_node():
             # threadLock.acquire()
             while FlagEmergency:
                 pub_emg.publish(FlagEmergency)
+                conv.SetChannel(3, 0)
                 conv.SetChannel(2, 0)
                 conv.SetChannel(0, ZERO_LW)
                 conv.SetChannel(1, ZERO_RW)
@@ -1027,7 +1045,7 @@ def control_node():
         # RosMassage = "%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s" % (current_time, cycle_T, RDS_time,Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Out_CP,Send_DAC0, Send_DAC1, User_V, User_W, feasible, Output_V, Output_W)
         # RosMassage = "%s %s %s %s %s %s %s %s" % (cycle_T, RDS_time, DA_time, feasible, User_V, User_W, round(Output_V,4), round(Output_W,4) )
         # RosMassage = "%s %s %s %s %s" % (User_V, User_W, Output_V, Output_W, RDS_time)
-        # dat_wheels.data = [Send_DAC0, Send_DAC1]
+        dat_wheels.data = [Send_DAC0, Send_DAC1, Send_DAC2, Send_DAC3]
         dat_vel.data = [time_msg, User_V, User_W, Output_V, Output_W]
         
         qolo_twist.header = make_header("tf_qolo")
@@ -1071,7 +1089,7 @@ def control_node():
         pub_vel.publish(dat_vel)
         pub_twist.publish(qolo_twist)
         pub_cor_vel.publish(dat_cor_vel)
-        # pub_wheels.publish(dat_wheels)
+        pub_wheels.publish(dat_wheels)
         # pub_user.publish(dat_user)
         # pub_compliance_raw.publish(dat_compliance_raw)
         pub_compliance_svr.publish(dat_compliance_svr)

@@ -10,7 +10,6 @@ import time
 import math
 import os
 from itertools import groupby
-# import threading
 # import RPi.GPIO as GPIO
 import numpy as np
 import array as arr
@@ -24,7 +23,7 @@ import signal
 import datetime
 # from scipy import signal
 import rospy
-import threading
+# import threading
 
 from geometry_msgs.msg import Wrench, WrenchStamped, Vector3, PoseStamped, Quaternion, Twist, TwistStamped
 from std_msgs.msg import String, Bool, Float32MultiArray, Float32, Int32MultiArray
@@ -63,9 +62,9 @@ TESTING_MODE = False
 
 PORT = 8080
 control_type ='embodied'
-threadLock = threading.Lock()
+
 FLAG_debug = True
-Stop_Thread_Flag = False
+
 
 conv = converter.AD_DA()
 
@@ -84,8 +83,8 @@ backward_coefficient = 0.5
 # DAC1 --> Right Wheel Velocity
 # DAC2 --> Enable Qolo Motion
 THRESHOLD_V = 1500;
-ZERO_LW = 2580 #2750;
-ZERO_RW = 2500 #2650;
+ZERO_LW = 0 #2750;
+ZERO_RW = 0 #2650;
 High_DAC = 5000;
 MBED_Enable = mraa.Gpio(36) #11 17
 MBED_Enable.dir(mraa.DIR_OUT)
@@ -174,12 +173,14 @@ last_v = 0.;
 last_w = 0.;
 cycle=0.
 
-Command_V = 2500
-Command_W = 2500
+Command_V = 0.
+Command_W = 0.
 Comand_DAC0 = 0
 Comand_DAC1 = 0
-Send_DAC0 = 0
-Send_DAC1 = 0 
+Send_DAC0 = 0.
+Send_DAC1 = 0. 
+Send_DAC2 = 0.
+Send_DAC3 = 0.
 # rpm_L = 0;
 # rpm_R = 0;
 
@@ -249,7 +250,6 @@ level_relations = {
 
 # for interruption
 def exit(signum, frame):
-    # global Stop_Thread_Flag
     # MBED_Enable = mraa.Gpio(36) #11 17
     # MBED_Enable.dir(mraa.DIR_OUT)
     MBED_Enable.write(0)
@@ -257,53 +257,9 @@ def exit(signum, frame):
     conv.SET_DAC3(0, conv.data_format.voltage)
     conv.SET_DAC0(0, conv.data_format.voltage)
     conv.SET_DAC1(0, conv.data_format.voltage)
-    # Stop_Thread_Flag = True
-    # cleanup_stop_thread()
+
     print(colored('----> You chose to interrupt', "red"))
     quit()
-
-class FSR_thread (threading.Thread):
-    def __init__(self, name, counter):
-        threading.Thread.__init__(self)
-        self.threadID = counter
-        self.name = name
-        self.counter = counter
-    def run(self):
-        # print("\nStarting " + self.name)
-        # Acquire lock to synchronize thread
-        while True:
-            have_it = threadLock.acquire()
-            try:
-                if have_it:
-                    read_FSR()
-                    threadLock.release()
-                    have_it = 0
-                    user_input_thread()
-            finally:
-                if have_it:
-                    threadLock.release()
-                # Release lock for the next thread
-
-            if Stop_Thread_Flag:
-                break
-
-        print("Exiting " + self.name)
-
-    def get_id(self): 
-        # returns id of the respective thread 
-        if hasattr(self, '_thread_id'): 
-            return self._thread_id 
-        for id, thread in threading._active.items(): 
-            if thread is self: 
-                return id
-
-    def raise_exception(self): 
-        thread_id = self.get_id() 
-        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 
-              ctypes.py_object(SystemExit)) 
-        if res > 1: 
-            ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0) 
-            print('Exception raised: Stopped User_input_thread')
 
 
 def callback_remote(data):
@@ -412,34 +368,9 @@ def FSR_execution():
     else:
         Command_V = 2500
         Command_W = 2500
-        
-def user_input_thread():
-    global FSR_time, t2, Xin, Xin_temp, FsrZero, FsrK, Out_CP, User_V, User_W, Command_V, Command_W, Read_Flag
-
-    # read_FSR()
-    Xin = FsrK* (round(Xin_temp,4) - FsrZero)     # Values in [mV]
-    # Calculating the Center of pressure
-    ox = np.sum(Rcenter*Xin) / (Xin[1] + Xin[2] + Xin[3] + Xin[4] + Xin[5] + Xin[6] + Xin[7] + Xin[8])
-    Out_CP = round(ox, 4)
-    # Runs the user input and returns Command_V and Command_W --> in 0-5k scale
-    FSR_execution()
-    motor_v = 2*MAX_MOTOR_V*Command_V/5000 - MAX_MOTOR_V            # In [RPM]
-    motor_w = (2*MAX_MOTOR_V/(DISTANCE_CW)*Command_W/5000 - MAX_MOTOR_V/(DISTANCE_CW)) / W_RATIO # In [RPM]
-
-    # Start lock
-    User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
-    User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
-    # if Stop_Thread_Flag:
-    #     break
-    
-    if FLAG_debug:
-        FSR_time = round((time.clock() - t2),4)
-        t2 = time.clock()
 
 
 def enable_mbed():
-    # threadLock.acquire()
-
     MBED_Enable.write(0)
     time.sleep(1)
     MBED_Enable.write(1)
@@ -448,6 +379,7 @@ def enable_mbed():
 
     StartFlag = 1
     conv.SET_DAC2(High_DAC, conv.data_format.voltage)
+    conv.SET_DAC3(High_DAC, conv.data_format.voltage)
     conv.SET_DAC0(ZERO_LW, conv.data_format.voltage)
     conv.SET_DAC1(ZERO_RW, conv.data_format.voltage)
 
@@ -460,74 +392,69 @@ def enable_mbed():
         if ComError>THRESHOLD_V:
             StartFlag=0
 
-    time.sleep(1)  
-    # threadLock.release()
+    time.sleep(1)
 
 def transformTo_Lowevel(Desired_V, Desired_W):
     # A function to transform linear and angular velocities to output commands
-    # print('received ', Command_V, Command_W)
     global DISTANCE_CW, RADIUS, User_V, User_W, MAX_SPEED, GEAR, MAX_MOTOR_V
-
-    # These lines should be commented to execute the RDS output
-    # motor_v = 2*MAX_MOTOR_V*Command_V/5000 - MAX_MOTOR_V            # In [RPM]
-    # motor_w = (2*MAX_MOTOR_V/(DISTANCE_CW)*Command_W/5000 - MAX_MOTOR_V/(DISTANCE_CW)) / W_RATIO # In [RPM]
-    # User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),4)
-    # User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),4)
-
     # Using the desired velocity (linearn adn angular) --> transform to motor speed
 
     wheel_L = Desired_V - (DISTANCE_CW * Desired_W)    # Output in [m/s]
     wheel_R = Desired_V + (DISTANCE_CW * Desired_W)    # Output in [m/s]
     # print ('Wheels Vel =', wheel_L, wheel_R)
 
-    # motor_v = round(((Desired_V*GEAR)/RADIUS)/(np.pi/30),8) 
-    # motor_w = round(((Desired_W*GEAR)/RADIUS)/(np.pi/30),8) 
-
-    # rpm_L = motor_v - DISTANCE_CW*motor_w
-    # rpm_R = motor_v + DISTANCE_CW*motor_w
     # Transforming from rad/s to [RPM]
     motor_l = (wheel_L/RADIUS) * GEAR *(30/np.pi)
     motor_r = (wheel_R/RADIUS) * GEAR *(30/np.pi)
     # print ('Motor Vel =', motor_l, motor_r)    
+
     # Transforming velocities to mV [0-5000]
-    Command_L = round( (ZERO_LW + 5000*motor_l/2400), 6)
-    Command_R = round ( (ZERO_RW + 5000*motor_r/2400), 6)
-    
+    Command_L = round( (ZERO_LW + High_DAC*motor_l / MAX_MOTOR_V), 6)
+    Command_R = round( (ZERO_RW + High_DAC*motor_r / MAX_MOTOR_V), 6) 
 
     return Command_L, Command_R
 
 
 def write_DA(Write_DAC0,Write_DAC1):
-    global Send_DAC0, Send_DAC1
-
+    global Send_DAC0, Send_DAC1, Send_DAC2, Send_DAC3
     # ADC Board output in mV [0-5000]
-    if Write_DAC0 > 4800:
-        Send_DAC0 = 4800
-    elif Write_DAC0 < 200:
-        Send_DAC0 = 200
+
+        # Inverting for sending absolute values of velocity
+    if Write_DAC0 < 0:
+        Write_DAC0 = -Write_DAC0
+        Send_DAC2 = 2500
+    else:
+        Send_DAC2 = 5000
+
+        # Inverting for sending absolute values of velocity
+    if Write_DAC1 < 0:
+        Write_DAC1 = -Write_DAC1
+        Send_DAC3 = 2500
+    else:
+        Send_DAC3 = 5000
+
+        # Capping the maximum values
+    if Write_DAC0 > 4900:
+        Send_DAC0 = 4900
     else:
         Send_DAC0 = Write_DAC0
 
-    if Write_DAC1 > 4800:
-        Send_DAC1 = 4800
-    elif Write_DAC1 < 200:
-        Send_DAC1 = 200
+    if Write_DAC1 > 4900:
+        Send_DAC1 = 4900
     else:
         Send_DAC1 = Write_DAC1
 
     if TESTING_MODE:
-        Send_DAC0 = ZERO_LW;
-        Send_DAC1 = ZERO_RW;
-        send_DAC2 = 0
-    else:
-        send_DAC2 = High_DAC;
+        Send_DAC0 = ZERO_LW
+        Send_DAC1 = ZERO_RW
+        Send_DAC2 = 0
+        Send_DAC3 = 0
+    # print('Output: ', Send_DAC0, Send_DAC1, Send_DAC2, Send_DAC3)
 
-    # threadLock.acquire()
+    conv.SET_DAC2(Send_DAC2, conv.data_format.voltage)
+    conv.SET_DAC3(Send_DAC3, conv.data_format.voltage)
     conv.SET_DAC0(Send_DAC0, conv.data_format.voltage)
     conv.SET_DAC1(Send_DAC1, conv.data_format.voltage)
-    conv.SET_DAC2(send_DAC2, conv.data_format.voltage)
-    # threadLock.release()
-
 
 # output curve: Linear/Angular Velocity-Pressure Center
 def FSR_output(a, b, c, d, e, f, g, h, ox):
@@ -791,32 +718,38 @@ def control():
             Corrected_V, Corrected_W,
             svr_data
         )
+        Output_V = round(compliant_V,6)
+        Output_W = round(compliant_W,6)
     else:
-        compliant_V = Corrected_V
-        compliant_W = Corrected_W
+        Output_V = Corrected_V
+        Output_W = Corrected_W
 
     if FLAG_debug:
         Compliance_time = round((time.clock() - t1),6)
         t1 = time.clock()
 
-    if math.isnan(compliant_V):
+    if math.isnan(Output_V):
         Output_V = 0.
-    if math.isnan(compliant_W):
+    if math.isnan(Output_W):
         Output_W = 0.
 
-    if compliant_V > MAX_SPEED:
-        Output_V = MAX_SPEED
-    elif compliant_V < -MIN_SPEED:
-        Output_V = -MIN_SPEED
-    else:
-        Output_V = round(compliant_V,6)
+    # if compliant_V > MAX_SPEED:
+    #     Output_V = MAX_SPEED
+    # elif compliant_V < -MIN_SPEED:
+    #     Output_V = -MIN_SPEED
+    # else:
+    #     Output_V = round(compliant_V,6)
 
-    if compliant_W > MAX_OMEGA:
-        Output_W = MAX_OMEGA
-    elif compliant_W < -MAX_OMEGA:
-        Output_W = -MAX_OMEGA
-    else:
-        Output_W = round(compliant_W,6)
+    Output_V = np.clip(Output_V, -MIN_SPEED, MAX_SPEED)
+
+    # if compliant_W > MAX_OMEGA:
+    #     Output_W = MAX_OMEGA
+    # elif compliant_W < -MAX_OMEGA:
+    #     Output_W = -MAX_OMEGA
+    # else:
+    #     Output_W = round(compliant_W,6)
+
+    Output_W = np.clip(Output_W, -MAX_OMEGA, MAX_OMEGA)
 
     last_v = Output_V
     last_w = Output_W
@@ -833,15 +766,12 @@ def control():
 
 
 def control_node():
-    global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Xin
+    global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Send_DAC2, Send_DAC3, Xin
     global RemoteE, ComError
     global DA_time, RDS_time, Compute_time, FSR_time, Compliance_time, extra_time,last_msg, time_msg
     global compliant_V, compliant_W, offset_ft_data, bumperModel, lp_filter, compliance_control
     prevT = 0
     FlagEmergency=False
-    # threadLock = threading.Lock()
-    # Setting ROS Node
-    
     # Call the calibration File
     # load_calibration()
     if COMPLIANCE_FLAG:
@@ -861,29 +791,11 @@ def control_node():
     logger.init_topic("corr_velocity", "compliance", ["t", "v_user", "omega_user", "v_OA", "omega_OA", "v_compliance", "omega_compliance"])
     logger.init_topic("timings", "compliance", ["t", "DA_time", "RDS_time", "Compute_time", "FSR_time", "Compliance_time", "Cycle_time"])
 
-
     ########### Starting Communication and MBED Board ###########
 
     ComError = conv.ReadChannel(6, conv.data_format.voltage)
     if ComError<=THRESHOLD_V:
         enable_mbed()
-
-    ########### creating threads  ##############
-    # try:
-    #     thread_user = FSR_thread("user_input", 1)
-    #     Stop_Thread_Flag = False
-    #     # thread_user = threading.Thread(target=user_input_thread)
-    #     print "FSR Thread started"
-    # except:
-    #    print "Error: unable to start FSR thread"
-    # start input thread
-    # thread_user.run(threadLock)
-    # thread_user.start()
-
-    ########### Starting ROS Node ###########
-    # pub = rospy.Publisher('qolo', String, queue_size=1)
-    # rospy.init_node('qolo_control', anonymous=True)
-    # rate = rospy.Rate(50) #  20 hz
 
     ########### Starting ROS Node ###########
     pub_wheels = rospy.Publisher('qolo/wheels', Float32MultiArray, queue_size=1)
@@ -939,8 +851,8 @@ def control_node():
     dat_wheels = Float32MultiArray()
     dat_wheels.layout.dim.append(MultiArrayDimension())
     dat_wheels.layout.dim[0].label = 'Wheels Output'
-    dat_wheels.layout.dim[0].size = 2
-    dat_wheels.data = [0]*2
+    dat_wheels.layout.dim[0].size = 4
+    dat_wheels.data = [0]*4
     
     # dat_compliance_raw = WrenchStamped()
     dat_compliance_svr = WrenchStamped()
@@ -996,10 +908,8 @@ def control_node():
 
         control()   # Function of control for Qolo
         # # Checking emergency inputs
-        # threadLock.acquire()
         RemoteE = conv.ReadChannel(7, conv.data_format.voltage) # THRESHOLD_V - 1 # conv.ReadChannel(7, conv.data_format.voltage)
         ComError = conv.ReadChannel(6, conv.data_format.voltage) # THRESHOLD_V + 1 # conv.ReadChannel(6, conv.data_format.voltage)
-        # threadLock.release()
         # print('Comerror', ComError)
         if ComError<=THRESHOLD_V:
             enable_mbed()
@@ -1007,10 +917,10 @@ def control_node():
             print('RemoteE', RemoteE)
             FlagEmergency=True
             time_msg=0.
-            # threadLock.acquire()
             while FlagEmergency:
                 pub_emg.publish(FlagEmergency)
                 conv.SET_DAC2(0, conv.data_format.voltage)
+                conv.SET_DAC3(0, conv.data_format.voltage)
                 conv.SET_DAC0(ZERO_LW, conv.data_format.voltage)
                 conv.SET_DAC1(ZERO_RW, conv.data_format.voltage)
                 ResetFSR = conv.ReadChannel(5, conv.data_format.voltage)
@@ -1021,13 +931,12 @@ def control_node():
                     enable_mbed()
                     time_msg=0.
                 time.sleep(0.1)
-                # threadLock.release()
         # now = datetime.datetime.now()
         # current_time = now.strftime("%H:%M:%S")
         # RosMassage = "%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s" % (current_time, cycle_T, RDS_time,Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Out_CP,Send_DAC0, Send_DAC1, User_V, User_W, feasible, Output_V, Output_W)
         # RosMassage = "%s %s %s %s %s %s %s %s" % (cycle_T, RDS_time, DA_time, feasible, User_V, User_W, round(Output_V,4), round(Output_W,4) )
-        # RosMassage = "%s %s %s %s %s" % (User_V, User_W, Output_V, Output_W, RDS_time)
-        dat_wheels.data = [Send_DAC0, Send_DAC1]
+        # RosMassage = "%s %s %s %s %s" % (User_V, User_W, Output_V, Output_W)
+        dat_wheels.data = [Send_DAC0, Send_DAC1, Send_DAC2, Send_DAC3]
         dat_vel.data = [time_msg, User_V, User_W, Output_V, Output_W]
         
         qolo_twist.header = make_header("tf_qolo")
@@ -1081,10 +990,6 @@ def control_node():
         # rospy.loginfo(RosMassage)
         # pub_mess.publish(RosMassage)
         rate.sleep()
-
-    # Stop_Thread_Flag = True
-    # thread_user.raise_exception()
-    # thread_user.join()
 
     logger.exit()
 

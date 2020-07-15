@@ -44,8 +44,8 @@ data_remote = Float32MultiArray()
 
 ### ---------- GLOBAL VARIABLES ---------- ####
 PORT = 8080
-Max_V = 0.5
-Max_W = 0.5
+Max_V = 0.8
+Max_W = 0.8
 
 level_relations = {
         # 'debug':logging.DEBUG,
