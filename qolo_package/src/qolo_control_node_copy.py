@@ -816,22 +816,7 @@ def control():
     if math.isnan(Output_W):
         Output_W = 0.
 
-    # if compliant_V > MAX_SPEED:
-    #     Output_V = MAX_SPEED
-    # elif compliant_V < -MIN_SPEED:
-    #     Output_V = -MIN_SPEED
-    # else:
-    #     Output_V = round(compliant_V,6)
-
     Output_V = np.clip(Output_V, -MIN_SPEED, MAX_SPEED)
-
-    # if compliant_W > MAX_OMEGA:
-    #     Output_W = MAX_OMEGA
-    # elif compliant_W < -MAX_OMEGA:
-    #     Output_W = -MAX_OMEGA
-    # else:
-    #     Output_W = round(compliant_W,6)
-
     Output_W = np.clip(Output_W, -MAX_OMEGA, MAX_OMEGA)
 
     last_v = Output_V
