@@ -10,7 +10,6 @@ import time
 import math
 import os
 from itertools import groupby
-
 import numpy as np
 import array as arr
 # from scipy.signal import butter, lfilter, freqz
