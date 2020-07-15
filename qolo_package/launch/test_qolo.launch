@@ -1,8 +1,8 @@
 <launch>
     <arg name="log_folder" default="$(env PWD)/csv_logs/test" />
     <arg name="shared_mode" default="false" />
-    <arg name="compliance_flag" default="true" />
-    <arg name="joystick_mode" default="true" />
+    <arg name="compliance_mode" default="true" />
+    <arg name="joystick_mode" default="false" />
     <arg name="remote_mode" default="false" />
 <!--  <include file="$(find qolo)/launch/rear_lidar-lrf.launch"/> 
 
@@ -11,16 +11,16 @@
 
     <include file="$(find qolo)/launch/joystick_qolo.launch"/>
     
-    <node name="qolo_control" pkg="qolo" type="qolo_control_node_copy.py" output="screen">
+    <node name="qolo_control" pkg="qolo" type="qolo_control_node.py" output="screen">
         <param name="log_folder"
                type="str"
                value="$(arg log_folder)"/>
         <param name="shared_mode"
                type="bool"
                value="$(arg shared_mode)"/>
-        <param name="compliance_flag"
+        <param name="compliance_mode"
                type="bool"
-               value="$(arg compliance_flag)"/>
+               value="$(arg compliance_mode)"/>
         <param name="joystick_mode"
                type="bool"
                value="$(arg joystick_mode)"/>
