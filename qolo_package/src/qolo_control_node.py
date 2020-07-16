@@ -766,10 +766,11 @@ def control_node():
             omega_max=(MAX_OMEGA/W_RATIO),
             bumper_l=0.2425,
             bumper_R=0.33,
-            Ts=1.0/50,
-            Damping_gain=0.1,
-            robot_mass=2,
+            Ts=1.0/100,
+            Damping_gain=0.2,
+            robot_mass=15,
             collision_F_max=25,
+            activation_F=10,
             logger=logger
         )
     
@@ -832,7 +833,7 @@ def control_node():
     
     ########### Starting ROS Node ###########
     rospy.init_node('qolo_control', anonymous=True)
-    rate = rospy.Rate(200) #  100 hz
+    rate = rospy.Rate(100) #  100 hz
 
     if COMPLIANCE_MODE:
         ftsub = rospy.Subscriber("/rokubi_node_front/ft_sensor_measurements",WrenchStamped,ft_sensor_callback, queue_size=1)
