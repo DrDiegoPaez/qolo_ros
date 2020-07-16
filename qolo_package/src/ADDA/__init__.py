@@ -2,6 +2,9 @@
 
 This module implements ADS1256 and DAC8532 modules.
 It also implements class ADDA for 2 modules each.
+
+Extended from waveshare library for RaspberryPi at
+https://github.com/waveshare/High-Precision-AD-DA-Board
 """
 
 __all__ = ['ADDA', 'ADS1256', 'DAC8532']
