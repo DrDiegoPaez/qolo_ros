@@ -9,10 +9,10 @@ class AdmittanceController:
         bumper_l=0.2425,    # [m] (210+32.5) mm
         bumper_R=0.33,      # [m] 330 mm
         Ts=1.0/50,          # [s] 50 Hz
-        Damping_gain=0.1,   # [N-s/m]
-        robot_mass=2,       # [kg]
+        Damping_gain=0.2,   # [N-s/m]
+        robot_mass=15,       # [kg]
         collision_F_max=25, # [N]
-        activation_F=15,    # [N]
+        activation_F=10,    # [N]
         logger=None
     ):
         self.v_max = v_max

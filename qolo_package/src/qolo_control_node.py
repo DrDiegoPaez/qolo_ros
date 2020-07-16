@@ -2,7 +2,8 @@
 
 #########  Qolo Main Code for Shared / Embodied / Remore Control ##########
 ##### Author: Diego F. Paez G.
-##### Embodied sensirg: Chen Yang
+##### Collaboration: Vaibhav Gupta
+##### Embodied sensing: Chen Yang
 ##### Data: 2019/10/01
 
 from ADDA import ADDA as converter
@@ -45,24 +46,24 @@ except PermissionError:
     print(colored("Cannot set niceness for the process...", "red"))
     print(colored("Run the script as sudo...", "red"))
 
-K_vel = 0.5
-CONSTANT_VEL = False
+K_vel = 0.7
+# CONSTANT_VEL_MODE = True
+CONSTANT_VEL_MODE = rospy.get_param("/qolo_control/constant_mode", False)
 # For testing collision avoidance 
 SHARED_MODE = rospy.get_param("/qolo_control/shared_mode", False)
 # For testing collision control
 COMPLIANCE_MODE = rospy.get_param("/qolo_control/compliance_mode", False)
 # For using remote app Joystick
-JOYSTICK_MODE = rospy.get_param("/qolo_control/joystick_mode", True)
+JOYSTICK_MODE = rospy.get_param("/qolo_control/joystick_mode", False)
 # For using DS or trajectory tracking
 REMOTE_MODE = rospy.get_param("/qolo_control/remote_mode", False)
 # For zero output to the wheels
 TESTING_MODE = False
-DEBUG_MODE = False
+DEBUG_MODE = True
 TIMING_MODE = True
 
 PORT = 8080
 control_type ='embodied'
-
 conv = converter()
 
 # Logger
@@ -106,6 +107,7 @@ ANGULAR_ACC = LINEAR_ACC / DISTANCE_CW  # Maximum Robot's angular acceleration =
 ############ Setting for the RDS service ################
 #########################################################
 LRF_points_Flag = True
+ORCA_Flag = False
 # y_coordinate_of_reference_point_for_command_limits = 0.5
 # Gain to this point
 weight_scaling_of_reference_point_for_command_limits = 0.
@@ -114,7 +116,7 @@ tau = 1.5
 # Minimal distance to obstacles
 delta = 0.05
 # Some reference for controlling the non-holonomic base
-control_point = 0.18
+control_point = 0.2
 
 max_linear = MAX_SPEED
 min_linear = -MIN_SPEED
@@ -507,75 +509,78 @@ def rds_service():
     global User_V, User_W, Output_V, Output_W, last_v, last_w, cycle, feasible, Corrected_V, Corrected_W
     # print "Waiting for RDS Service"
     rospy.wait_for_service('rds_velocity_command_correction')
-    try:
-        RDS = rospy.ServiceProxy('rds_velocity_command_correction',VelocityCommandCorrectionRDS)
+    # try:
+    RDS = rospy.ServiceProxy('rds_velocity_command_correction',VelocityCommandCorrectionRDS)
 
-        request = VelocityCommandCorrectionRDSRequest()
-        # y_coordinate_of_reference_point_for_command_limits = 0.5
-        # # Gain to this point
-        # weight_scaling_of_reference_point_for_command_limits = 0.
-        # # Some gain for velocity after proximity reaches limits
-        # tau = 2.
-        # # Minimal distance to obstacles
-        # delta = 0.08
-        # clearance_from_axle_of_final_reference_point = 0.15
-        # max_linear = MAX_SPEED
-        # min_linear = -MIN_SPEED
-        # absolute_angular_at_min_linear = 0.
-        # absolute_angular_at_max_linear = 0.
-        # absolute_angular_at_zero_linear = MAX_OMEGA/W_RATIO
-        # linear_acceleration_limit = 1.1
-        # angular_acceleration_limit = 1.5
+    request = VelocityCommandCorrectionRDSRequest()
+    # y_coordinate_of_reference_point_for_command_limits = 0.5
+    # # Gain to this point
+    # weight_scaling_of_reference_point_for_command_limits = 0.
+    # # Some gain for velocity after proximity reaches limits
+    # tau = 2.
+    # # Minimal distance to obstacles
+    # delta = 0.08
+    # clearance_from_axle_of_final_reference_point = 0.15
+    # max_linear = MAX_SPEED
+    # min_linear = -MIN_SPEED
+    # absolute_angular_at_min_linear = 0.
+    # absolute_angular_at_max_linear = 0.
+    # absolute_angular_at_zero_linear = MAX_OMEGA/W_RATIO
+    # linear_acceleration_limit = 1.1
+    # angular_acceleration_limit = 1.5
 
-        request.nominal_command.linear = User_V
-        request.nominal_command.angular = User_W
-        request.capsule_center_front_y = 0.051
-        request.capsule_center_rear_y = -0.50
-        request.capsule_radius = 0.45
-        
-        request.reference_point_y = control_point
+    request.nominal_command.linear = User_V
+    request.nominal_command.angular = User_W
+    request.capsule_center_front_y = 0.2 # Actual: 0.051
+    request.capsule_center_rear_y = -0.50
+    request.capsule_radius = 0.45
+    
+    request.reference_point_y = control_point
 
-        request.rds_tau = tau  # Time horizon for velocity obstacles
-        request.rds_delta = delta
-        request.vel_lim_linear_min = min_linear
-        request.vel_lim_linear_max = max_linear
-        request.vel_lim_angular_abs_max = absolute_angular_at_zero_linear
-        request.vel_linear_at_angular_abs_max = 0.2
-        request.acc_limit_linear_abs_max = linear_acceleration_limit
-        request.acc_limit_angular_abs_max = angular_acceleration_limit
+    request.rds_tau = tau  # Time horizon for velocity obstacles
+    request.rds_delta = delta
+    request.vel_lim_linear_min = min_linear
+    request.vel_lim_linear_max = max_linear
+    request.vel_lim_angular_abs_max = absolute_angular_at_zero_linear
+    request.vel_linear_at_angular_abs_max = 0.2
+    request.acc_limit_linear_abs_max = linear_acceleration_limit
+    request.acc_limit_angular_abs_max = angular_acceleration_limit
 
-        # // shall rds consider lrf measurements?
-        request.lrf_point_obstacles = LRF_points_Flag
-        # // for generating constraints due to raw lrf scan points,
-        # // shall rds use the VO-based or the alternative (prior) approach?
-        request.lrf_alternative_rds = False
-        # // how shall rds choose the base velocity for determining the convex approximate VO
-        # // 0 : use zero velocity (ensures that the final halfplane contains the VO, if the VO does not contain the origin)
-        # // 1 : use the velocity which rds computed previously
-        # // any other integer: use the nominal velocity (from the current nominal command)
-        request.vo_tangent_base_command = 0
-        # // shall rds map the base velocity to the tangent point the same way as ORCA for determining the convex approximate VO?
-        request.vo_tangent_orca_style = True
-        # // shall rds work with bounding circles or find per object the closest incircle in the capsule?
-        # // any integer n > 2 : use n bounding circles
-        # // any integer <= 2 : use local capsule incircles
-        request.bounding_circles = 2
+    # // shall rds consider lrf measurements?
+    request.lrf_point_obstacles = LRF_points_Flag
+    # Swtching ORCA and RDS
+    request.ORCA_implementation = ORCA_Flag 
 
-        if cycle==0:
-            delta_time = 0.005
-        else:
-            delta_time = time.clock() - cycle
+    # // for generating constraints due to raw lrf scan points,
+    # // shall rds use the VO-based or the alternative (prior) approach?
+    # request.lrf_alternative_rds = False
+    # // how shall rds choose the base velocity for determining the convex approximate VO
+    # // 0 : use zero velocity (ensures that the final halfplane contains the VO, if the VO does not contain the origin)
+    # // 1 : use the velocity which rds computed previously
+    # // any other integer: use the nominal velocity (from the current nominal command)
+    # request.vo_tangent_base_command = 0
+    # // shall rds map the base velocity to the tangent point the same way as ORCA for determining the convex approximate VO?
+    # request.vo_tangent_orca_style = True
+    # // shall rds work with bounding circles or find per object the closest incircle in the capsule?
+    # // any integer n > 2 : use n bounding circles
+    # // any integer <= 2 : use local capsule incircles
+    # request.bounding_circles = 2
 
-        request.dt = 0.01 #delta_time
+    if cycle==0:
+        delta_time = 0.005
+    else:
+        delta_time = time.clock() - cycle
 
-        response = RDS(request)
-        Corrected_V = round(response.corrected_command.linear,6)
-        Corrected_W = round(response.corrected_command.angular,6)
+    request.dt = 0.01 #delta_time
+    # print('call time',delta_time)
+    response = RDS(request)
+    Corrected_V = round(response.corrected_command.linear,6)
+    Corrected_W = round(response.corrected_command.angular,6)
 
-        cycle = time.clock()
-    except:
-        Corrected_V = 0.
-        Corrected_W = 0.
+    cycle = time.clock()
+    # except:
+    #     Corrected_V = 0.
+    #     Corrected_W = 0.
 
 def mds_service():
     global User_V, User_W, Output_V, Output_W, last_v, last_w, cycle, feasible, Corrected_V, Corrected_W, control_point
@@ -662,6 +667,9 @@ def control():
         else:
             User_V = 0.
             User_W = 0.
+    elif CONSTANT_VEL_MODE:
+        User_V = K_vel
+        User_W = 0.
     else:
         read_FSR()
         # FSR Inputs calibration: 
@@ -679,10 +687,6 @@ def control():
         motor_w = (2*MAX_MOTOR_V/(DISTANCE_CW)*Command_W/5000 - MAX_MOTOR_V/(DISTANCE_CW)) / W_RATIO # In [RPM]
         User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),6)
         User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),6)
-
-    if CONSTANT_VEL:
-        User_V = K_vel
-        User_W = 0.
 
     if TIMING_MODE:
         FSR_time = round((time.clock() - t1),6)
