@@ -4,10 +4,6 @@
     <arg name="compliance_mode" default="false" />
     <arg name="joystick_mode" default="false" />
     <arg name="remote_mode" default="true" />
-<!--  <include file="$(find qolo)/launch/rear_lidar-lrf.launch"/> 
-
-    <include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>
-        -->
 
     <include file="$(find qolo)/launch/joystick_qolo.launch"/>
     
@@ -30,8 +26,9 @@
     </node>
 
 <!-- <include file="$(find qolo)/launch/qolo_joystick.launch"/> 
-<include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>
-<include file="$(find qolo)/launch/rear_lidar-slam.launch"/> 
+    <include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>
+    <include file="$(find qolo)/launch/rear_lidar-slam.launch"/> 
+    <include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>
     -->  
 
   <!-- Only for static tests without slam
