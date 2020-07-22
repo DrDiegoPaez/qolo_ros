@@ -3,7 +3,7 @@
     <arg name="constant_mode" default="false" />
     <arg name="shared_mode" default="true" />
     <arg name="compliance_mode" default="false" />
-    <arg name="joystick_mode" default="false" />
+    <arg name="joystick_mode" default="true" />
     <arg name="remote_mode" default="false" />
 
     <include file="$(find qolo)/launch/joystick_qolo.launch"/>

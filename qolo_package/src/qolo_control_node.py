@@ -107,7 +107,7 @@ ANGULAR_ACC = LINEAR_ACC / DISTANCE_CW  # Maximum Robot's angular acceleration =
 ############ Setting for the RDS service ################
 #########################################################
 LRF_points_Flag = True
-ORCA_Flag = False
+ORCA_Flag = True
 # y_coordinate_of_reference_point_for_command_limits = 0.5
 # Gain to this point
 weight_scaling_of_reference_point_for_command_limits = 0.
