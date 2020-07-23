@@ -6,6 +6,7 @@
 <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher"/>
 
 <node type="rviz" name="rviz" pkg="rviz"
-      args="-d $(find qolo)/../visualisation/crowdbot_qolo.rviz" />
+      args="-d $(find qolo)/../visualisation/crowdbot_qolo.rviz"
+/>
 
 </launch>

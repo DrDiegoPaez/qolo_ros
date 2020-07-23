@@ -51,7 +51,8 @@
       <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <joint name="qolo_main_to_wheel_right" type="continuous">
+  <!-- <joint name="qolo_main_to_wheel_right" type="continuous"> -->
+  <joint name="qolo_main_to_wheel_right" type="fixed">
     <parent link="tf_qolo"/>
     <child link="wheel_right"/>
     <origin xyz="0 0.2 0"/>
@@ -77,7 +78,8 @@
       <origin rpy="-1.57079632679 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <joint name="qolo_main_to_wheel_left" type="continuous">
+  <!-- <joint name="qolo_main_to_wheel_left" type="continuous"> -->
+  <joint name="qolo_main_to_wheel_left" type="fixed">
     <parent link="tf_qolo"/>
     <child link="wheel_left"/>
     <origin xyz="0 -0.2 0"/>
