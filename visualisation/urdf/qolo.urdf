@@ -4,7 +4,14 @@
 <!-- |    EDITING THIS FILE BY HAND IS NOT RECOMMENDED                                 | -->
 <!-- =================================================================================== -->
 <robot name="qolo">
-  <link name="qolo_main">
+  <material name="gray">
+    <color rgba="0.7 0.7 0.7 1"/>
+  </material>
+  <material name="dark_gray">
+    <color rgba="0.4 0.4 0.4 1"/>
+  </material>
+  
+  <link name="tf_qolo">
     <inertial>
       <origin rpy="0 0 0" xyz="-0.160 0 0.184"/>
       <mass value="50"/>
@@ -12,23 +19,18 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://visulisation/urdf/stl/qolo_main.stl" scale="1 1 1"/>
+        <mesh filename="package://qolo/../visualisation/urdf/stl/qolo_main.stl" scale="1 1 1"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
+      <material name="gray"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://visulisation/urdf/stl/qolo_main.stl" scale="1 1 1"/>
+        <mesh filename="package://qolo/../visualisation/urdf/stl/qolo_main.stl" scale="1 1 1"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <!-- <xacro:joint_macro 
-		parent="qolo_main" 
-		child="belly" 
-		type="fixed"
-		conn_origin="${[0, 0, 0]}"
-	/> -->
   <link name="wheel_right">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -37,19 +39,20 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://visulisation/urdf/stl/qolo_wheel.stl" scale="1 1 1"/>
+        <mesh filename="package://qolo/../visualisation/urdf/stl/qolo_wheel.stl" scale="1 1 1"/>
       </geometry>
       <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
+      <material name="dark_gray"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://visulisation/urdf/stl/qolo_wheel.stl" scale="1 1 1"/>
+        <mesh filename="package://qolo/../visualisation/urdf/stl/qolo_wheel.stl" scale="1 1 1"/>
       </geometry>
       <origin rpy="1.57079632679 0 0" xyz="0 0 0"/>
     </collision>
   </link>
   <joint name="qolo_main_to_wheel_right" type="continuous">
-    <parent link="qolo_main"/>
+    <parent link="tf_qolo"/>
     <child link="wheel_right"/>
     <origin xyz="0 0.2 0"/>
     <axis xyz="0 1 0"/>
@@ -62,19 +65,20 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://visulisation/urdf/stl/qolo_wheel.stl" scale="1 1 1"/>
+        <mesh filename="package://qolo/../visualisation/urdf/stl/qolo_wheel.stl" scale="1 1 1"/>
       </geometry>
       <origin rpy="-1.57079632679 0 0" xyz="0 0 0"/>
+      <material name="dark_gray"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://visulisation/urdf/stl/qolo_wheel.stl" scale="1 1 1"/>
+        <mesh filename="package://qolo/../visualisation/urdf/stl/qolo_wheel.stl" scale="1 1 1"/>
       </geometry>
       <origin rpy="-1.57079632679 0 0" xyz="0 0 0"/>
     </collision>
   </link>
   <joint name="qolo_main_to_wheel_left" type="continuous">
-    <parent link="qolo_main"/>
+    <parent link="tf_qolo"/>
     <child link="wheel_left"/>
     <origin xyz="0 -0.2 0"/>
     <axis xyz="0 1 0"/>
@@ -87,19 +91,20 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="package://visulisation/urdf/stl/bumper.stl" scale="1 1 1"/>
+        <mesh filename="package://qolo/../visualisation/urdf/stl/bumper.stl" scale="1 1 1"/>
       </geometry>
       <origin rpy="0 0 1.57079632679" xyz="0 0 0"/>
+      <material name="gray"/>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="package://visulisation/urdf/stl/bumper.stl" scale="1 1 1"/>
+        <mesh filename="package://qolo/../visualisation/urdf/stl/bumper.stl" scale="1 1 1"/>
       </geometry>
       <origin rpy="0 0 1.57079632679" xyz="0 0 0"/>
     </collision>
   </link>
   <joint name="qolo_main_to_bumper" type="fixed">
-    <parent link="qolo_main"/>
+    <parent link="tf_qolo"/>
     <child link="bumper"/>
     <origin xyz="0.035 0 0.015"/>
     <axis xyz="1 0 0"/>
