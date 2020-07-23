@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 #########  ROS version of Remote Joystick with safety ##########
 ##### Author: Diego F. Paez G. & Chen Yang
-##### Preliminar version: Chen Yang
 ##### Data: 2020/04/20
 
 ##### This script subscribes to a webserver
@@ -44,8 +43,8 @@ data_remote = Float32MultiArray()
 
 ### ---------- GLOBAL VARIABLES ---------- ####
 PORT = 8080
-Max_V = 0.5
-Max_W = 0
+Max_V = 0.7
+Max_W = 0.5
 
 level_relations = {
         # 'debug':logging.DEBUG,
