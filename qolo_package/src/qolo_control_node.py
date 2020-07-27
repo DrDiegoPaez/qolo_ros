@@ -754,7 +754,7 @@ def control_node():
     if COMPLIANCE_MODE:
         logger.init_topic("svr", "compliance", ["t", "Fx", "Fy", "Mz"])
     if TIMING_MODE:
-        logger.init_topic("timings", "compliance", ["t", "DA_time", "RDS_time", "Compute_time", "FSR_time", "Compliance_time", "Cycle_time"])
+        logger.init_topic("timings", "compliance", ["t", "DA_time", "RDS_time", "Compute_time", "FSR_time", "Compliance_time", "Cycle_time", "Full_time"])
 
     ########### Starting Communication and MBED Board ###########
     ComError = conv.ReadChannel(6)
