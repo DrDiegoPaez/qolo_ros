@@ -1,5 +1,5 @@
 import numpy as np
-from .prediction_model import BumperModel
+import math
 
 class AdmittanceController:
     def __init__(
@@ -10,9 +10,9 @@ class AdmittanceController:
         bumper_R=0.33,      # [m] 330 mm
         Ts=1.0/50,          # [s] 50 Hz
         Damping_gain=0.2,   # [N-s/m]
-        robot_mass=15,       # [kg]
-        collision_F_max=25, # [N]
-        activation_F=10,    # [N]
+        robot_mass=5,       # [kg]
+        collision_F_max=45, # [N]
+        activation_F=15,    # [N]
         logger=None
     ):
         self.v_max = v_max
@@ -24,9 +24,7 @@ class AdmittanceController:
         self.robot_mass = robot_mass
         self.collision_F_max = collision_F_max
         self.activation_F = activation_F
-
-        # Bumper Model
-        self.bumper_model = BumperModel()
+        self.nominal_F = self.collision_F_max
 
         # Internal State Variables
         self._Fmag = 0.0
@@ -40,37 +38,33 @@ class AdmittanceController:
         # Loggers
         if logger:
             self.logger = logger
-            self.logger.init_topic("svr", "compliance", ["t", "Fx", "Fy", "Mz"])
             self.logger.init_topic("bumper_loc", "compliance", ["t", "Fmag", "theta(rad)", "h", "p"])
 
+    def update_Ts(self, Ts):
+        self.Ts = Ts
 
-    def step(self, ft_data, v_prev, omega_prev, v_cmd, omega_cmd, svr_data=None):
-        data = np.reshape(ft_data, (1,-1))
-        self.damper_correction(data)
-        if svr_data is not None:
-            svr_data[0] = self._Fx
-            svr_data[1] = self._Fy
-            svr_data[2] = self._Mz
+    def step(self, v_prev, omega_prev, v_cmd, omega_cmd, svr_data):
+        self._Fx = svr_data[0]
+        self._Fy = svr_data[1]
+        self._Mz = svr_data[2]
+        self.damper_correction()
         if abs(self._Fmag) > self.activation_F:
             return self.get_control(v_prev, omega_prev, v_cmd, omega_cmd)
         else:
             return (v_cmd, omega_cmd)
 
     def log(self):
-        self.logger.log('svr', self._Fx, self._Fy, self._Mz)
         self.logger.log('bumper_loc', self._Fmag, self._theta, self._h, self._p)
 
-    def damper_correction(self, data):
+    def damper_correction(self):
         # Correcting based on trained SVR damping model
-        # corr_ft_data = bumperModel.predict(ft_data)
-        # ft_data_temp = ft_data
-        (self._Fx, self._Fy, self._Mz) = self.bumper_model.predict(data)
-
         self._h = 0.1
 
         (a, b, c) = (self._Fx, self._Fy, self._Mz/self.bumper_R)
         temp = a**2 + b**2 - c**2
-        if temp > 0:
+        if temp == 0:
+            self._theta = 0
+        elif temp > 0:
             self._theta = np.real(-1j * np.log(
                 (c + 1j*np.sqrt(temp)) /
                 (a + 1j*b)
@@ -86,15 +80,15 @@ class AdmittanceController:
     def get_control(self, v_prev, omega_prev, v_cmd, omega_cmd):
         # F = robot_mass \Delta \ddot{x} + Damping_gain \Delta \dot{x} + K \Delta x
         # And set reference to 0 and discretize w/ ZOH
-        stheta = np.sin(self._theta)    # Small optimization
-        ctheta = np.cos(self._theta)    # Small optimization
+        stheta = math.sin(self._theta)    # Small optimization
+        ctheta = math.cos(self._theta)    # Small optimization
 
         # Position wrt center of rotatiion
-        O = np.sqrt((self.bumper_R*stheta)**2 + (self.bumper_l + self.bumper_R*ctheta)**2 )
-        beta = np.arctan2(self.bumper_R * stheta, self.bumper_l + self.bumper_R*ctheta)
+        O = math.sqrt((self.bumper_R*stheta)**2 + (self.bumper_l + self.bumper_R*ctheta)**2 )
+        beta = math.atan2(self.bumper_R * stheta, self.bumper_l + self.bumper_R*ctheta)
 
-        sbeta = np.sin(beta)      # Small optimization
-        cbeta = np.cos(beta)      # Small optimization
+        sbeta = math.sin(beta)      # Small optimization
+        cbeta = math.cos(beta)      # Small optimization
 
         # Admittance Control      
         a = ctheta
@@ -107,8 +101,8 @@ class AdmittanceController:
         if (abs(V_cmd) > (self.collision_F_max * self.Ts) / self.robot_mass):
             eff_robot_mass = (self.collision_F_max * self.Ts) / abs(V_cmd)
 
-        V_dot = (-self._Fmag - self.Damping_gain*V_prev) / eff_robot_mass
-        V = V_dot * self.Ts + V_cmd
+        V_dot = (self.nominal_F - self._Fmag - self.Damping_gain*V_prev) / eff_robot_mass
+        V = V_dot * self.Ts  # + V_cmd
 
         # Calculate new v and omega in parameterized form
         a = 1.0 
@@ -137,7 +131,7 @@ class AdmittanceController:
         else:
             t_min = 0.0
 
-        self._p = self.__map(np.abs(self._theta),
+        self._p = self.__map(math.fabs(self._theta),
                        [0.0, np.pi],
                        [t_min, t_max])
 
