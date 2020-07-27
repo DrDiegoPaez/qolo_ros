@@ -29,6 +29,9 @@ except PermissionError:
 
 # ---- Global Variables ----
 model = None
+logger = Logger(rospy.get_param("/qolo_control/log_folder", "csv_logs"))
+logger.init_topic("bumper_prediction", "compliance", ["t", "Fx", "Fy", "Mz"])
+
 offset_ft_data = np.zeros((6,))
 raw_ft_data = np.zeros((6,))
 ft_data = np.zeros((6,))
@@ -118,6 +121,8 @@ def main():
         dat_compliance_svr.wrench.force.y = svr_data[1]
         dat_compliance_svr.wrench.torque.z = svr_data[2]
         pub_compliance_svr.publish(dat_compliance_svr)
+
+        logger.log('bumper_prediction', *svr_data)
 
         rate.sleep()
 
