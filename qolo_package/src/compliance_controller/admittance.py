@@ -38,7 +38,7 @@ class AdmittanceController:
         # Loggers
         if logger:
             self.logger = logger
-            self.logger.init_topic("bumper_loc", "compliance", ["t", "Fmag", "theta(rad)", "h", "p"])
+            self.logger.init_topic("bumper_loc", "compliance", ["t", "Fmag", "theta(rad)", "h"])
 
     def update_Ts(self, Ts):
         self.Ts = Ts
@@ -54,7 +54,7 @@ class AdmittanceController:
             return (v_cmd, omega_cmd)
 
     def log(self):
-        self.logger.log('bumper_loc', self._Fmag, self._theta, self._h, self._p)
+        self.logger.log('bumper_loc', self._Fmag, self._theta, self._h)
 
     def damper_correction(self):
         # Correcting based on trained SVR damping model

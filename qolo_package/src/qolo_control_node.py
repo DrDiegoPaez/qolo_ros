@@ -33,7 +33,7 @@ from rds_network_ros.srv import *
 
 from filters import MultiLowPassFilter
 from logger import Logger
-from compliance_controller import AdmittanceController
+from compliance_controller import AdmittanceController, PassiveDSController
 
 from termcolor import colored
 
@@ -46,7 +46,7 @@ except PermissionError:
     print(colored("Cannot set niceness for the process...", "red"))
     print(colored("Run the script as sudo...", "red"))
 
-K_vel = 0.7
+K_vel = 0.2
 # CONSTANT_VEL_MODE = True
 CONSTANT_VEL_MODE = rospy.get_param("/qolo_control/constant_mode", False)
 # For testing collision avoidance 
@@ -134,6 +134,11 @@ angular_acceleration_limit = 4.5
 #########################################################
 compliant_V =0.
 compliant_W =0.
+
+# Type of compliance controller to use
+#   * admittance (default)
+#   * passive_ds
+COMPLIANCE_TYPE = "passive_ds"
 
 compliance_control = None
 
@@ -737,18 +742,31 @@ def control_node():
     # Call the calibration File
     # load_calibration()
     if COMPLIANCE_MODE:
-        compliance_control = AdmittanceController(
-            v_max=MAX_SPEED,
-            omega_max=(MAX_OMEGA/W_RATIO),
-            bumper_l=0.2425,
-            bumper_R=0.33,
-            Ts=1.0/100,
-            Damping_gain=0.1,
-            robot_mass=5,
-            collision_F_max=45,
-            activation_F=15,
-            logger=logger
-        )
+        if COMPLIANCE_TYPE is "passive_ds":
+            compliance_control = PassiveDSController(
+                bumper_l=0.2425,
+                bumper_R=0.33,
+                Ts=1.0/200,
+                robot_mass=2,
+                lambda_t=0.0,
+                lambda_n=0.5,
+                Fd=45,
+                activation_F=15,
+                logger=logger
+            )
+        else:
+            compliance_control = AdmittanceController(
+                v_max=MAX_SPEED,
+                omega_max=(MAX_OMEGA/W_RATIO),
+                bumper_l=0.2425,
+                bumper_R=0.33,
+                Ts=1.0/200,
+                Damping_gain=0.1,
+                robot_mass=5,
+                collision_F_max=45,
+                activation_F=15,
+                logger=logger
+            )
     
     logger.init_topic("corr_velocity", "compliance", ["t", "v_user", "omega_user", "v_OA", "omega_OA", "v_compliance", "omega_compliance", "v_output", "omega_output"])
     if COMPLIANCE_MODE:
@@ -838,6 +856,7 @@ def control_node():
         prevT = time.clock()
 
         control()   # Function of control for Qolo
+
         # # Checking emergency inputs
         RemoteE = conv.ReadChannel(7) # THRESHOLD_V - 1 # conv.ReadChannel(7)
         ComError = conv.ReadChannel(6) # THRESHOLD_V + 1 # conv.ReadChannel(6)
@@ -868,13 +887,13 @@ def control_node():
         qolo_twist.twist.angular.z = Output_W
 
         # dat_vel.data = [time_msg, User_V, User_W, Output_V, Output_W]
-        
+
         if DEBUG_MODE:
             dat_cor_vel.data = [User_V, User_W, Corrected_V, Corrected_W, compliant_V, compliant_W, Output_V, Output_W, RDS_time]
             dat_wheels.data = [Send_DAC0, Send_DAC1, Send_DAC2, Send_DAC3]
             dat_user.data = [Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Out_CP]
             if COMPLIANCE_MODE:
-                dat_compliance_bumper_loc.data = bumper_loc
+                dat_compliance_bumper_loc.data = [i for i in bumper_loc]
 
         if TIMING_MODE:
             cycle_T = time.clock() - prevT
@@ -907,7 +926,8 @@ def control_node():
                 pub_compliance_bumper_loc.publish(dat_compliance_bumper_loc)
 
         FULL_time = time.clock() - prevT
-        compliance_control.update_Ts(FULL_time)
+        if COMPLIANCE_MODE:
+            compliance_control.update_Ts(FULL_time)
 
         rate.sleep()
 

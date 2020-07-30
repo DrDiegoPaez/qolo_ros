@@ -1,7 +1,14 @@
 #!/bin/bash
+
+#----- Colored Terminal -----
+NORMAL="\e[0m"
+IMP_INFO="\e[34;1m"
+IMP_RED="\e[31;1m"
+IMP_GREEN="\e[32;1m"
+
 #----- Ctrl-C stop -----
 _kill() {
-    echo "Killing all subprocesses"
+    echo -e "${IMP_RED}Killing all subprocesses${NORMAL}"
     for PID in ${PID_LIST[@]};do
         kill -INT $PID
     done
@@ -16,17 +23,17 @@ while [ -d "csv_logs/test${TEST_NO}" ]; do
 done
 LOG_FOLDER="$(pwd)/csv_logs/test${TEST_NO}"
 eval "mkdir -p ${LOG_FOLDER}/compliance"
-echo "Current Test Number : ${TEST_NO}"
+echo -e "${IMP_INFO}Current Test Number : ${TEST_NO}${NORMAL}"
 
 #----- Launch and record force sensors -----
-echo "Launching FT Sensors..."
+echo -e "${IMP_INFO}Launching FT Sensors...${NORMAL}"
 eval "source /home/qolo/collision_ws/devel/setup.bash"
 eval ". /home/qolo/collision_ws/src/rokubimini_interface/run_rokubimini_ros.sh -f ${LOG_FOLDER} &"
 PID_LIST+="$! "
 sleep 5
 
 #----- Launch and record realsense camera -----
-# echo "Launching RealSense Camera..."
+# echo -e "Launching RealSense Camera..."
 # eval "source devel/setup.bash"
 # eval "roslaunch realsense2_camera rs_qolo_front_test.launch &"
 # PID_LIST+="$! "
@@ -34,10 +41,10 @@ sleep 5
 # sleep 10
 
 # eval "rostopic echo -p /camera_front/accel/sample \
-#     &> ${LOG_FOLDER}/imu_accel.csv &"
+#     &> ${LOG_FOLDER}/imu/accel.csv &"
 # PID_LIST+="$! "
 # eval "rostopic echo -p /camera_front/gyro/sample \
-#     &> ${LOG_FOLDER}/imu_gyro.csv &"
+#     &> ${LOG_FOLDER}/imu/gyro.csv &"
 # PID_LIST+="$! "
 
 # sleep 5
@@ -45,35 +52,12 @@ sleep 5
 #----- Launch qolo control -----
 eval ". devel/setup.bash"
 # eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
-eval "roslaunch qolo test_qolo.launch log_folder:=${LOG_FOLDER} &"
+eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
 PID_LIST+="$! "
 sleep 15
 
-# eval "rostopic echo -p /qolo/compliance/raw \
-#     &> ${LOG_FOLDER}/compliance/raw.csv &"
-# PID_LIST+="$! "
-# eval "rostopic echo -p /qolo/compliance/svr \
-#     &> ${LOG_FOLDER}/compliance/svr.csv &"
-# PID_LIST+="$! "
-# eval "rostopic echo -p /qolo/compliance/bumper_loc \
-#     &> ${LOG_FOLDER}/compliance/bumper_loc.csv &"
-# PID_LIST+="$! "
-# eval "rostopic echo -p /qolo/corrected_velocity \
-#     &> ${LOG_FOLDER}/compliance/corr_velocity.csv &"
-# PID_LIST+="$! "
-
-# eval "rosbag record -a \
-#     -O ${LOG_FOLDER}/compliant_test \
-#     &> /dev/null &"
-# PID_LIST+="$! "
-
-# eval "rosbag record -a \
-    # -O ${LOG_FOLDER}/compliant_test \
-    # &> /dev/null &"
- # PID_LIST+="$! "
-
 # Wait till all pids to be finished or killed
-echo "All PIDs : ${PID_LIST}"
+echo -e "${IMP_GREEN}All PIDs : ${PID_LIST}${NORMAL}"
 for PID in ${PID_LIST[@]};do
     wait $PID
 done
