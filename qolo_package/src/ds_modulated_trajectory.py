@@ -45,6 +45,7 @@ def get_pose():
    rpy = tf.transformations.euler_from_quaternion(rot)
    print ("phi=", rpy[2])
    return (trans[0], trans[1], rpy[2])
+   
 
 def ds_generation(x,y,phi):
    global dx_prev, dx, previous_time, ref_vel

@@ -44,7 +44,7 @@ def get_pose():
    global tf_listener
    (trans, rot) = tf_listener.lookupTransform('/tf_qolo_world', '/tf_qolo', rospy.Time(0))
    rpy = tf.transformations.euler_from_quaternion(rot)
-   print ("phi=", rpy[2])
+   print ("pose = ", trans[0], trans[1], rpy[2])
    return (trans[0], trans[1], rpy[2])
 
 def ds_generation(x,y,phi):
