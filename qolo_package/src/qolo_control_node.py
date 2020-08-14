@@ -749,7 +749,7 @@ def control_node():
                 Ts=1.0/200,
                 robot_mass=2,
                 lambda_t=0.0,
-                lambda_n=0.5,
+                lambda_n=0.2,
                 Fd=45,
                 activation_F=15,
                 logger=logger
