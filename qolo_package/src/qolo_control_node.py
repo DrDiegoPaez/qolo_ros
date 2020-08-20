@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#! /usr/bin/env python
 
 #########  Qolo Main Code for Shared / Embodied / Remore Control ##########
 ##### Author: Diego F. Paez G.
@@ -110,7 +110,7 @@ ANGULAR_ACC = LINEAR_ACC / DISTANCE_CW  # Maximum Robot's angular acceleration =
 ############ Setting for the RDS service ################
 #########################################################
 LRF_points_Flag = True
-ORCA_Flag = True
+ORCA_Flag = False
 # y_coordinate_of_reference_point_for_command_limits = 0.5
 # Gain to this point
 weight_scaling_of_reference_point_for_command_limits = 0.
@@ -749,7 +749,7 @@ def control_node():
                 Ts=1.0/200,
                 robot_mass=2,
                 lambda_t=0.0,
-                lambda_n=0.5,
+                lambda_n=0.2,
                 Fd=45,
                 activation_F=15,
                 logger=logger
