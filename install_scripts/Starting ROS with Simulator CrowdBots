@@ -1,0 +1,33 @@
+Unity:
+~/Softwares/UnityHub.AppImage &
+Open: Scenes/CrowdBot/EPFL/qolo1Dflow
+
+Terminal 1
+roscore
+
+Terminal 2
+cd ~/CrowdBot_simulator/CrowdBotUnity/catkin_crowdbotsim
+. devel/setup.bash
+roslaunch crowdbotsim unity_sim.launch
+
+Terminal 3:
+cd ~/CrowdBot_simulator/CrowdBotUnity/catkin_crowdbotsim
+. devel/setup.bash
+rosrun crowdbotsim clock_publisher.py 0.1 0.1
+
+terminal 4:
+sudo -s
+cd ~/qolo_ws
+. devel/setup.bash
+roslaunch qolo simulator_qolo.launch
+
+or for Joystick control:
+python src/qolo_ros/qolo_package/src/remote_joystick_simulator.py 
+
+In a web browser:
+ 	127.0.0.1:8080
+
+terminal 5:
+cd ~/qolo_ws
+. devel/setup.bash
+
