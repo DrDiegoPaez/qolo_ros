@@ -144,7 +144,6 @@ compliance_control = None
 
 # Global Variables for Compliant mode
 svr_data =  np.zeros((3,))
-bumper_loc = np.zeros((3,))
 
 # Prediction Models
 bumperModel = None
@@ -893,7 +892,7 @@ def control_node():
             dat_wheels.data = [Send_DAC0, Send_DAC1, Send_DAC2, Send_DAC3]
             dat_user.data = [Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Out_CP]
             if COMPLIANCE_MODE:
-                dat_compliance_bumper_loc.data = [i for i in bumper_loc]
+                dat_compliance_bumper_loc.data = compliance_control.bumper_loc
 
         if TIMING_MODE:
             cycle_T = time.clock() - prevT
