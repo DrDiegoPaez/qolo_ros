@@ -43,7 +43,7 @@ Nvidia board 200
 7. 200 Nvidia terminal: Choos a recording at the bottom of the document that suits the test (the following is the simplest LRF + tracker + qolo)
 	cd /ssd_nvidia/data/demo_2020
 
-	rosbag record -O 04_demo.bag -a
+	rosbag record -O 14_demo.bag -a
 	
 	rosbag record -O 01_demo.bag /tf /tf_static /qolo /front_lidar/scan /front_lidar/velodyne_points /rear_lidar/scan /rear_lidar/velodyne_points /map /map_metadata /move_base_simple/goal /poseupdate /rds_to_gui /slam_out_pose /rokubi_node_front/ft_sensor_measurements /diagnostics /rosout /rosout_agg
 
@@ -106,23 +106,18 @@ Nvidia board 200
 #### Establish 1 connetcion to Hasler Upboard 120
 
 1. 110 terminal:
-	rosocre
+	rosocore
 
-2. 110 terminal: launching SLAM from rear LIDAR
+2. 110 terminal: Starting main Qolo node
+	sudo -s
 	cd ~/catkin_ws/
 	. devel/setup.bash
-	roslaunch qolo rear_lidar-cloud.launch   ///roslaunch qolo rear_lidar-slam.launch
+	roslaunch qolo hasler_qolo.launch  // roslaunch qolo rear_lidar-slam.launch
 
 3. 120 terminal
 	cd ~/autonomy_ws/
 	. devel/setup.bash
 	roslaunch hector_mapping mapping_qolo_rear.launch
-
-4. 110 terminal: Starting main Qolo node
-	sudo -s
-	cd ~/catkin_ws/
-	. devel/setup.bash
-	roslaunch qolo hasler_qolo.launch
 
 ## 	RESETTING SLAM: if needed or lost in the map
 	rostopic pub /syscommand std_msgs/String "reset"
