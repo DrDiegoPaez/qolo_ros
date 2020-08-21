@@ -8,7 +8,7 @@
   <arg name="device_ip" default="" />
   <arg name="frame_id" default="tf_rear_lidar" />
   <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
-  <arg name="max_range" default="50.0" />
+  <arg name="max_range" default="25.0" />
   <arg name="min_range" default="0.3" />
   <arg name="pcap" default="" />
   <arg name="port" default="2369" />
@@ -22,7 +22,6 @@
   <arg name="organize_cloud" default="false" />
 
   <group ns="rear_lidar">
-
     <!-- start nodelet manager and driver nodelets -->
     <include file="$(find velodyne_driver)/launch/nodelet_manager.launch">
       <arg name="device_ip" value="192.168.1.19"/>
@@ -57,10 +56,11 @@
       <arg name="resolution" value="$(arg laserscan_resolution)"/>
     </include>
     
-    <!--  <node name="lidar_channels_to_lrf_node" pkg="rds_ros" type="lidar_channels_to_lrf_node" /> -->
+    <!--  <node name="lidar_channels_to_lrf_node" pkg="rds_ros" type="lidar_channels_to_lrf_node" /> 
 
-    <!--     <include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>   -->
-
+    <include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>
+    -->
+    
   </group>
 
 </launch>

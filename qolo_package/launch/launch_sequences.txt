@@ -7,6 +7,54 @@ Hasler 130
 Nvidia board 200
 	pass
 
+
+============== Qolo DEMO - RDS/Compliance ==========================
+
+#### Establish 2 connetcions to main UpBoard 110
+#### Establish 1 connetcion to Forntal Upboard 120
+#### Establish 2 connetcion to Nvidia Board 200
+
+1 110 terminal:
+	rosocre
+
+2. 110 terminal: Starting main Qolo node
+	sudo -s
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	./src/qolo_ros/run_scripts/demo_qolo.sh
+
+3. 120 terminal
+	cd ~/autonomy_ws/
+	. devel/setup.bash
+	roslaunch rds_ros rds_front_lrf_slam.launch
+
+4. Nvidia 200 terminal:  Start front-left camera
+	cd /ssd_nvidia/autonomy_ws
+	. devel/setup.bash 
+	roslaunch realsense2_camera rs_qolo.launch
+
+5. Nvidia 200 terminal:  Start tracker
+	cd ~/tracker_ws
+	. /ssd_nvidia/venv_sensing/bin/activate
+	. devel/setup.bash
+	roslaunch rwth_crowdbot_launch qolo_onboard.launch trt:=true
+
+
+7. 200 Nvidia terminal: Choos a recording at the bottom of the document that suits the test (the following is the simplest LRF + tracker + qolo)
+	cd /ssd_nvidia/data/demo_2020
+
+	rosbag record -O 04_demo.bag -a
+	
+	rosbag record -O 01_demo.bag /tf /tf_static /qolo /front_lidar/scan /front_lidar/velodyne_points /rear_lidar/scan /rear_lidar/velodyne_points /map /map_metadata /move_base_simple/goal /poseupdate /rds_to_gui /slam_out_pose /rokubi_node_front/ft_sensor_measurements /diagnostics /rosout /rosout_agg
+
+
+
+## 	RESETTING SLAM: if needed or lost in the map
+	rostopic pub /syscommand std_msgs/String "reset"
+
+
+
+
 ============== Experiments with Obstacle Avoidance - RDS ==========================
 
 #### Establish 3 connetcions to main UpBoard 110
@@ -18,18 +66,18 @@ Nvidia board 200
 
 2. 110 terminal: launching SLAM from rear LIDAR
 	cd ~/catkin_ws/
-	. devel/setup.bash
-	roslaunch qolo rear_lidar-slam.launch
+	. devel/setup.bash	
+	roslaunch qolo rear_lidar-cloud.launch /// OR ///  roslaunch qolo rear_lidar-slam.launch
 
 3. 120 terminal
 	cd ~/autonomy_ws/
 	. devel/setup.bash
-	roslaunch rds_ros rds_front_lrf.launch
+	roslaunch rds_ros rds_front_slam.launch ///OR/// roslaunch rds_ros rds_front_lrf.launch
 
 4. Nvidia 200 terminal:  Start front-left camera
 	cd /ssd_nvidia/autonomy_ws
 	. devel/setup.bash 
-	roslaunch realsense2_camera rs_qolo.launch 
+	roslaunch realsense2_camera rs_qolo.launch
 
 5. Nvidia 200 terminal:  Start tracker
 	cd ~/tracker_ws
@@ -55,20 +103,21 @@ Nvidia board 200
 
 #### Establish 3 connetcions to main UpBoard 110
 #### Establish 1 connetcion to Hasler Upboard 130
+#### Establish 1 connetcion to Hasler Upboard 120
 
 1. 110 terminal:
-	rosocre
+	rosocore
 
-2. 110 terminal: launching SLAM from rear LIDAR
-	cd ~/catkin_ws/
-	. devel/setup.bash
-	roslaunch qolo rear_lidar-slam.launch
-
-3. 110 terminal: Starting main Qolo node
+2. 110 terminal: Starting main Qolo node
 	sudo -s
 	cd ~/catkin_ws/
 	. devel/setup.bash
-	roslaunch qolo hasler_qolo.launch
+	roslaunch qolo hasler_qolo.launch  // roslaunch qolo rear_lidar-slam.launch
+
+3. 120 terminal
+	cd ~/autonomy_ws/
+	. devel/setup.bash
+	roslaunch hector_mapping mapping_qolo_rear.launch
 
 ## 	RESETTING SLAM: if needed or lost in the map
 	rostopic pub /syscommand std_msgs/String "reset"
