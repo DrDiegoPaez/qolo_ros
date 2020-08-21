@@ -32,12 +32,12 @@ qolo_pose = np.array([0., 0., 0.])
 Start_pose = np.array([0., 0., 0.])
 
 DEBUG_FLAG = False
-MaxSpeed = 1.8 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
+MaxSpeed = 1.5 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
 MaxAngular = 4.124
 D_angular = 10
 D_linear = 10
 
-ref_vel = 1.5
+ref_vel = 1.2
 density = 1.0
 control_point = 0.9
 stop_distance = 0.1
@@ -72,12 +72,12 @@ min_linear = -MaxSpeed;
 absolute_angular_at_min_linear = 0.;
 absolute_angular_at_max_linear = 0.;
 absolute_angular_at_zero_linear = MaxAngular;
-linear_acceleration_limit = 2.0
+linear_acceleration_limit = 4.0
 angular_acceleration_limit = 7.0
 
 Corrected_V = 0.;
 Corrected_W = 0.;
-cycle = 0.1;
+cycle = 0.05;
 
 def rds_service(User_V, User_W):
     global cycle, Corrected_V, Corrected_W
@@ -134,7 +134,7 @@ def rds_service(User_V, User_W):
         request.vo_tangent_orca_style = True;
 
         if cycle==0:
-            delta_time = 0.005;
+            delta_time = 0.05;
         else:
             delta_time = time.clock() - cycle;
 

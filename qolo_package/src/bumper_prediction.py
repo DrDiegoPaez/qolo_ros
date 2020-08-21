@@ -2,7 +2,7 @@
 
 """Bumper Prediction Node"""
 
-__version__ = '0.1'
+__version__ = '1.0'
 __author__ = 'Vaibhav Gupta'
 
 import os

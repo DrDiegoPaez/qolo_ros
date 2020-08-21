@@ -1,0 +1,14 @@
+digraph G {
+node [shape=box];
+"qolo_main" [label="qolo_main"];
+"bumper" [label="bumper"];
+"wheel_left" [label="wheel_left"];
+"wheel_right" [label="wheel_right"];
+node [shape=ellipse, color=blue, fontcolor=blue];
+"qolo_main" -> "qolo_main_to_bumper" [label="xyz: 0.035 0 0.015 \nrpy: 0 -0 0"]
+"qolo_main_to_bumper" -> "bumper"
+"qolo_main" -> "qolo_main_to_wheel_left" [label="xyz: 0 -0.2 0 \nrpy: 0 -0 0"]
+"qolo_main_to_wheel_left" -> "wheel_left"
+"qolo_main" -> "qolo_main_to_wheel_right" [label="xyz: 0 0.2 0 \nrpy: 0 -0 0"]
+"qolo_main_to_wheel_right" -> "wheel_right"
+}

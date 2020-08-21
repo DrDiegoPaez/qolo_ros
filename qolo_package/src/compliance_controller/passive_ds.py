@@ -73,6 +73,8 @@ class PassiveDSController:
 
         self._Fmag = self._Fx*np.sin(self._theta) + self._Fy*np.cos(self._theta)
 
+        self.bumper_loc = [self._Fmag, self._theta, self._h]
+
     def get_control(self, v_prev, omega_prev, v_cmd, omega_cmd):
         # Jacobian
         control_pt_x = self.bumper_R * np.cos(self._theta)
