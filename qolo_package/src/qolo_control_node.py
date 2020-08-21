@@ -747,11 +747,11 @@ def control_node():
                 bumper_l=0.2425,
                 bumper_R=0.33,
                 Ts=1.0/200,
-                robot_mass=2,
+                robot_mass=5,
                 lambda_t=0.0,
-                lambda_n=0.2,
-                Fd=45,
-                activation_F=15,
+                lambda_n=1.0,
+                Fd=30,
+                activation_F=10,
                 logger=logger
             )
         else:
