@@ -79,7 +79,6 @@ def collision_force_callback(data):
 
 def frames():
     while True:
-        print(list(Fmag_queue.queue), list(theta_queue.queue))
         yield list(Fmag_queue.queue), list(theta_queue.queue)
 
 
@@ -108,12 +107,9 @@ def main():
     )
 
     # Create the Animation object
-    ani = animation.FuncAnimation(fig, animate, frames=frames, interval=1)
+    ani = animation.FuncAnimation(fig, animate, frames=frames, interval=30)
     
     plt.show()
-
-    rospy.spin()
-
 
 if __name__ == '__main__':
     try:
