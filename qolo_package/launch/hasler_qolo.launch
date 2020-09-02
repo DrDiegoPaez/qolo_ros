@@ -5,7 +5,7 @@
     <arg name="joystick_mode" default="false" />
     <arg name="remote_mode" default="true" />
 
-    <include file="$(find qolo)/launch/joystick_qolo.launch"/>
+    <!-- <include file="$(find qolo)/launch/joystick_qolo.launch"/> -->
     
     <node name="qolo_control" pkg="qolo" type="qolo_control_node.py" output="screen">
         <param name="log_folder"
@@ -30,7 +30,7 @@
     <include file="$(find qolo)/launch/rear_lidar-slam.launch"/> 
     <include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>
     -->  
-  <include file="$(find qolo)/launch/rear_lidar-cloud.launch"/> 
+  <include file="$(find qolo)/launch/rear_lidar-slam.launch"/> 
 
   <!-- Only for static tests without slam
   <node pkg="tf" type="static_transform_publisher" name="tf_front_lidar" 

@@ -17,11 +17,11 @@ trap "exit" INT TERM ERR
 trap _kill EXIT
 
 #----- Get Test Number -----
-TEST_NO=0
-while [ -d "csv_logs/test${TEST_NO}" ]; do
+TEST_NO=7
+while [ -d "csv_logs/demos/demo${TEST_NO}" ]; do
    TEST_NO=$(( $TEST_NO + 1 ))
 done
-LOG_FOLDER="$(pwd)/csv_logs/test${TEST_NO}"
+LOG_FOLDER="$(pwd)/csv_logs/demos/demo${TEST_NO}"
 eval "mkdir -p ${LOG_FOLDER}/compliance"
 echo -e "${IMP_INFO}Current Test Number : ${TEST_NO}${NORMAL}"
 
@@ -59,6 +59,7 @@ sleep 5
 # sleep 5
 
 #----- Launch qolo control -----
+echo -e "${IMP_INFO}Launching QOLO Control Node...${NORMAL}"
 # eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
 eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
 PID_LIST+="$! "

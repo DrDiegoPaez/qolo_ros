@@ -1,4 +1,5 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
+
 #########  ROS version of Remote Joystick with safety ##########
 ##### Author: Diego F. Paez G. & Chen Yang
 ##### Data: 2020/04/20
