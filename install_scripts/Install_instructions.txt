@@ -27,7 +27,7 @@ Install Ubuntu Kernel for Upboard: https://wiki.up-community.org/Ubuntu
 
 if any issue:
 list of kernels:
-	grep gnulinux /boot/grub/grub.cfg 
+	grep gnulinux /boot/grub/grub.cfg
 	Desired kernel:
 		'gnulinux-4.15.0-37-generic-advanced-b97a8611-ce0d-4cd4-b420-8f5e3e3725a1'
 	Find the number in listing: 3
@@ -44,6 +44,10 @@ install spidev
 
 	add missing firmware from
 		https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/tree/i915
+		to
+		W: Possible missing firmware /lib/firmware/i915/bxt_guc_ver8_7.bin for module i915
+		W: Possible missing firmware /lib/firmware/i915/kbl_guc_ver9_14.bin for module i915
+
 
 enablel spi port on UP board
 	https://wiki.up-community.org/Pinout_UP2#SPI_Ports
@@ -79,6 +83,14 @@ PYYAML: For FT model
 	Modify /usr/lib/x86_64-linux-gnu/cmake/SDL2/sdl2-config.cmake (White space at the end)
 		BEFORE:    set(SDL2_LIBRARIES "-L${SDL2_LIBDIR}  -lSDL2 ")
 		AFTER :    set(SDL2_LIBRARIES "-L${SDL2_LIBDIR}  -lSDL2")
+
+
+######################## New Install requirements ############################
+
+Pyhton3 ros:
+	
+
+	python3 -m pip install termcolor tornado spidev --user
 
 
 
@@ -117,7 +129,8 @@ Velodyne system isntallation:
 	catkin_make clean
 	catkin_make
 
-Newest Velodyne Driver (recommended for tracker)
+
+Newest Velodyne Driver (recommended for tracker) --> CURRENT VERSION
 	sudo apt-get remove ros-kinetic-velodyne ros-kinetic-velodyne-driver ros-kinetic-velodyne-laserscan ros-kinetic-velodyne-msgs ros-kinetic-velodyne-pointcloud 
 	cd ~/autonomy_ws/src/
 	git clone https://github.com/ros-drivers/velodyne.git
