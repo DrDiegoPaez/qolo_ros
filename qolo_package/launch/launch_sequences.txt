@@ -72,7 +72,7 @@ Nvidia board 200
 3. 120 terminal
 	cd ~/autonomy_ws/
 	. devel/setup.bash
-	roslaunch rds_ros rds_front_slam.launch ///OR/// roslaunch rds_ros rds_front_lrf.launch
+	roslaunch rds_ros rds_front_lrf_slam.launch ///OR/// roslaunch rds_ros rds_front_lrf.launch
 
 4. Nvidia 200 terminal:  Start front-left camera
 	cd /ssd_nvidia/autonomy_ws
