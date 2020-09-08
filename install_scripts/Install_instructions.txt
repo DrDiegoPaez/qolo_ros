@@ -87,12 +87,19 @@ PYYAML: For FT model
 
 ######################## New Install requirements ############################
 
-Pyhton3 ros:
-	
+Python3 ros:
+	sudo apt-get install python3-pip python3-yaml
+	sudo python3 -m pip install rospkg catkin_pkg
+	sudo apt-get install python-catkin-tools python3-dev python3-numpy
 
-	python3 -m pip install termcolor tornado spidev --user
+Colored Terminal:
+	python3 -m pip install termcolor --user
 
+Joystick & New ADDA library requirements:
+	python3 -m pip install tornado spidev --user
 
+TensorFlow Lite install: (For Python 3.5, refer https://www.tensorflow.org/lite/guide/python)
+	python3 -m pip https://dl.google.com/coral/python/tflite_runtime-2.1.0.post1-cp35-cp35m-linux_x86_64.whl
 
 ################## Velodyne points and LRF transformation ###########################
 
