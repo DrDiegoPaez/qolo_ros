@@ -26,7 +26,9 @@ Nvidia board 200
 3. 120 terminal
 	cd ~/autonomy_ws/
 	. devel/setup.bash
-	roslaunch rds_ros rds_front_lrf_slam.launch
+	rosrun rds_ros run_rds_localisation.sh
+
+	 // roslaunch rds_ros rds_front_lrf_slam.launch
 
 4. Nvidia 200 terminal:  Start front-left camera
 	cd /ssd_nvidia/autonomy_ws
@@ -72,7 +74,9 @@ Nvidia board 200
 3. 120 terminal
 	cd ~/autonomy_ws/
 	. devel/setup.bash
-	roslaunch rds_ros rds_front_lrf_slam.launch ///OR/// roslaunch rds_ros rds_front_lrf.launch
+	rosrun rds_ros run_rds_localisation.sh
+		Not used anymore
+		roslaunch rds_ros rds_front_lrf_slam.launch ///OR/// roslaunch rds_ros rds_front_lrf.launch
 
 4. Nvidia 200 terminal:  Start front-left camera
 	cd /ssd_nvidia/autonomy_ws
@@ -117,7 +121,9 @@ Nvidia board 200
 3. 120 terminal
 	cd ~/autonomy_ws/
 	. devel/setup.bash
-	roslaunch hector_mapping mapping_qolo_rear.launch
+	roslaunch rds_ros rds_front_lrf_slam.launch
+		
+		Not used anymore //roslaunch hector_mapping mapping_qolo_rear.launch
 
 ## 	RESETTING SLAM: if needed or lost in the map
 	rostopic pub /syscommand std_msgs/String "reset"

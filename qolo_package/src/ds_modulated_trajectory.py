@@ -1,16 +1,17 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 #########  ROS version of Trajectory Tracking with safety ##########
-##### Author: Diego F. Paez G. & David Gonon
-##### Preliminar version: David Gonon
+##### Author: Diego F. Paez G.
 ##### Data: 2020/05/18
 
 import time
 import math
 import rospy
 # from rds_network_ros.srv import * #VelocityCommandCorrectionRDS
-import tf
+
 from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import MultiArrayLayout, MultiArrayDimension 
+from geometry_msgs.msg import Pose2D
+
 import numpy as np
 from scipy.interpolate import UnivariateSpline
 import dynamical_system_representation as ds
@@ -25,27 +26,26 @@ MaxAngular = 4.124/4
 D_angular = 10
 D_linear = 10
 
-ref_vel = 0.8
+ref_vel = 0.5
 control_point = 0.9
 stop_distance = 0.5
 time_limit = 90
 
 Attractor = np.array([[10.0+control_point], [0.0]])
 
-tf_listener = None
+pose = [0., 0., 0.]
 command_publisher = None
 t_lost_tf = -1.0
 previous_command_linear = None
 previous_command_angular = None
 data_remote = Float32MultiArray()
 
-def get_pose():
-   global tf_listener
-   (trans, rot) = tf_listener.lookupTransform('/tf_qolo_world', '/tf_qolo', rospy.Time(0))
-   rpy = tf.transformations.euler_from_quaternion(rot)
-   print ("phi=", rpy[2])
-   return (trans[0], trans[1], rpy[2])
-   
+def pose_callback(data):
+   global pose
+   pose[0] = data.x
+   pose[1] = data.y
+   pose[2] = data.theta
+
 
 def ds_generation(x,y,phi):
    global dx_prev, dx, previous_time, ref_vel
@@ -118,9 +118,9 @@ def publish_command(command_linear, command_angular, t):
 def trajectory_service(t):
    # print "Waiting for RDS Service"
    try:
-      (x, y, phi) = get_pose()
+      # x, y, phi = pose
 
-      (Trajectory_V, Trajectory_W) = ds_generation(x,y,phi)
+      (Trajectory_V, Trajectory_W) = ds_generation(*pose)
       if ~DEBUG_FLAG:
          publish_command(Trajectory_V, Trajectory_W, t)
    except:
@@ -131,7 +131,8 @@ def trajectory_service(t):
 def main():
    global tf_listener, command_publisher, data_remote, trajectory_xyt
    rospy.init_node('qolo_ds_trajectory')
-   tf_listener = tf.TransformListener()
+
+   pose_sub = rospy.Subscriber("qolo/pose2D", Pose2D, pose_callback, queue_size=1)
    command_publisher = rospy.Publisher('qolo/remote_commands',Float32MultiArray, queue_size=1)
 
    data_remote.layout.dim.append(MultiArrayDimension())
