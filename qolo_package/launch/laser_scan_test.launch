@@ -1,16 +1,17 @@
 <launch>
-	<arg name="topic_scan" default="/rear_lidar/scan"/>
+	<arg name="topic_scan" default="/front_lidar/scan"/>
 	<arg name="topic_imu" default="/camera_front/imu"/>
-	<arg name="topic_cloud" default="/rear_lidar/velodyne_points"/>
+	<arg name="topic_cloud" default="/front_lidar/velodyne_points"/>
 
 	<arg name="use_imu" default="false"/>
-	<arg name="use_cloud" default="true"/>
+	<arg name="use_cloud" default="false"/>
 
 	#### start the laser scan_matcher ##############################
 
 	<node pkg="laser_scan_matcher"
 		  type="laser_scan_matcher_node"
 		  name="laser_scan_matcher_node"
+		  ns="qolo"
 		  output="screen">
 
 		<remap from="scan" to="$(arg topic_scan)" />
