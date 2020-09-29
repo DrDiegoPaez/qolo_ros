@@ -10,8 +10,8 @@ class PassiveDSController:
         bumper_R=0.33,      # [m] 330 mm
         Ts=1.0/50,          # [s] 50 Hz
         robot_mass=2,       # [kg]
-        lambda_t=0.0,       # [N-s/m]
-        lambda_n=0.5,       # [N-s/m]
+        lambda_t=0.0,       # 
+        lambda_n=0.5,       # 
         Fd=45,              # [N]
         activation_F=15,    # [N]
         logger=None
@@ -72,6 +72,8 @@ class PassiveDSController:
             ))
 
         self._Fmag = self._Fx*np.sin(self._theta) + self._Fy*np.cos(self._theta)
+
+        self.bumper_loc = [self._Fmag, self._theta, self._h]
 
     def get_control(self, v_prev, omega_prev, v_cmd, omega_cmd):
         # Jacobian

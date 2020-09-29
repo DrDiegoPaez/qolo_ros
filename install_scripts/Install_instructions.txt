@@ -27,7 +27,7 @@ Install Ubuntu Kernel for Upboard: https://wiki.up-community.org/Ubuntu
 
 if any issue:
 list of kernels:
-	grep gnulinux /boot/grub/grub.cfg 
+	grep gnulinux /boot/grub/grub.cfg
 	Desired kernel:
 		'gnulinux-4.15.0-37-generic-advanced-b97a8611-ce0d-4cd4-b420-8f5e3e3725a1'
 	Find the number in listing: 3
@@ -44,6 +44,10 @@ install spidev
 
 	add missing firmware from
 		https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/tree/i915
+		to
+		W: Possible missing firmware /lib/firmware/i915/bxt_guc_ver8_7.bin for module i915
+		W: Possible missing firmware /lib/firmware/i915/kbl_guc_ver9_14.bin for module i915
+
 
 enablel spi port on UP board
 	https://wiki.up-community.org/Pinout_UP2#SPI_Ports
@@ -81,6 +85,21 @@ PYYAML: For FT model
 		AFTER :    set(SDL2_LIBRARIES "-L${SDL2_LIBDIR}  -lSDL2")
 
 
+######################## New Install requirements ############################
+
+Python3 ros:
+	sudo apt-get install python3-pip python3-yaml
+	sudo python3 -m pip install rospkg catkin_pkg
+	sudo apt-get install python-catkin-tools python3-dev python3-numpy
+
+Colored Terminal:
+	python3 -m pip install termcolor --user
+
+Joystick & New ADDA library requirements:
+	python3 -m pip install tornado spidev --user
+
+TensorFlow Lite install: (For Python 3.5, refer https://www.tensorflow.org/lite/guide/python)
+	python3 -m pip https://dl.google.com/coral/python/tflite_runtime-2.1.0.post1-cp35-cp35m-linux_x86_64.whl
 
 ################## Velodyne points and LRF transformation ###########################
 
@@ -117,7 +136,8 @@ Velodyne system isntallation:
 	catkin_make clean
 	catkin_make
 
-Newest Velodyne Driver (recommended for tracker)
+
+Newest Velodyne Driver (recommended for tracker) --> CURRENT VERSION
 	sudo apt-get remove ros-kinetic-velodyne ros-kinetic-velodyne-driver ros-kinetic-velodyne-laserscan ros-kinetic-velodyne-msgs ros-kinetic-velodyne-pointcloud 
 	cd ~/autonomy_ws/src/
 	git clone https://github.com/ros-drivers/velodyne.git

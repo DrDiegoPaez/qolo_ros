@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 #########  Qolo Main Code for Shared / Embodied / Remore Control ##########
 ##### Author: Diego F. Paez G.
@@ -126,7 +126,7 @@ min_linear = -MIN_SPEED
 absolute_angular_at_min_linear = 0.
 absolute_angular_at_max_linear = 0.
 absolute_angular_at_zero_linear = MAX_OMEGA/W_RATIO
-linear_acceleration_limit = 1.5
+linear_acceleration_limit = 2.5
 angular_acceleration_limit = 4.5
 
 #########################################################
@@ -144,7 +144,6 @@ compliance_control = None
 
 # Global Variables for Compliant mode
 svr_data =  np.zeros((3,))
-bumper_loc = np.zeros((3,))
 
 # Prediction Models
 bumperModel = None
@@ -490,7 +489,7 @@ def FSR_output(a, b, c, d, e, f, g, h, ox):
     return forward, backward, left_angle_for, left_angle_turn, right_angle_for, right_angle_turn, left_around, right_around
 
 def rds_service():
-    global User_V, User_W, Output_V, Output_W, last_v, last_w, cycle, feasible, Corrected_V, Corrected_W
+    global Output_V, Output_W, last_v, last_w, cycle, feasible, Corrected_V, Corrected_W
     # print "Waiting for RDS Service"
     rospy.wait_for_service('rds_velocity_command_correction')
     # try:
@@ -513,8 +512,8 @@ def rds_service():
     # linear_acceleration_limit = 1.1
     # angular_acceleration_limit = 1.5
 
-    request.nominal_command.linear = User_V
-    request.nominal_command.angular = User_W
+    request.nominal_command.linear = Corrected_V
+    request.nominal_command.angular = Corrected_W
     request.capsule_center_front_y = 0.2 # Actual: 0.051
     request.capsule_center_rear_y = -0.50
     request.capsule_radius = 0.45
@@ -555,7 +554,7 @@ def rds_service():
     else:
         delta_time = time.clock() - cycle
 
-    request.dt = 0.01 #delta_time
+    request.dt = delta_time
     # print('call time',delta_time)
     response = RDS(request)
     Corrected_V = round(response.corrected_command.linear,6)
@@ -676,14 +675,6 @@ def control():
         FSR_time = round((time.clock() - t1),6)
         t1 = time.clock()
 
-    if SHARED_MODE:
-        rds_service()
-        # Corrected_V = User_V
-        # Corrected_W = User_W
-    else:
-        Corrected_V = User_V
-        Corrected_W = User_W
-
     if TIMING_MODE:
         RDS_time = round((time.clock() - t1),6)
         t1 = time.clock()
@@ -691,14 +682,23 @@ def control():
     if COMPLIANCE_MODE:
         (compliant_V, compliant_W) = compliance_control.step(
             compliant_V, compliant_W,
-            Corrected_V, Corrected_W,
+            User_V, User_W,
             svr_data
         )
-        Output_V = round(compliant_V,6)
-        Output_W = round(compliant_W,6)
+        Corrected_V = round(compliant_V,6)
+        Corrected_W = round(compliant_W,6)
     else:
-        Output_V = Corrected_V
-        Output_W = Corrected_W
+        Corrected_V = User_V
+        Corrected_W = User_W
+
+    if SHARED_MODE:
+        rds_service()
+        # Corrected_V = User_V
+        # Corrected_W = User_W
+
+    Output_V = Corrected_V
+    Output_W = Corrected_W
+
 
     if TIMING_MODE:
         Compliance_time = round((time.clock() - t1),6)
@@ -747,9 +747,9 @@ def control_node():
                 bumper_l=0.2425,
                 bumper_R=0.33,
                 Ts=1.0/200,
-                robot_mass=5,
+                robot_mass=2,
                 lambda_t=0.0,
-                lambda_n=1.0,
+                lambda_n=1.1,
                 Fd=30,
                 activation_F=10,
                 logger=logger
@@ -893,7 +893,7 @@ def control_node():
             dat_wheels.data = [Send_DAC0, Send_DAC1, Send_DAC2, Send_DAC3]
             dat_user.data = [Xin[0],Xin[1],Xin[2],Xin[3],Xin[4],Xin[5],Xin[6],Xin[7],Xin[8],Xin[9],Out_CP]
             if COMPLIANCE_MODE:
-                dat_compliance_bumper_loc.data = [i for i in bumper_loc]
+                dat_compliance_bumper_loc.data = compliance_control.bumper_loc
 
         if TIMING_MODE:
             cycle_T = time.clock() - prevT

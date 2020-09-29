@@ -50,11 +50,18 @@ sleep 5
 # sleep 5
 
 #----- Launch qolo control -----
+echo -e "${IMP_INFO}Launching QOLO Control Node...${NORMAL}"
 eval ". devel/setup.bash"
 # eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
 eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
 PID_LIST+="$! "
 sleep 15
+
+#----- Launch realsense camera -----
+# echo -e "${IMP_INFO}Launching RealSense Camera...${NORMAL}"
+# eval "roslaunch realsense2_camera rs_qolo_front.launch &"
+# PID_LIST+="$! "
+# sleep 5
 
 # Wait till all pids to be finished or killed
 echo -e "${IMP_GREEN}All PIDs : ${PID_LIST}${NORMAL}"
