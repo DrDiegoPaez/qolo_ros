@@ -37,7 +37,7 @@ MaxAngular = 4.124
 D_angular = 10
 D_linear = 10
 
-ref_vel = 1.2
+ref_vel = 0.7
 density = 1.0
 control_point = 0.9
 stop_distance = 0.1

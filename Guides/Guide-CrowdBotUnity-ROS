@@ -1,3 +1,11 @@
+ROSSETUP:
+export ROS_IP=127.0.0.1
+export ROS_MASTER_URI=http://127.0.0.1:11311
+#export ROS_HOSTNAME=localhost
+#export ROS_MASTER_URI=http://localhost:11311
+#export ROS_IP=192.168.13.104 #(local Qolo_Net assigned IP)
+#export ROS_MASTER_URI=http://192.168.13.110:11311
+
 Unity:
 ~/Softwares/UnityHub.AppImage &
 Open: Scenes/CrowdBot/EPFL/qolo1Dflow
