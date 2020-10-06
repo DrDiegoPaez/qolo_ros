@@ -27,15 +27,15 @@ D_angular = 10
 D_linear = 10
 
 ref_vel = 0.5
-control_point = 0.9
+# control_point = 0.9      ## WHY 0.9 ??
+control_pt = [0.5275, 0.]
 stop_distance = 0.5
 time_limit = 90
 
-Attractor = np.array([[10.0+control_point], [0.0]])
+Attractor = np.array([[4.0+control_pt[0]], [0.0+control_pt[1]]])
 
 pose = [0., 0., 0.]
 command_publisher = None
-t_lost_tf = -1.0
 previous_command_linear = None
 previous_command_angular = None
 data_remote = Float32MultiArray()
@@ -46,6 +46,10 @@ def pose_callback(data):
    pose[1] = data.y
    pose[2] = data.theta
 
+def control_pt_callback(data):
+   global control_pt
+   control_pt[0] = data.x
+   control_pt[1] = data.y
 
 def ds_generation(x,y,phi):
    global dx_prev, dx, previous_time, ref_vel
@@ -53,13 +57,12 @@ def ds_generation(x,y,phi):
       # x = 1
       # y = 1
       # phi = 0.79
-      t_lost_tf = -1.0
       Ctime = time.clock()
       translation = np.array([[x], [y]])
       Rotation = np.array([
          [np.cos(phi), -np.sin(phi)],
          [np.sin(phi),  np.cos(phi)]])
-      p_ref_local = np.array([[control_point], [0.0]])
+      p_ref_local = np.array([[control_pt[0]], [control_pt[1]]])
       p_ref_global = np.matmul(Rotation, p_ref_local) + translation
 
       if DEBUG_FLAG:
@@ -103,9 +106,8 @@ def ds_generation(x,y,phi):
 
       return command_linear, command_angular
 
-   except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-      print ("Exception during tf lookup ...")
-
+   except e:
+      print("Exception ...")
 
 def publish_command(command_linear, command_angular, t):
    global data_remote, command_publisher
@@ -129,10 +131,11 @@ def trajectory_service(t):
 
 
 def main():
-   global tf_listener, command_publisher, data_remote, trajectory_xyt
+   global command_publisher, data_remote, trajectory_xyt
    rospy.init_node('qolo_ds_trajectory')
 
    pose_sub = rospy.Subscriber("qolo/pose2D", Pose2D, pose_callback, queue_size=1)
+   control_pt_sub = rospy.Subscriber("qolo/control_pt", Pose2D, control_pt_callback, queue_size=1)
    command_publisher = rospy.Publisher('qolo/remote_commands',Float32MultiArray, queue_size=1)
 
    data_remote.layout.dim.append(MultiArrayDimension())

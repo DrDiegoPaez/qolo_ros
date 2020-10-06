@@ -24,7 +24,7 @@ import datetime
 import rospy
 # import threading
 
-from geometry_msgs.msg import Wrench, WrenchStamped, Vector3, PoseStamped, Quaternion, Twist, TwistStamped
+from geometry_msgs.msg import Wrench, WrenchStamped, Vector3, PoseStamped, Quaternion, Twist, TwistStamped, Pose2D
 from std_msgs.msg import String, Bool, Float32MultiArray, Float32, Int32MultiArray
 from std_msgs.msg import MultiArrayLayout, MultiArrayDimension, Header
 
@@ -119,14 +119,14 @@ tau = 1.5
 # Minimal distance to obstacles
 delta = 0.05
 # Some reference for controlling the non-holonomic base
-control_point = 0.2
+control_point = 0.4
 
 max_linear = MAX_SPEED
 min_linear = -MIN_SPEED
 absolute_angular_at_min_linear = 0.
 absolute_angular_at_max_linear = 0.
 absolute_angular_at_zero_linear = MAX_OMEGA/W_RATIO
-linear_acceleration_limit = 2.5
+linear_acceleration_limit = 1.5
 angular_acceleration_limit = 4.5
 
 #########################################################
@@ -141,13 +141,10 @@ compliant_W =0.
 COMPLIANCE_TYPE = "passive_ds"
 
 compliance_control = None
+qolo_control_pt = None
 
 # Global Variables for Compliant mode
 svr_data =  np.zeros((3,))
-
-# Prediction Models
-bumperModel = None
-lp_filter = None
 
 feasible = 0
 Output_V = 0.
@@ -687,6 +684,15 @@ def control():
         )
         Corrected_V = round(compliant_V,6)
         Corrected_W = round(compliant_W,6)
+
+        # Update Control Point
+        if abs(compliance_control._Fmag) > compliance_control.activation_F:
+            qolo_control_pt.x = compliance_control.bumper_l + compliance_control.bumper_R * np.cos(compliance_control._theta)
+            qolo_control_pt.y = compliance_control.bumper_R * np.sin(compliance_control._theta)
+        else:
+            qolo_control_pt.x = compliance_control.bumper_l + compliance_control.bumper_R
+            qolo_control_pt.y = 0
+            
     else:
         Corrected_V = User_V
         Corrected_W = User_W
@@ -736,7 +742,7 @@ def control_node():
     global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Send_DAC2, Send_DAC3, Xin
     global RemoteE, ComError
     global DA_time, RDS_time, Compute_time, FSR_time, Compliance_time, extra_time,last_msg, time_msg, FULL_time
-    global compliant_V, compliant_W, offset_ft_data, bumperModel, lp_filter, compliance_control, initialising_ft
+    global compliant_V, compliant_W, offset_ft_data, compliance_control, initialising_ft, qolo_control_pt
     prevT = 0
     FlagEmergency=False
     # Call the calibration File
@@ -747,11 +753,11 @@ def control_node():
                 bumper_l=0.2425,
                 bumper_R=0.33,
                 Ts=1.0/200,
-                robot_mass=2,
+                robot_mass=30.0,
                 lambda_t=0.0,
-                lambda_n=1.1,
-                Fd=30,
-                activation_F=10,
+                lambda_n=1.5,
+                Fd=45,
+                activation_F=15,
                 logger=logger
             )
         else:
@@ -784,6 +790,11 @@ def control_node():
 
     pub_twist = rospy.Publisher('qolo/twist', TwistStamped, queue_size=1)
     qolo_twist = TwistStamped()
+
+    pub_control_pt = rospy.Publisher('qolo/control_pt', Pose2D, queue_size=1)
+    qolo_control_pt = Pose2D()
+    qolo_control_pt.x = compliance_control.bumper_l + compliance_control.bumper_R
+    qolo_control_pt.y = 0
 
     # pub_vel = rospy.Publisher('qolo/velocity', Float32MultiArray, queue_size=1)
     # dat_vel = Float32MultiArray()
@@ -915,6 +926,7 @@ def control_node():
         # ----- Publish ROS topics -----
         pub_emg.publish(FlagEmergency)
         pub_twist.publish(qolo_twist)
+        pub_control_pt.publish(qolo_control_pt)
 
         # pub_vel.publish(dat_vel)
 

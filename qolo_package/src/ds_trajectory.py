@@ -25,12 +25,12 @@ MaxAngular = 4.124/8
 D_angular = 10
 D_linear = 10
 
-ref_vel = 0.8
+ref_vel = 0.9
 control_point = 0.9
 stop_distance = 0.5
 time_limit = 90
 
-Attractor = np.array([[10.0+control_point], [0.0]])
+Attractor = np.array([[15.0+control_point], [0.0]])
 
 tf_listener = None
 command_publisher = None
