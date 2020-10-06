@@ -51,7 +51,6 @@ def control_pt_callback(data):
    control_pt[0] = data.x
    control_pt[1] = data.y
 
-
 def ds_generation(x,y,phi):
    global dx_prev, dx, previous_time, ref_vel
    try:
