@@ -77,7 +77,7 @@ class PassiveDSController:
 
     def get_control(self, v_prev, omega_prev, v_cmd, omega_cmd):
         # Jacobian
-        control_pt_x = self.bumper_R * np.cos(self._theta)
+        control_pt_x = self.bumper_l + self.bumper_R * np.cos(self._theta)
         control_pt_y = self.bumper_R * np.sin(self._theta)
         self.jacobian = np.array([
             [1., -control_pt_y],
