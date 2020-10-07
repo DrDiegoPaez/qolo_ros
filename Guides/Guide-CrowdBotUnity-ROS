@@ -40,3 +40,9 @@ cd ~/qolo_ws
 . devel/setup.bash
 roslaunch qolo rviz.launch
 
+
+EDITING Scenes:
+
+gedit /home/crowdbot/CrowdBot_simulator/CrowdBotUnity/Scenario/CrowdBot/EPFL/FileOrder.csv &
+
+
