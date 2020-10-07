@@ -8,6 +8,7 @@ export ROS_MASTER_URI=http://127.0.0.1:11311
 
 Unity:
 ~/Softwares/UnityHub.AppImage &
+OPen CrowdBot Simulation
 Open: Scenes/CrowdBot/EPFL/qolo1Dflow
 
 Terminal 1

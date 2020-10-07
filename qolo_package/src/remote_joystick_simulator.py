@@ -44,7 +44,7 @@ qolo_twist = Twist()
 
 ### ---------- GLOBAL VARIABLES ---------- ####
 PORT = 8080
-Max_V = 1.0
+Max_V = 0.7
 Max_W = 0.7
 
 level_relations = {
@@ -74,14 +74,22 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
  
   def on_message(self, message):
+    # print ('[WS] Incoming message:'), message
+    # print (type(message)) # result = re.findall(r"[-+]?\d*\.\d+|\d+", message)
+    # result = re.findall(r"[-\d]+", message) 
+    # # print (result)
+    # Output = [((float(i)/100)) for i in result]
+    # Ctime = round(time.clock(),4)
+    # publishJoystick(Ctime,Output[1]*Max_V, ((Output[0]*Max_W)*180./np.pi ))
+    # print ('Joystick =', Output[1]*Max_V, ((Output[0]*Max_W)*180./np.pi))
     print ('[WS] Incoming message:'), message
     print (type(message)) # result = re.findall(r"[-+]?\d*\.\d+|\d+", message)
     result = re.findall(r"[-\d]+", message) 
     # print (result)
     Output = [((float(i)/100)) for i in result]
     Ctime = round(time.clock(),4)
-    publishJoystick(Ctime,Output[1]*Max_V, ((Output[0]*Max_W)*180./np.pi ))
-    print ('Joystick =', Output[1]*Max_V, ((Output[0]*Max_W)*180./np.pi))
+    publishJoystick(Ctime,Output[1]*Max_V, ((-Output[0]*Max_W)*180./np.pi ))
+    print ('Joystick =', Output[1]*Max_V, ((-Output[0]*Max_W)*180./np.pi))
 
 
   def on_close(self):

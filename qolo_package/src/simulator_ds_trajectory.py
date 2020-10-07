@@ -37,7 +37,7 @@ MaxAngular = 4.124
 D_angular = 10
 D_linear = 10
 
-ref_vel = 0.7
+ref_vel = 0.5
 density = 1.0
 control_point = 0.9
 stop_distance = 0.1
@@ -77,7 +77,7 @@ angular_acceleration_limit = 7.0
 
 Corrected_V = 0.;
 Corrected_W = 0.;
-cycle = 0.05;
+cycle = 0.1;
 
 def rds_service(User_V, User_W):
     global cycle, Corrected_V, Corrected_W
@@ -345,7 +345,7 @@ def trajectory_service(t):
       rds_service(Trajectory_V, Trajectory_W)
       (Corrected_V, Corrected_W) = Trajectory_V, Trajectory_W
       if ~DEBUG_FLAG:
-         publish_command(Corrected_V, Corrected_W, t)
+         publish_command(Corrected_V, -Corrected_W, t)
    except:
         publish_command(0., 0., 0.)
         print ('No Pose Setting [V,W] = [0, 0]')
