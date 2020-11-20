@@ -21,7 +21,7 @@ Nvidia board 200
 	sudo -s
 	cd ~/catkin_ws/
 	. devel/setup.bash
-	./src/qolo_ros/run_scripts/demo_qolo.sh
+	./src/qolo_ros/run_scripts/remote_qolo.sh
 
 3. 120 terminal
 	cd ~/autonomy_ws/
