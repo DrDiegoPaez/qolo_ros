@@ -42,7 +42,8 @@ Nvidia board 200
 	roslaunch rwth_crowdbot_launch qolo_onboard.launch trt:=true
 
 
-7. 200 Nvidia terminal: Choos a recording at the bottom of the document that suits the test (the following is the simplest LRF + tracker + qolo)
+7. 200 Nvidia terminal: Choose a recording at the bottom of the document that suits the test (the following is the simplest LRF + tracker + qolo)
+
 	cd /ssd_nvidia/data/demo_2020
 		/ssd_nvidia/data/lidar_training/2_med_recordings
 
