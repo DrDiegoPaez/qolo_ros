@@ -86,7 +86,7 @@
   <node pkg="tf" type="static_transform_publisher" name="Unity" 
       args="0.035 0 0.280 0 0 0 1 tf_qolo Unity 10" />
 
-  <node name="rds_ros" pkg="rds_ros" type="rds_ros_node"/>
+ <!-- <node name="rds_ros" pkg="rds_ros" type="rds_ros_node"/> -->
 
   <!-- <node name="qolo_simulator" pkg="qolo" type="simulator_ds_trajectory.py" /> -->
 

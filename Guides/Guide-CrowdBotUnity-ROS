@@ -7,7 +7,8 @@ export ROS_MASTER_URI=http://127.0.0.1:11311
 #export ROS_MASTER_URI=http://192.168.13.110:11311
 
 Unity:
-~/Softwares/UnityHub.AppImage &
+/hdd/crowdbot_simulator/UnityHub.AppImage &
+
 OPen CrowdBot Simulation
 Open: Scenes/CrowdBot/EPFL/qolo1Dflow
 
@@ -15,12 +16,12 @@ Terminal 1
 roscore
 
 Terminal 2
-cd ~/CrowdBot_simulator/CrowdBotUnity/catkin_crowdbotsim
+cd /hdd/crowdbot_simulator/CrowdBotUnity/catkin_crowdbotsim
 . devel/setup.bash
 roslaunch crowdbotsim unity_sim.launch
 
 Terminal 3:
-cd ~/CrowdBot_simulator/CrowdBotUnity/catkin_crowdbotsim
+cd /hdd/crowdbot_simulator/CrowdBotUnity/catkin_crowdbotsim
 . devel/setup.bash
 rosrun crowdbotsim clock_publisher.py 0.1 0.1
 
@@ -43,7 +44,6 @@ roslaunch qolo rviz.launch
 
 
 EDITING Scenes:
-
 gedit /home/crowdbot/CrowdBot_simulator/CrowdBotUnity/Scenario/CrowdBot/EPFL/FileOrder.csv &
 
 
