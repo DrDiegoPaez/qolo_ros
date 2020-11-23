@@ -791,11 +791,6 @@ def control_node():
     pub_twist = rospy.Publisher('qolo/twist', TwistStamped, queue_size=1)
     qolo_twist = TwistStamped()
 
-    pub_control_pt = rospy.Publisher('qolo/control_pt', Pose2D, queue_size=1)
-    qolo_control_pt = Pose2D()
-    qolo_control_pt.x = compliance_control.bumper_l + compliance_control.bumper_R
-    qolo_control_pt.y = 0
-
     # pub_vel = rospy.Publisher('qolo/velocity', Float32MultiArray, queue_size=1)
     # dat_vel = Float32MultiArray()
     # dat_vel.layout.dim.append(MultiArrayDimension())
@@ -832,6 +827,11 @@ def control_node():
             dat_compliance_bumper_loc.layout.dim[0].label = 'F_mag bumper_theta bumper_h'
             dat_compliance_bumper_loc.layout.dim[0].size = 3
             dat_compliance_bumper_loc.data = [0]*3
+
+            pub_control_pt = rospy.Publisher('qolo/control_pt', Pose2D, queue_size=1)
+            qolo_control_pt = Pose2D()
+            qolo_control_pt.x = compliance_control.bumper_l + compliance_control.bumper_R
+            qolo_control_pt.y = 0
     
     ########### Starting ROS Node ###########
     rospy.init_node('qolo_control', anonymous=True)
@@ -919,6 +919,7 @@ def control_node():
         if COMPLIANCE_MODE:
             compliance_control.log()
             logger.log('svr', *svr_data)
+            pub_control_pt.publish(qolo_control_pt)
         
         if TIMING_MODE:
             logger.log('timings', DA_time, RDS_time, Compute_time, FSR_time, Compliance_time, cycle_T, FULL_time)
@@ -926,7 +927,6 @@ def control_node():
         # ----- Publish ROS topics -----
         pub_emg.publish(FlagEmergency)
         pub_twist.publish(qolo_twist)
-        pub_control_pt.publish(qolo_control_pt)
 
         # pub_vel.publish(dat_vel)
 
