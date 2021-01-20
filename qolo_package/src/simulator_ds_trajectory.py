@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 #########  ROS version of Trajectory Tracking with safety ##########
 ##### Author: Diego F. Paez G. & David Gonon
 ##### Preliminar version: David Gonon
