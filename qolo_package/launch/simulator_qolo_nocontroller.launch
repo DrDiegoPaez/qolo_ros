@@ -88,8 +88,10 @@
 
   <!--<node name="rds_ros" pkg="rds_ros" type="rds_ros_node"/> -->
 
-  <node name="qolo_simulator" pkg="qolo" type="simulator_ds_trajectory.py" /> 
+  <!-- <node name="qolo_simulator" pkg="qolo" type="simulator_ds_trajectory.py" />  -->
 
   <!-- <node name="qolo_simulator" pkg="qolo_modulation" type="qolo_simulation_modulation.py" /> -->
+
+    <node name="qolo_joystick" pkg="qolo" type="remote_joystick_simulator.py" />
 
 </launch>
