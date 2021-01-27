@@ -103,6 +103,21 @@ TensorFlow Lite install: (For Python 3.5, refer https://www.tensorflow.org/lite/
 
 ################## Velodyne points and LRF transformation ###########################
 
+======================== Setup network for EEG Computer ========================
+sudo nano /etc/network/interface
+
+	auto enp1s0
+	allow-hotplug enp1s0
+	iface enp2s0 inet static
+	        address 128.178.145.IP_EPFL
+	        netmask 255.255.255.0
+
+	auto enp2s0
+	allow-hotplug enp2s0
+	iface enp2s0 inet static
+	        address 192.168.1.130
+	        netmask 255.255.255.0
+
 ======================== Setup network for LIDAR ========================
 sudo nano /etc/network/interface
 	
