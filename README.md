@@ -85,6 +85,7 @@ Qolo safety for collisions:
 
 **Contact**: 
 [Dr. Diego Paez]
+https://diegofpaez.wordpress.com/
 
 **Acknowledgments**
 This project was partially founded by:
