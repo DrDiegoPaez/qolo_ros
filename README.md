@@ -69,22 +69,23 @@ https://github.com/DrDiegoPaez/qolo_ros/blob/master/qolo_package/launch/launch_s
 ## References for citations:
 Qolo Design:
 
-[1] Paez-Granados, D. F., Kadone, H., & Suzuki, K. (2018). Unpowered Lower-Body Exoskeleton with Torso Lifting Mechanism for Supporting Sit-to-Stand Transitions. IEEE International Conference on Intelligent Robots and Systems, 2755–2761. https://doi.org/10.1109/IROS.2018.8594199
+> [1] Paez-Granados, D. F., Kadone, H., & Suzuki, K. (2018). Unpowered Lower-Body Exoskeleton with Torso Lifting Mechanism for Supporting Sit-to-Stand Transitions. IEEE International Conference on Intelligent Robots and Systems, 2755–2761. https://doi.org/10.1109/IROS.2018.8594199
 
 Qolo Hands-free control:
 
-[2] Chen, Y., Paez-Granados, D., Kadone, H., & Suzuki, K. (2020). Control Interface for Hands-free Navigation of Standing Mobility Vehicles based on Upper-Body Natural Movements. IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS-2020).
+> [2] Chen, Y., Paez-Granados, D., Kadone, H., & Suzuki, K. (2020). Control Interface for Hands-free Navigation of Standing Mobility Vehicles based on Upper-Body Natural Movements. IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS-2020).
 
 Qolo shared control:
 
-[3] Paez-Granados, D., Billard, A., & Suzuki, K. (2020). Materializing Personal Standing Mobility from Design to Shared Control. In ETH Zurich Rehabilitation Engineering Lab (Ed.), CYBATHLON Symposium. Cybathlon. https://cybathlon-symposium.ethz.ch
+> [3] Paez-Granados, D., Billard, A., & Suzuki, K. (2020). Materializing Personal Standing Mobility from Design to Shared Control. In ETH Zurich Rehabilitation Engineering Lab (Ed.), CYBATHLON Symposium. Cybathlon. https://cybathlon-symposium.ethz.ch
 
-[4] Paez-granados, D., Gonon, D., Salvini, P., & Billard, A. (2020). Physical Safety in Collisions Between Robots and Pedestrians. IEEEE International Conference on Robot and Human Interaactive Communication (ROMAN-2020) Workshop on Robots from Pathways to Crowds, 1–2. https://doi.org/10.13140/RG.2.2.28087.55209
+> [4] Paez-granados, D., Gonon, D., Salvini, P., & Billard, A. (2020). Physical Safety in Collisions Between Robots and Pedestrians. IEEEE International Conference on Robot and Human Interaactive Communication (ROMAN-2020) Workshop on Robots from Pathways to Crowds, 1–2. https://doi.org/10.13140/RG.2.2.28087.55209
 
 **Contact**: 
 [Dr. Diego Paez]
 
 **Acknowledgments**
-This project was partially founded by the EU Horizon-2020 Project CROWDBOT: http://crowdbot.eu
-This project was partially founded by the Toyota Mobility Foundation thorugh the Grant: Mobility Unlimited Challenge 2019: https://mobilityunlimited.org
-This project was partially founded by Grant-in-Aid for Scientific Research from the Ministry of Education, Culture, Sports, Science and Technology of (MEXT) Japan: http://www.ai.iit.tsukuba.ac.jp/research/046.html
+This project was partially founded by:
+> The EU Horizon-2020 Project CROWDBOT: http://crowdbot.eu
+> The Toyota Mobility Foundation (TMF) thorugh the Grant: Mobility Unlimited Challenge 2019: https://mobilityunlimited.org
+> Grant-in-Aid for Scientific Research from the Ministry of Education, Culture, Sports, Science and Technology of (MEXT) Japan: http://www.ai.iit.tsukuba.ac.jp/research/046.html
