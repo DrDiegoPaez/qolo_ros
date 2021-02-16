@@ -46,6 +46,7 @@ Nvidia board 200
 
 	cd /ssd_nvidia/data/demo_2020
 		/ssd_nvidia/data/lidar_training/2_med_recordings
+		/ssd_nvidia/data/crowdbot_2021
 
 	rosbag record -O 01_skirt_1m.bag -a
 	

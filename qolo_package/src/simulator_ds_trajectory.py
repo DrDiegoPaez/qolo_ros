@@ -319,7 +319,7 @@ def publish_command(Vel,Omega,time):
     global command_publisher, qolo_twist
     # data_remote.data = [time,Vel,Omega]
     qolo_twist.linear.x = Vel
-    qolo_twist.angular.z = -Omega*180./np.pi
+    qolo_twist.angular.z = Omega*180./np.pi
 
     command_publisher.publish(qolo_twist)
     rospy.loginfo(qolo_twist)
@@ -345,14 +345,14 @@ def trajectory_service(t):
       rds_service(Trajectory_V, Trajectory_W)
       (Corrected_V, Corrected_W) = Trajectory_V, Trajectory_W
       if ~DEBUG_FLAG:
-         publish_command(Corrected_V, -Corrected_W, t)
+         publish_command(Corrected_V, Corrected_W, t)
    except:
         publish_command(0., 0., 0.)
         print ('No Pose Setting [V,W] = [0, 0]')
 
 
 def main():
-   global tf_listener, qolo_twist, trajectory_xyt, qolo_pose
+   global tf_listener, qolo_twist, trajectory_xyt, qolo_pose, Start_pose
    rospy.init_node('qolo_simulator_ds', anonymous=True)
    rate = rospy.Rate(100) #  50 hz
    pose_qolo = rospy.Subscriber("/qolo/pose",Twist,pose_callback, queue_size=1)
