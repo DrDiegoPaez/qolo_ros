@@ -79,6 +79,8 @@ Qolo shared control:
 
 > [3] Paez-Granados, D., Billard, A., & Suzuki, K. (2020). Materializing Personal Standing Mobility from Design to Shared Control. In ETH Zurich Rehabilitation Engineering Lab (Ed.), CYBATHLON Symposium. Cybathlon. https://cybathlon-symposium.ethz.ch
 
+Qolo safety for collisions:
+
 > [4] Paez-granados, D., Gonon, D., Salvini, P., & Billard, A. (2020). Physical Safety in Collisions Between Robots and Pedestrians. IEEEE International Conference on Robot and Human Interaactive Communication (ROMAN-2020) Workshop on Robots from Pathways to Crowds, 1–2. https://doi.org/10.13140/RG.2.2.28087.55209
 
 **Contact**: 
@@ -87,5 +89,7 @@ Qolo shared control:
 **Acknowledgments**
 This project was partially founded by:
 > The EU Horizon-2020 Project CROWDBOT: http://crowdbot.eu
+
 > The Toyota Mobility Foundation (TMF) thorugh the Grant: Mobility Unlimited Challenge 2019: https://mobilityunlimited.org
+
 > Grant-in-Aid for Scientific Research from the Ministry of Education, Culture, Sports, Science and Technology of (MEXT) Japan: http://www.ai.iit.tsukuba.ac.jp/research/046.html
