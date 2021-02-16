@@ -1,8 +1,8 @@
 #! /usr/bin/env python3
 
 #########  ROS version of Remote Joystick with safety ##########
-##### Author: Diego F. Paez G. & Chen Yang
-##### Data: 2020/04/20
+##### Author: Diego Paez G.
+##### Data: 2021/02/15
 
 ##### This script subscribes to a webserver
 ## for receiving a virtual joystick commands 
@@ -39,7 +39,7 @@ except PermissionError:
     rospy.logerr("Cannot set niceness for the process...")
     rospy.logerr("Run the script as sudo...")
 
-pub_remote = rospy.Publisher('qolo/remote_commands', Float32MultiArray, queue_size=1)
+pub_remote = rospy.Publisher('qolo/modulation_command', Float32MultiArray, queue_size=1)
 data_remote = Float32MultiArray()
 
 ### ---------- GLOBAL VARIABLES ---------- ####

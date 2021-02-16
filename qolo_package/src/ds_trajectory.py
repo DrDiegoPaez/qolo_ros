@@ -16,6 +16,9 @@ from scipy.interpolate import UnivariateSpline
 import dynamical_system_representation as ds
 #import matplotlib.pyplot as plt
 
+# Fast Clipper Function
+clipper = lambda x, l, u: l if x < l else u if x > u else x
+
 dx_prev = np.array([[0.0], [0.0]])
 dx = np.array([[0.0], [0.0]])
 
@@ -53,11 +56,8 @@ def pose_callback(data):
 #    return (trans[0], trans[1], rpy[2])
 
 def ds_generation(x,y,phi):
-   global dx_prev, dx, previous_time, ref_vel
+   global dx_prev, dx, ref_vel
    try:
-      # x = 1
-      # y = 1
-      # phi = 0.79
       t_lost_tf = -1.0
       Ctime = time.clock()
       translation = np.array([[x], [y]])
@@ -87,21 +87,14 @@ def ds_generation(x,y,phi):
 
       cammand_robot = np.matmul(J_p_ref_inv, v_command_p_ref_local)
 
-      command_linear = cammand_robot[0,0]
+      command_angular = clipper(cammand_robot[1,0], -MaxAngular, MaxAngular)
+      command_linear = clipper(cammand_robot[0,0], -MaxSpeed, MaxSpeed)
 
-      if cammand_robot[1,0] > MaxAngular:
-         command_angular = MaxAngular
-      elif cammand_robot[1,0] < -MaxAngular:
-         command_angular = -MaxAngular
-      else:
-         command_angular = cammand_robot[1,0]
-      # previous_command_linear = command_linear
-      # previous_command_angular = command_angular
+
       if DEBUG_FLAG:
          print(" Robot Command = ",command_linear, command_angular)
          time.sleep(0.5)
       dx_prev = dx
-      # commands = [command_linear, command_angular]
 
       return command_linear, command_angular
 
