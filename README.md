@@ -1,19 +1,19 @@
 ## Ros Interface for controlling the robot Qolo @LASA
-This repository is used for integrating the main controller on the robot Qolo [1], all sensors, obstacle avoidance, and high-level controllers with the low-level motor control of the robot.
-Package contaiing Qolo Controllers:
+This repository is used for integrating the main controller on the robot Qolo [1], all sensors, obstacle avoidance, and high-level controllers with the low-level motor control of the robot [3].
+Package containing the following:
 
 User Iterface:
   * Embodided control with Hands-free Navigation [2] 
   * Joystick remote control with html interface
   
 Controllers:
-  * Obstacle Avoidance with RDS [4]
-  * Compliant control [REF]
-  * Modulated Dynamical Systems based control [REF]
+  * Redirecting Driver Support (RDS): Obstacle Avoidance for non-holonomic robots [P1]
+  * Modulated Dynamical Systems based obstacle avoidance [P2]
+  * Compliant control [P3]
   
 Communication: 
   * Controllers for real-robot Qolo.
-  * Controllers version for the CrwodBot simulator version of Qolo. [REF]
+  * Controllers version for the CrowdBot simulator version of Qolo. [REF]
   
 ![Alt text](/visualisation/qolo_images/qolo_sim.png?raw=true "Qolo version @LASA-EPFL and CrowdBot Simulator version.")
 
@@ -45,14 +45,17 @@ https://github.com/DrDiegoPaez/qolo_ros/blob/master/install_scripts/Install_inst
 
 ## Related packages:
 
-Obstacle avoidance for tight shape and non-holonomic constraints (used in shared control):
+[P1] Obstacle avoidance for tight shape and non-holonomic constraints (used in shared control):
+
 https://github.com/epfl-lasa/rds
 
-Obstacle avoidance based on dynamical systems:
+[P2] Obstacle avoidance based on dynamical systems:
+
 https://github.com/epfl-lasa/qolo_modulation
 https://github.com/epfl-lasa/dynamic_obstacle_avoidance/
 
-Pybullet simulation for collisions and compliant control with Qolo and other robots:
+[P3] Pybullet simulation for collisions and compliant control with Qolo and other robots [4]:
+
 https://github.com/epfl-lasa/human-robot-collider
 
 ## Usage Guides:
@@ -76,7 +79,7 @@ Qolo shared control:
 
 [3] Paez-Granados, D., Billard, A., & Suzuki, K. (2020). Materializing Personal Standing Mobility from Design to Shared Control. In ETH Zurich Rehabilitation Engineering Lab (Ed.), CYBATHLON Symposium. Cybathlon. https://cybathlon-symposium.ethz.ch
 
-[4] [TBA]
+[4] Paez-granados, D., Gonon, D., Salvini, P., & Billard, A. (2020). Physical Safety in Collisions Between Robots and Pedestrians. IEEEE International Conference on Robot and Human Interaactive Communication (ROMAN-2020) Workshop on Robots from Pathways to Crowds, 1–2. https://doi.org/10.13140/RG.2.2.28087.55209
 
 **Contact**: 
 [Dr. Diego Paez]
