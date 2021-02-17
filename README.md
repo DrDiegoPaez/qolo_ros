@@ -47,15 +47,15 @@ https://github.com/DrDiegoPaez/qolo_ros/blob/master/install_scripts/Install_inst
 
 Launch sequence guide for real Qolo:
 
-https://github.com/DrDiegoPaez/qolo_ros/blob/master/guides/launch_sequences.txt
+https://github.com/DrDiegoPaez/qolo_ros/blob/master/Guides/launch_sequences.txt
 
 Remote Joystick setup and usage:
 
-https://github.com/DrDiegoPaez/qolo_ros/blob/master/guides/ROS-joystick-guide.txt
+https://github.com/DrDiegoPaez/qolo_ros/blob/master/Guides/ROS-joystick-guide.txt
 
 General Usage guide for CrowdBot Simulator:
 
-https://github.com/DrDiegoPaez/qolo_ros/blob/master/guides/Guide-CrowdBotUnity-ROS.txt
+https://github.com/DrDiegoPaez/qolo_ros/blob/master/Guides/Guide-CrowdBotUnity-ROS.txt
 
 ## Visualization Guide:
 
