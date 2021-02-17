@@ -6,11 +6,17 @@ Steps:
 
 	This is included already in the launch file for remote control:
 		roslaunch qolo_ros remote_qolo.launch
-	OR
-		rosrun qolo_ros remote_qolo.sh # This one includes Lidar and reccordings for tests
+				--> Would launch a joystick that writes to /qolo/remote_commands
+		roslaunch qolo_ros modulation_qolo.launch 
+				--> Would launch a joystick that writes to /qolo/modulation_ccommands
+	
+	OR including Lidar and reccordings for tests:
+		rosrun qolo_ros remote_qolo.sh 
+		rosrun qolo_ros modulation_qolo.sh
 
 	Or for the Crwodbot simulator:
 		python src/qolo_ros/qolo_package/src/remote_joystick_simulator.py 
+			--> Would launch a joystick that writes to /qolo/twist_cmd
 
 [2] After this is launched on the  main computer you should conenct to the internal wifi network on Qolo:
 	Wifi Name: QoloNet
