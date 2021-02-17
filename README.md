@@ -72,6 +72,18 @@ General Usage guide for CrowdBot Simulator:
 
 https://github.com/DrDiegoPaez/qolo_ros/blob/master/guides/Guide-CrowdBotUnity-ROS.txt
 
+## Visualization Guide:
+
+Install the packages: {also found online}
+> visualisation/messages.zip
+> visualisation/spencer_tracking_rviz_plugin.zip
+* Only compatible with ROS-kinetic or ROS-melodic (Ubuntu 16 or 18)
+
+catkin_make of the ros package on your wrokspace
+source your workspace
+roslaunch qolo_ros rviz.launch
+
+You can select among different presets for rviz depending on the available data (LIDARs / sensory board / force sensors / people tracker)
 
 ## References for citations:
 Qolo Design:
