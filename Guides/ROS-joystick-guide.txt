@@ -1,0 +1,26 @@
+A simple way to drive Qolo is through a remote Joystick launched as an java-script in one of the robot's computers.
+
+Steps:
+[1] In the main ocmputer the following script could be used:
+		python src/qolo_ros/qolo_package/src/qolo_joystick.py 
+
+	This is included already in the launch file for remote control:
+		roslaunch qolo_ros remote_qolo.launch
+	OR
+		rosrun qolo_ros remote_qolo.sh # This one includes Lidar and reccordings for tests
+
+	Or for the Crwodbot simulator:
+		python src/qolo_ros/qolo_package/src/remote_joystick_simulator.py 
+
+[2] After this is launched on the  main computer you should conenct to the internal wifi network on Qolo:
+	Wifi Name: QoloNet
+	Pass: [ask]
+
+[3] In a web browser access:
+ 	192.168.13.110:8080
+
+[4] Now you should see a virtual joytick with the X and Y values of the position of the joystick below it. 
+	Linear velocity is on the vertical axis (y) 
+	Angular velocity is on the horizontal axis (x)
+
+Note: there are hard coded linear and angular velocity limits in the scripts above which usually are around 0.7 m/s and 0.7 rad/s. (mostly for safety and ease of the control).

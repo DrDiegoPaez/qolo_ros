@@ -61,10 +61,14 @@ https://github.com/epfl-lasa/human-robot-collider
 ## Usage Guides:
 
 Launch sequence guide for real Qolo:
-https://github.com/DrDiegoPaez/qolo_ros/blob/master/Guides/Guide-CrowdBotUnity-ROS
+https://github.com/DrDiegoPaez/qolo_ros/blob/master/guides/launch_sequences.txt
+
+Remote Joystick setup and usage:
+https://github.com/DrDiegoPaez/qolo_ros/blob/master/guides/joystick_setting.txt
 
 General Usage guide for CrowdBot Simulator:
-https://github.com/DrDiegoPaez/qolo_ros/blob/master/qolo_package/launch/launch_sequences.txt
+https://github.com/DrDiegoPaez/qolo_ros/blob/master/guides/Guide-CrowdBotUnity-ROS.txt
+
 
 ## References for citations:
 Qolo Design:
