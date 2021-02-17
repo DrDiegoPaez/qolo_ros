@@ -45,6 +45,10 @@ https://github.com/DrDiegoPaez/qolo_ros/blob/master/install_scripts/Install_inst
 
 ## Usage Guides:
 
+Qolo overall system guide:
+
+https://github.com/DrDiegoPaez/qolo_ros/blob/master/Guides/Qolo_LASA_Specs.pdf
+
 Launch sequence guide for real Qolo:
 
 https://github.com/DrDiegoPaez/qolo_ros/blob/master/Guides/launch_sequences.txt
