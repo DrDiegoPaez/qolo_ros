@@ -55,7 +55,7 @@ https://github.com/DrDiegoPaez/qolo_ros/blob/master/Guides/ROS-joystick-guide.tx
 
 General Usage guide for CrowdBot Simulator:
 
-https://github.com/DrDiegoPaez/qolo_ros/blob/master/Guides/Guide-CrowdBotUnity-ROS.txt
+https://github.com/DrDiegoPaez/qolo_ros/blob/master/Guides/launch_sequence-CrowdBotUnity-ROS.txt
 
 ## Visualization Guide:
 
