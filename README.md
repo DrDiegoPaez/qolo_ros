@@ -24,8 +24,8 @@ Last Update: 2021-02-15
 
 ## Prerequisites
 
-Ubnutu 16.04
-ROS kinetic
+Ubnutu 16.04 or 18.04
+ROS kinetic / melodic
 python 2.7
 python-pip
 
@@ -42,21 +42,6 @@ PYYAML: For FT model
 
 Follow the installation guide: 
 https://github.com/DrDiegoPaez/qolo_ros/blob/master/install_scripts/Install_instructions.txt
-
-## Related packages:
-
-[P1] Obstacle avoidance for tight shape and non-holonomic constraints (used in shared control):
-
-https://github.com/epfl-lasa/rds
-
-[P2] Obstacle avoidance based on dynamical systems:
-
-https://github.com/epfl-lasa/qolo_modulation
-https://github.com/epfl-lasa/dynamic_obstacle_avoidance/
-
-[P3] Pybullet simulation for collisions and compliant control with Qolo and other robots [4]:
-
-https://github.com/epfl-lasa/human-robot-collider
 
 ## Usage Guides:
 
@@ -84,6 +69,22 @@ source your workspace
 roslaunch qolo_ros rviz.launch
 
 You can select among different presets for rviz depending on the available data (LIDARs / sensory board / force sensors / people tracker)
+
+## Related packages:
+
+[P1] Obstacle avoidance for tight shape and non-holonomic constraints (used in shared control):
+
+https://github.com/epfl-lasa/rds
+
+[P2] Obstacle avoidance based on dynamical systems:
+
+https://github.com/epfl-lasa/qolo_modulation
+https://github.com/epfl-lasa/dynamic_obstacle_avoidance/
+
+[P3] Pybullet simulation for collisions and compliant control with Qolo and other robots [4]:
+
+https://github.com/epfl-lasa/human-robot-collider
+
 
 ## References for citations:
 Qolo Design:
