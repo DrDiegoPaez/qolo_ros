@@ -23,7 +23,7 @@ Nvidia board 200
 	. devel/setup.bash
 	./src/qolo_ros/qolo_package/scripts/remote_qolo.sh
 
-	rosrun qolo_ros remote_qolo.sh
+	rosrun qolo remote_qolo.sh
 
 3. 120 terminal
 	cd ~/autonomy_ws/

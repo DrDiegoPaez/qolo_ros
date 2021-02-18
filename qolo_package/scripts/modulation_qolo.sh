@@ -16,7 +16,7 @@ _kill() {
 trap "exit" INT TERM ERR
 trap _kill EXIT
 
------ Get Test Number -----
+# ----- Get Test Number -----
 TEST_NO=0
 while [ -d "csv_logs/demos/demo${TEST_NO}" ]; do
    TEST_NO=$(( $TEST_NO + 1 ))
