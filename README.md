@@ -115,8 +115,8 @@ https://diegofpaez.wordpress.com/
 
 **Acknowledgments**
 This project was partially founded by:
-> The EU Horizon-2020 Project CROWDBOT: http://crowdbot.eu
+> The EU Horizon 2020 Project CROWDBOT (Grant No. 779942): http://crowdbot.eu
 
-> The Toyota Mobility Foundation (TMF) thorugh the Grant: Mobility Unlimited Challenge 2019: https://mobilityunlimited.org
+> The Toyota Mobility Foundation (TMF) through the Grant: Mobility Unlimited Challenge 2019: https://mobilityunlimited.org
 
 > Grant-in-Aid for Scientific Research from the Ministry of Education, Culture, Sports, Science and Technology of (MEXT) Japan: http://www.ai.iit.tsukuba.ac.jp/research/046.html
