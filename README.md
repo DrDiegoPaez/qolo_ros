@@ -97,15 +97,17 @@ Qolo Design:
 
 Qolo Hands-free control:
 
-> [2] Chen, Y., Paez-Granados, D., Kadone, H., & Suzuki, K. (2020). Control Interface for Hands-free Navigation of Standing Mobility Vehicles based on Upper-Body Natural Movements. IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS-2020).
+> [2] Chen, Y., Paez-Granados, D., Kadone, H., & Suzuki, K. (2020). Control Interface for Hands-free Navigation of Standing Mobility Vehicles based on Upper-Body Natural Movements. IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS-2020). https://doi.org/10.1109/IROS45743.2020.9340875
 
 Qolo shared control:
 
-> [3] Paez-Granados, D., Billard, A., & Suzuki, K. (2020). Materializing Personal Standing Mobility from Design to Shared Control. In ETH Zurich Rehabilitation Engineering Lab (Ed.), CYBATHLON Symposium. Cybathlon. https://cybathlon-symposium.ethz.ch
+> [3] Gonon, D. Paez-Granados, D., Billard, A. (2021). Reactive Controller for a Convex Non-holonomic Robot to Travel in Crowds. IEEE Robotics and Automation Letters (RA-L).
+
+> [4] Paez-Granados, D., Billard, A., & Suzuki, K. (2020). Materializing Personal Standing Mobility from Design to Shared Control. In ETH Zurich Rehabilitation Engineering Lab (Ed.), CYBATHLON Symposium. Cybathlon. https://cybathlon-symposium.ethz.ch
 
 Qolo safety for collisions:
 
-> [4] Paez-granados, D., Gonon, D., Salvini, P., & Billard, A. (2020). Physical Safety in Collisions Between Robots and Pedestrians. IEEEE International Conference on Robot and Human Interaactive Communication (ROMAN-2020) Workshop on Robots from Pathways to Crowds, 1–2. https://doi.org/10.13140/RG.2.2.28087.55209
+> [5] Paez-granados, D., Gonon, D., Salvini, P., & Billard, A. (2020). Physical Safety in Collisions Between Robots and Pedestrians. IEEEE International Conference on Robot and Human Interaactive Communication (ROMAN-2020) Workshop on Robots from Pathways to Crowds, 1–2. https://doi.org/10.13140/RG.2.2.28087.55209
 
 **Contact**: 
 [Dr. Diego Paez]
