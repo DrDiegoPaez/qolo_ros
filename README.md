@@ -76,7 +76,7 @@ You can select among different presets for rviz depending on the available data 
 
 ## Related packages:
 
-[P1] Obstacle avoidance for tight shape and non-holonomic constraints (used in shared control):
+[P1] Obstacle avoidance for tight shape and non-holonomic constraints (used in shared control): [3] 
 
 https://github.com/epfl-lasa/rds
 
@@ -88,6 +88,14 @@ https://github.com/epfl-lasa/dynamic_obstacle_avoidance/
 [P3] Pybullet simulation for collisions and compliant control with Qolo and other robots [4]:
 
 https://github.com/epfl-lasa/human-robot-collider
+
+[P4] CrowdBot Simulator Package:
+
+https://gitlab.inria.fr/CrowdBot/CrowdBotUnity
+
+[P5] Qolo 3D model for simulation files:
+
+https://github.com/FabienGrzeskowiakInria/CrowdBot_robots
 
 
 ## References for citations:
@@ -101,7 +109,7 @@ Qolo Hands-free control:
 
 Qolo shared control:
 
-> [3] Gonon, D. Paez-Granados, D., Billard, A. (2021). Reactive Controller for a Convex Non-holonomic Robot to Travel in Crowds. IEEE Robotics and Automation Letters (RA-L).
+> [3] Gonon, D. Paez-Granados, D., Billard, A. (2021). Reactive Controller for a Convex Non-holonomic Robot to Travel in Crowds. IEEE Robotics and Automation Letters (IEEE-RAL). [Accepted for publication]
 
 > [4] Paez-Granados, D., Billard, A., & Suzuki, K. (2020). Materializing Personal Standing Mobility from Design to Shared Control. In ETH Zurich Rehabilitation Engineering Lab (Ed.), CYBATHLON Symposium. Cybathlon. https://cybathlon-symposium.ethz.ch
 
