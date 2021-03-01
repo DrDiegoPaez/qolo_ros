@@ -1,0 +1,194 @@
+############ Launch Sequence for experiments in Qolo robot ##########
+
+ssh -X qolo@192.168.13.XXX
+main UpBoard 110
+Frontal Lidar 120
+Hasler 130
+Nvidia board 200
+
+============== Experiments with Remote Commands - Hasler Project ==========================
+
+#### Establish 3 connetcions to main UpBoard 110
+#### Establish 1 connetcion to Hasler Upboard 130
+#### Establish 1 connetcion to Hasler Upboard 120
+
+1. 110 terminal:
+	rosocore
+
+2. 110 terminal: Starting main Qolo node
+	sudo -s
+	cd ~/catkin_ws/
+	. devel/setup.bash
+
+	roslaunch qolo hasler_qolo.launch  
+
+		// roslaunch qolo rear_lidar-slam.launch
+
+
+3. 120 terminal
+	cd ~/autonomy_ws/
+	. devel/setup.bash
+	# roslaunch rds_ros rds_front_lrf_slam.launch
+	
+	rosrun qolo_modulation run_localisation.sh
+
+
+## 	RESETTING SLAM: if needed or lost in the map
+	rostopic pub /syscommand std_msgs/String "reset"
+
+
+============== Experiments for Compliant tests - Collision Handling ==========================
+
+#### Establish 3 connetcions to main UpBoard 110
+#### Establish 1 connetcion to Frontal Upboard 120
+
+1. 110 terminal:
+	rosocre
+
+2. 110 terminal: launching SLAM from rear LIDAR
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	roslaunch qolo rear_lidar-slam.launch
+
+3. 110 terminal: Starting main Qolo node
+	sudo -s
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	./src/qolo_ros/run_scripts/run_compliant.sh
+
+4. Rosbag: if wanted 
+	rosbag record -O rds_pedestrians_01.bag /tf /tf_static /qolo /front_lidar/scan /rear_lidar/scan /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /slam_out_pose
+
+## 	RESETTING SLAM: if needed or lost in the map
+	rostopic pub /syscommand std_msgs/String "reset"
+
+
+
+============== Options at the main UpBoard 110 ==========================
+
+Avaliable Launch files and starting scripts :
+
+		launching SLAM from rear pc
+	roslaunch qolo rear_lidar-slam.launch
+	
+		OR only rear LIDAR
+ 	roslaunch qolo rear_lidar-cloud.launch
+
+		OR only RDS in the rear LIDAR
+ 	roslaunch rds_ros rds_rear_lrf_cloud.launch
+
+ 		# This rear LIDAR + rear camera
+	./src/qolo_ros/run_scripts/run_rear_camera.sh
+ 		OR for all combined
+ 	./src/qolo_ros/run_scripts/run_all_sensors.sh
+ 	
+ 		OR for compiant mode
+ 	sudo -s
+ 	./src/qolo_ros/run_scripts/run_compliant.sh
+
+
+Main Qolo controller
+	CConfigure the launch file as required:
+		Flags avaiable:
+			1. Compliance mode
+				Activates the Compliance mode for collision detection and reaction
+			2. Shared Control mode
+				Activates the RDS service for obstacle avoidance
+			3. Joystick mode
+				Subscribing to the remote joystick
+			4. Remote mode
+				Recieving remote commands (for DS/ trajectory tracking or so)
+			5. Constant mode
+				Fix velocity
+
+Option 1: Main Qolo controller
+	roslaunch qolo qolo.launch
+
+Option 2: Compliance Command Control
+	roslaunch qolo compliance_qolo.launch 
+	
+Option 3: Hasler Control Commands
+	roslaunch qolo hasler_qolo.launch
+
+#### Sensor recording for imu 
+ 	cd ~/catkin_ws/
+ 	sudo -s
+	. devel/setup.bash
+ 	./src/qolo_ros/run_scripts/record_imu.sh
+
+
+ ####  Trajectory tracking mode
+	cd catkin_ws/
+	. devel/setup.bash
+ 	python src/qolo_ros/qolo_package/src/trajectory_command_node.py
+
+
+============== Executables at UpBoard 120 ==========================
+
+Avaliable Launch files and starting scripts :
+	cd autonomy_ws
+	. devel/setup.bash
+	
+	Options for launch file:
+	0. LIDAR SLAM
+	roslaunch rds_ros slam_lrf.launch
+
+	3. Only RDS with 2D lidar:
+	roslaunch rds_ros rds_front_lrf.launch
+
+	1. RDS with LIDAR + SLAM
+		# This includes the frontal LIDAR
+	./src/rds/rds_ros/launch/run_slam.sh
+	or
+	roslaunch rds_ros rds_slam.launch
+
+	2. LIDAR with 3d pointcloud
+		# This includes the frontal LIDAR
+	./src/rds/rds_ros/launch/run_front_cloud.sh
+	
+	4. OR LIDAR + RGBD front
+		# This includes the frontal LIDAR
+	./src/rds/rds_ros/launch/run_front_camera.sh
+
+2. Terminal: TRAJECTORY TRACKING
+	cd autonomy_ws
+	. devel/setup.bash
+	python src/rds/rds_ros/scripts/trajectory_command_node.py 
+
+
+Terminal 3:
+	cd autonomy_ws
+	. devel/setup.bash
+	rosrun rds_gui_ros rds_gui_ros_node
+
+============== Execute at Nvidia Board 200 ==========================
+
+Activate virtual environment
+	
+Terminal 1:
+	cd /ssd_nvidia/autonomy_ws
+	. devel/setup.bash 
+	roslaunch realsense2_camera rs_qolo.launch 
+
+Termina 2: 
+	cd ~/tracker_ws
+	. /ssd_nvidia/venv_sensing/bin/activate
+	. devel/setup.bash
+	roslaunch rwth_crowdbot_launch qolo_onboard.launch trt:=true
+
+
+
+################## ROSBAG recording  ########################
+
+============== ROSbag with RGBD and 3D points ===============
+
+### Not recommended as it will record at very low frequency (specially if the cameras are used) around 1-2 Hz.
+		rosbag record -O all_sensors_tracking_3.bag -a
+
+
+###### ROSbag with 2LRF ######
+	rosbag record -O rds_pedestrians_01.bag /tf /tf_static /qolo /front_lidar/scan /rear_lidar/scan /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /slam_out_pose
+
+
+###### ROSbag with Frontal RGBD and 3D points ######
+	rosbag record -O driver_rds_points_5.bag /tf /tf_static /qolo /front_lidar/scan /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /slam_out_pose
