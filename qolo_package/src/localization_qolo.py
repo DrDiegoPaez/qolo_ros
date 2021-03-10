@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-#########  ROS version of Trajectory Tracking with safety ##########
+#########  ROS version for publishing 2D pose from Intel T265 Odometry ##########
 ##### Author: Diego F. Paez G.
 ##### Data: 2021/03/10
 
