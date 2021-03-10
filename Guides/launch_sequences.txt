@@ -39,6 +39,8 @@ Nvidia board 200
 	. devel/setup.bash 
 	roslaunch realsense2_camera rs_qolo.launch
 
+	roslaunch realsense2_camera localization_t265.launch
+
 5. Nvidia 200 terminal:  Start tracker
 	cd ~/tracker_ws
 	. /ssd_nvidia/venv_sensing/bin/activate
