@@ -44,7 +44,7 @@ data_remote = Float32MultiArray()
 
 ### ---------- GLOBAL VARIABLES ---------- ####
 PORT = 8080
-Max_V = 0.7
+Max_V = 0.9
 Max_W = 0.7
 
 level_relations = {
@@ -114,8 +114,8 @@ def joystick_control():
         data_remote.layout.dim[0].size = 3
         data_remote.data = [0]*3
 
-        rospy.init_node('qolo_joystick', anonymous=True)
-        rate = rospy.Rate(50) #  50 hz
+        # rospy.init_node('qolo_joystick', anonymous=True)
+        # rate = rospy.Rate(50) #  50 hz
         print ("Tornado Server started")
         main_loop.start()
 
@@ -140,6 +140,8 @@ signal.signal(signal.SIGINT, exit)
 signal.signal(signal.SIGTERM, exit)
 
 if __name__ == '__main__':
+    rospy.init_node('qolo_joystick', anonymous=True)
+    rate = rospy.Rate(100) #  50 hz
     try:
         joystick_control()
     except rospy.ROSInterruptException:

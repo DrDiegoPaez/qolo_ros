@@ -33,7 +33,7 @@ control_point = 0.9
 stop_distance = 0.5
 time_limit = 90
 
-Attractor = np.array([[15.0+control_point], [0.0]])
+Attractor = np.array([[50.0+control_point], [0.0]])
 
 tf_listener = None
 command_publisher = None
@@ -125,7 +125,8 @@ def trajectory_service(t):
 
 def main():
    global tf_listener, command_publisher, data_remote, trajectory_xyt
-   rospy.init_node('qolo_ds_trajectory')
+   rospy.init_node('qolo_ds_trajectory', anonymous=True)
+   rate = rospy.Rate(200) #  100 [Hz]
    tf_listener = tf.TransformListener()
    pose_sub = rospy.Subscriber("qolo/pose2D", Pose2D, pose_callback, queue_size=1)
    command_publisher = rospy.Publisher('qolo/remote_commands',Float32MultiArray, queue_size=1)
@@ -149,6 +150,7 @@ def main():
          publish_command(0., 0., 0.)
          time.sleep(0.5)
          break
+
 
 if __name__ == '__main__':
    main()
