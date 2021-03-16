@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#! /usr/bin/env python
 #########  ROS version of Trajectory Tracking with safety ##########
 ##### Author: Diego F. Paez G. 
 ##### Using 
@@ -11,6 +11,7 @@ import rospy
 import tf
 from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import MultiArrayLayout, MultiArrayDimension 
+from geometry_msgs.msg import Pose2D
 import numpy as np
 from scipy.interpolate import UnivariateSpline
 import dynamical_system_representation as ds
@@ -31,8 +32,8 @@ D_linear = 10
 ref_vel = 0.9
 control_point = 0.9
 stop_distance = 0.5
-time_limit = 90
-
+time_limit = 180
+pose = [0., 0., 0.]
 Attractor = np.array([[50.0+control_point], [0.0]])
 
 tf_listener = None
