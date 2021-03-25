@@ -65,7 +65,7 @@ eval "roslaunch qolo remote_qolo.launch log_folder:=${LOG_FOLDER} &"
 PID_LIST+="$! "
 sleep 15
 
-#----- Launch qolo control -----
+#----- Launch qolo's odometry -----
 echo -e "${IMP_INFO}Launching QOLO Odometry Node...${NORMAL}"
 # eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
 eval "rosrun qolo localization_qolo.py "

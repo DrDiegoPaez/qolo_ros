@@ -1,8 +1,10 @@
 #! /usr/bin/env python
+
 #########  ROS version of Trajectory Tracking with safety ##########
-##### Author: Diego F. Paez G. 
-##### Using 
-##### Data: 2020/05/18
+
+__author__ = "Diego Paez-Granados"
+__date__ = "2019-01-20"
+__email__ = "diego.paez@epfl.ch"
 
 import time
 import math
@@ -24,17 +26,16 @@ dx_prev = np.array([[0.0], [0.0]])
 dx = np.array([[0.0], [0.0]])
 
 DEBUG_FLAG = False
-MaxSpeed = 1.5/2 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
-MaxAngular = 4.124/8
-D_angular = 10
-D_linear = 10
 
-ref_vel = 0.9
+ref_vel = 1.2
 control_point = 0.9
 stop_distance = 0.5
-time_limit = 180
+time_limit = 60
+
 pose = [0., 0., 0.]
-Attractor = np.array([[50.0+control_point], [0.0]])
+Local_Attractor = np.array([[40.0+control_point], [0.0]])
+
+Attractor = np.array([[0.0], [0.0]])
 
 tf_listener = None
 command_publisher = None
@@ -42,6 +43,11 @@ t_lost_tf = -1.0
 previous_command_linear = None
 previous_command_angular = None
 data_remote = Float32MultiArray()
+
+MaxSpeed = 1.5 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
+MaxAngular = 4.124/8
+D_angular = 10
+D_linear = 10
 
 def pose_callback(data):
    global pose
@@ -106,9 +112,11 @@ def ds_generation(x,y,phi):
 def publish_command(command_linear, command_angular, t):
    global data_remote, command_publisher
    Ctime = round(time.clock(),4)
+   # command_linear = round(command_linear,4)
+   # command_angular = round(command_angular,4)
    data_remote.data = [Ctime,command_linear,command_angular]
    command_publisher.publish(data_remote)
-   rospy.loginfo(data_remote)
+   # rospy.loginfo(data_remote)
 
 
 def trajectory_service(t):
@@ -125,7 +133,7 @@ def trajectory_service(t):
 
 
 def main():
-   global tf_listener, command_publisher, data_remote, trajectory_xyt
+   global tf_listener, command_publisher, data_remote, trajectory_xyt, pose, Attractor
    rospy.init_node('qolo_ds_trajectory', anonymous=True)
    rate = rospy.Rate(200) #  100 [Hz]
    tf_listener = tf.TransformListener()
@@ -137,8 +145,18 @@ def main():
    data_remote.layout.dim[0].size = 3
    data_remote.data = [0]*3
 
+   print(":"*60)
+   print("Starting DS Trajectory")
+   print(":"*60)
+   # Set the Attractor forward to the initial pose (because of orientation errors)
+   time.sleep(1.5)
+   Attractor[0,0] = Local_Attractor[0,0]*np.cos(pose[2]) - Local_Attractor[1,0]*np.sin(pose[2]) + pose[0]
+   Attractor[1,0] = Local_Attractor[0,0]*np.sin(pose[2]) + Local_Attractor[1,0]*np.cos(pose[2]) + pose[1]
+
+   print(" Attractor X, Y = ",Attractor[0,0],Attractor[1,0])
    # end_time = trajectory_xyt[-1][2]
    print('Trajectory time: ',time_limit)
+   time.sleep(2.0)
    start_time = time.time()
    while not rospy.is_shutdown():
       current_t = time.time() - start_time

@@ -31,7 +31,7 @@
     <include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>
         -->
     
-    <node name="qolo_joystick" pkg="qolo" type="modulation_joystick .py" />
+    <node name="qolo_joystick" pkg="qolo" type="modulation_joystick.py" />
 
     <include file="$(find qolo)/launch/tf_qolo.launch"/>
 

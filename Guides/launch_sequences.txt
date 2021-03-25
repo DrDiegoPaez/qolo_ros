@@ -23,10 +23,12 @@ Nvidia board 200
 	. devel/setup.bash
 	rosrun qolo remote_qolo.sh
 
-			rosrun qolo shared_qolo.sh
-			
-			./src/qolo_ros/qolo_package/scripts/remote_qolo.sh
+	####### For Modulated trajectory #######
+	rosrun qolo modulation_qolo.sh
 
+	####### For Manual Shared-control #######
+	rosrun qolo shared_qolo.sh
+	
 
 3. 120 terminal
 	cd ~/autonomy_ws/
@@ -69,18 +71,28 @@ Nvidia board 200
 	. devel/setup.bash
 	roslaunch rwth_crowdbot_launch qolo_onboard.launch trt:=true
 
-7. Nvidia 110 terminal:  Start DS-based trakectory control (50m ahead)
+7. Nvidia 110 terminal:  Start DS-based trajectory control (50m ahead)
 	sudo -s
 	cd ~/catkin_ws/
 	. devel/setup.bash
 	rosrun qolo ds_trajectory.py
+
+	####### For Modulated trajectory #######
+	Nvidia 120 terminal:  Start DS-based control (50m ahead)
+	cd ~/autonomy_ws/
+	. devel/setup.bash
+	rosrun qolo_modulation qolo_simulation_modulation.py --simulation
 
 
 8. 200 Nvidia terminal: Choose a recording at the bottom of the document that suits the test (the following is the simplest LRF + tracker + qolo)
 
 	cd /ssd_nvidia/data/crowdbot_2021
 
-	rosbag record -O 3-03_16_inddor.bag /tf /tf_static /qolo /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /t265/odom/sample
+rosbag record --duration=3m /chatter /tf /tf_static /qolo /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /t265/odom/sample
+
+
+
+	rosbag record --duration=2m /chatter -O 1-0322-Europe.bag /tf /tf_static /qolo /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /t265/odom/sample
 
 	###### ROSbag with Frontal RGBD + odom + 3D points ######
 
