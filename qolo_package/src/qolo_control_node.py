@@ -120,19 +120,19 @@ ORCA_Flag = False
 # Gain to this point
 weight_scaling_of_reference_point_for_command_limits = 0.
 # Some gain for velocity after proximity reaches limits
-tau = 1.5
+tau = 2.5 # Tested:1.5 and 2.5(faster response)
 # Minimal distance to obstacles
-delta = 0.05
+delta = 0.07 # Tested: 0.05
 # Some reference for controlling the non-holonomic base
-control_point = 0.4
+control_point = 0.3 # Tested:0.4
 
 max_linear = MAX_SPEED
 min_linear = -MIN_SPEED
 absolute_angular_at_min_linear = 0.
 absolute_angular_at_max_linear = 0.
 absolute_angular_at_zero_linear = MAX_OMEGA/W_RATIO
-linear_acceleration_limit = 2.5
-angular_acceleration_limit = 4.5
+linear_acceleration_limit = 1.5 # Tested:1.5
+angular_acceleration_limit = 4.5 # Tested: 4.5
 
 #########################################################
 ############ Setting for Compliant Control ##############
@@ -525,8 +525,8 @@ def rds_service():
 
     request.nominal_command.linear = Corrected_V
     request.nominal_command.angular = Corrected_W
-    request.capsule_center_front_y = 0.2 # Actual: 0.051
-    request.capsule_center_rear_y = -0.50
+    request.capsule_center_front_y = 0.1 # Actual: 0.051
+    request.capsule_center_rear_y = -0.52  # Actual: -0.515
     request.capsule_radius = 0.45
     
     request.reference_point_y = control_point

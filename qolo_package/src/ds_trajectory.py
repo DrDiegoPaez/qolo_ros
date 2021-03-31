@@ -27,13 +27,13 @@ dx = np.array([[0.0], [0.0]])
 
 DEBUG_FLAG = False
 
-ref_vel = 1.2
+ref_vel = 0.9
 control_point = 0.9
 stop_distance = 0.5
-time_limit = 60
+time_limit = 70
 
 pose = [0., 0., 0.]
-Local_Attractor = np.array([[40.0+control_point], [0.0]])
+Local_Attractor = np.array([[50.0+control_point], [0.0]])
 
 Attractor = np.array([[0.0], [0.0]])
 

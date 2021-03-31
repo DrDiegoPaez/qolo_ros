@@ -14,23 +14,33 @@ Nvidia board 200
 #### Establish 1 connetcion to Forntal Upboard 120
 #### Establish 2 connetcion to Nvidia Board 200
 
-1 110 terminal:
+### Check that all dates and times are the same on all PCs ###
+	date
+
+### If a PC is out of sync it might be that the internal NTP server went down ###
+	Manual setup:
+	sudo ntpd -q 192.168.13.110
+
+
+1 main-pc-110 terminal:
 	rosocre
 
-2. 110 terminal: Starting main Qolo node
+2. main-pc-110 terminal: Starting main Qolo node
 	sudo -s
-	cd ~/catkin_ws/
-	. devel/setup.bash
-	rosrun qolo remote_qolo.sh
+		cd ~/catkin_ws/
+		. devel/setup.bash
+		rosrun qolo remote_qolo.sh
 
 	####### For Modulated trajectory #######
 	rosrun qolo modulation_qolo.sh
 
 	####### For Manual Shared-control #######
+	cd ~/catkin_ws/
+	. devel/setup.bash
 	rosrun qolo shared_qolo.sh
-	
 
-3. 120 terminal
+
+3. front-pc-120 terminal:
 	cd ~/autonomy_ws/
 	. devel/setup.bash
 	roslaunch rds_ros rds_front_lrf.launch
@@ -44,13 +54,13 @@ Nvidia board 200
 			// Launching only RDS with Lidar:
 			roslaunch rds_ros rds_front_lrf.launch
 
-4. Nvidia 200 terminal:  Start front-left camera
+4. Nvidia-200 terminal:  Start front-left camera
 	cd /ssd_nvidia/autonomy_ws
 	. devel/setup.bash 
 	roslaunch realsense2_camera qolo_localization_t265.launch
 
 
-5. Nvidia 200 terminal:  Start front-left camera
+5. Nvidia-200 terminal:  Start front-left camera
 	cd /ssd_nvidia/autonomy_ws
 	. devel/setup.bash 
 	roslaunch realsense2_camera qolo_left_camera.launch
@@ -65,20 +75,19 @@ Nvidia board 200
 			// Localization only
 			roslaunch realsense2_camera qolo_localization_t265.launch
 
-6. Nvidia 200 terminal:  Start tracker
+6. Nvidia-200 terminal:  Start tracker
 	cd ~/tracker_ws
 	. /ssd_nvidia/venv_sensing/bin/activate
 	. devel/setup.bash
 	roslaunch rwth_crowdbot_launch qolo_onboard.launch trt:=true
 
-7. Nvidia 110 terminal:  Start DS-based trajectory control (50m ahead)
-	sudo -s
+7. Main-pc-110 terminal:  Start DS-based trajectory control (50m ahead)
 	cd ~/catkin_ws/
 	. devel/setup.bash
 	rosrun qolo ds_trajectory.py
 
 	####### For Modulated trajectory #######
-	Nvidia 120 terminal:  Start DS-based control (50m ahead)
+	 120 terminal:  Start DS-based control (50m ahead)
 	cd ~/autonomy_ws/
 	. devel/setup.bash
 	rosrun qolo_modulation qolo_simulation_modulation.py --simulation
@@ -88,7 +97,7 @@ Nvidia board 200
 
 	cd /ssd_nvidia/data/crowdbot_2021
 
-rosbag record --duration=3m /chatter /tf /tf_static /qolo /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /t265/odom/sample
+rosbag record --duration=4m /chatter /tf /tf_static /qolo /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /t265/odom/sample
 
 
 
