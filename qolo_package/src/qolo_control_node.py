@@ -63,7 +63,7 @@ JOYSTICK_MODE = rospy.get_param("/qolo_control/joystick_mode", False)
 REMOTE_MODE = rospy.get_param("/qolo_control/remote_mode", False)
 # For zero output to the wheels
 TESTING_MODE = False
-DEBUG_MODE = True
+DEBUG_MODE = False
 TIMING_MODE = True
 
 PORT = 8080
@@ -699,13 +699,14 @@ def control():
         Corrected_V = round(compliant_V,6)
         Corrected_W = round(compliant_W,6)
 
-        # Update Control Point
-        if abs(compliance_control._Fmag) > compliance_control.activation_F:
-            qolo_control_pt.x = compliance_control.bumper_l + compliance_control.bumper_R * np.cos(compliance_control._theta)
-            qolo_control_pt.y = compliance_control.bumper_R * np.sin(compliance_control._theta)
-        else:
-            qolo_control_pt.x = compliance_control.bumper_l + compliance_control.bumper_R
-            qolo_control_pt.y = 0
+        if DEBUG_MODE:
+            # Update Control Point
+            if abs(compliance_control._Fmag) > compliance_control.activation_F:
+                qolo_control_pt.x = compliance_control.bumper_l + compliance_control.bumper_R * np.cos(compliance_control._theta)
+                qolo_control_pt.y = compliance_control.bumper_R * np.sin(compliance_control._theta)
+            else:
+                qolo_control_pt.x = compliance_control.bumper_l + compliance_control.bumper_R
+                qolo_control_pt.y = 0
             
     else:
         Corrected_V = User_V
@@ -933,7 +934,6 @@ def control_node():
         if COMPLIANCE_MODE:
             compliance_control.log()
             logger.log('svr', *svr_data)
-            pub_control_pt.publish(qolo_control_pt)
         
         if TIMING_MODE:
             logger.log('timings', DA_time, RDS_time, Compute_time, FSR_time, Compliance_time, cycle_T, FULL_time)
@@ -950,6 +950,7 @@ def control_node():
             pub_user.publish(dat_user)
             if COMPLIANCE_MODE:
                 pub_compliance_bumper_loc.publish(dat_compliance_bumper_loc)
+                pub_control_pt.publish(qolo_control_pt)
 
         FULL_time = time.clock() - prevT
         if COMPLIANCE_MODE:

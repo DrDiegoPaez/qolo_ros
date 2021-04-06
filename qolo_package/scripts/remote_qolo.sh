@@ -18,19 +18,19 @@ trap _kill EXIT
 
 #----- Get Test Number -----
 TEST_NO=0
-while [ -d "csv_logs/demos/demo${TEST_NO}" ]; do
+while [ -d "csv_logs/flon/remote${TEST_NO}" ]; do
    TEST_NO=$(( $TEST_NO + 1 ))
 done
-LOG_FOLDER="$(pwd)/csv_logs/demos/demo${TEST_NO}"
+LOG_FOLDER="$(pwd)/csv_logs/flon/remote${TEST_NO}"
 eval "mkdir -p ${LOG_FOLDER}/compliance"
 echo -e "${IMP_INFO}Current Test Number : ${TEST_NO}${NORMAL}"
 
 #----- Launch and record force sensors -----
-# echo -e "${IMP_INFO}Launching FT Sensors...${NORMAL}"
-# eval "source /home/qolo/collision_ws/devel/setup.bash"
-# eval ". /home/qolo/collision_ws/src/rokubimini_interface/run_rokubimini_ros.sh -f ${LOG_FOLDER} &"
-# PID_LIST+="$! "
-# sleep 5
+echo -e "${IMP_INFO}Launching FT Sensors...${NORMAL}"
+eval "source /home/qolo/collision_ws/devel/setup.bash"
+eval ". /home/qolo/collision_ws/src/rokubimini_interface/run_rokubimini_ros.sh -f ${LOG_FOLDER} &"
+PID_LIST+="$! "
+sleep 5
 
 #----- Launch Rear Lidar  -----
 echo -e "${IMP_INFO}Launching REAR LIDAR...${NORMAL}"
