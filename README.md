@@ -29,6 +29,12 @@ ROS kinetic / melodic
 python 2.7
 python-pip
 
+# For Visualization in RVIZ:
+jsk_rviz_plugin
+	* sudo apt-get install -y ros-VERSION-jsk-visualization
+rwth_messages (for people tracker visualization -- See below in Visualization section)
+
+
 ## Installation on the real Qolo:
 Install Ubuntu Kernel for Upboard: https://wiki.up-community.org/Ubuntu
 enablel spi port on UP board
