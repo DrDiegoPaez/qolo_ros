@@ -27,13 +27,13 @@ dx = np.array([[0.0], [0.0]])
 
 DEBUG_FLAG = False
 
-ref_vel = 0.9
+ref_vel = 0.5
 control_point = 0.9
 stop_distance = 0.5
 time_limit = 70
 
 pose = [0., 0., 0.]
-Local_Attractor = np.array([[50.0+control_point], [0.0]])
+Local_Attractor = np.array([[5.0+control_point], [0.0]])
 
 Attractor = np.array([[0.0], [0.0]])
 
@@ -150,8 +150,11 @@ def main():
    print(":"*60)
    # Set the Attractor forward to the initial pose (because of orientation errors)
    time.sleep(1.5)
-   Attractor[0,0] = Local_Attractor[0,0]*np.cos(pose[2]) - Local_Attractor[1,0]*np.sin(pose[2]) + pose[0]
-   Attractor[1,0] = Local_Attractor[0,0]*np.sin(pose[2]) + Local_Attractor[1,0]*np.cos(pose[2]) + pose[1]
+   print(" Local Attractor X, Y = ",Local_Attractor[0,0],Local_Attractor[1,0])
+   print(" Robot Position X, Y = ",pose[0],pose[1])
+   print(" Robot Orientation Theta = ",pose[2])
+   Attractor[0,0] = Local_Attractor[0,0]*np.cos(pose[2]) - Local_Attractor[1,0]*np.sin(pose[2]) + pose[0]*np.cos(pose[2]) - pose[1]*np.sin(pose[2])
+   Attractor[1,0] = Local_Attractor[0,0]*np.sin(pose[2]) + Local_Attractor[1,0]*np.sin(pose[2]) + pose[0]*np.cos(pose[2]) + pose[1]*np.cos(pose[2])
 
    print(" Attractor X, Y = ",Attractor[0,0],Attractor[1,0])
    # end_time = trajectory_xyt[-1][2]

@@ -12,7 +12,7 @@ class PassiveDSController:
         robot_mass=2,       # Virtual Mass [kg]
         lambda_t=0.0,       # 
         lambda_n=0.5,       # 
-        Fd=45,              # Desired Contact at the surface [N]
+        Fd=30,              # Desired Contact at the surface [N]
         activation_F=15,    # Minimal Contact to Switch to Passive-DS Control [N]
         logger=None
     ):

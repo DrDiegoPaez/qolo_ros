@@ -22,12 +22,12 @@ Nvidia board 200
 	sudo /etc/init.d/ntp restart
 	sudo ntpd -q 192.168.13.110
 
-
 1 main-pc-110 terminal:
 	rosclean purge -y
 	roscore
 
 2. front-pc-120 terminal:
+	########### For Using RDS only ###########
 	sudo ntpd -q 192.168.13.110
 	rosclean purge -y
 	cd ~/autonomy_ws/
@@ -42,6 +42,9 @@ Nvidia board 200
 
 			// Launching only RDS with Lidar:
 			roslaunch rds_ros rds_front_lrf.launch
+
+	########### For Using MDS or RDS ###########
+	rosrun qolo_modulation qolo_simulation_modulation.py
 
 3. Nvidia-200 terminal:  Start front-left camera
 	sudo ntpd -q 192.168.13.110
@@ -110,16 +113,19 @@ Nvidia board 200
 	. devel/setup.bash
 	roslaunch rwth_crowdbot_launch qolo_onboard.launch trt:=true
 
-7. Main-pc-110 terminal:  Start DS-based trajectory control (50m ahead)
+7. Start DS-based trajectory control (50m ahead)
+	####### For RDS trajectory #######	
+	Main-pc-110 terminal:  
+	ssh qolo@192.168.13.110
 	cd ~/catkin_ws/
 	. devel/setup.bash
 	rosrun qolo ds_trajectory.py
 
-	####### For Modulated trajectory #######
-	 120 terminal:  Start DS-based control (50m ahead)
+	####### For MDS trajectory #######
+	ssh qolo@192.168.13.120
 	cd ~/autonomy_ws/
 	. devel/setup.bash
-	rosrun qolo_modulation qolo_simulation_modulation.py --simulation
+	rosrun qolo_modulation qolo_simulation_modulation.py
 
 
 8. 200 Nvidia terminal: Choose a recording at the bottom of the document that suits the test (the following is the simplest LRF + tracker + qolo)

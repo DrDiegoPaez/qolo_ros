@@ -1,7 +1,7 @@
 <launch>
     <arg name="log_folder" default="$(env PWD)/csv_logs/test" />
     <arg name="constant_mode" default="false" />
-    <arg name="shared_mode" default="false" />
+    <arg name="shared_mode" default="true" />
     <arg name="compliance_mode" default="true" />
     <arg name="joystick_mode" default="true" />
     <arg name="remote_mode" default="true" />
@@ -33,7 +33,7 @@
                value="$(arg log_folder)"/>
     </node>
     
-    <node name="qolo_joystick" pkg="qolo" type="modulation_joystick.py" />
+    <node name="qolo_joystick" pkg="qolo" type="qolo_joystick.py" />
 
     <include file="$(find qolo)/launch/tf_qolo.launch"/>
 
