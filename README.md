@@ -28,6 +28,7 @@ Ubnutu 16.04 or 18.04
 ROS kinetic / melodic
 python 2.7
 python-pip
+rds_network_ros # For shared control --> See related package below
 
 # For Visualization in RVIZ:
 jsk_rviz_plugin
