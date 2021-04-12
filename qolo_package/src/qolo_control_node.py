@@ -771,8 +771,8 @@ def control_node():
                 robot_mass=30.0,
                 lambda_t=0.0,
                 lambda_n=1.5,
-                Fd=45,
-                activation_F=15,
+                Fd=40,
+                activation_F=20,
                 logger=logger
             )
         else:
