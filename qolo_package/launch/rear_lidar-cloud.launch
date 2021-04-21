@@ -9,7 +9,7 @@
   <arg name="frame_id" default="tf_rear_lidar" />
   <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
   <arg name="max_range" default="25.0" />
-  <arg name="min_range" default="0.3" />
+  <arg name="min_range" default="0.4" />
   <arg name="pcap" default="" />
   <arg name="port" default="2369" />
   <arg name="read_fast" default="false" />
