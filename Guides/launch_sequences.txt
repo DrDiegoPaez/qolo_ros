@@ -54,6 +54,8 @@ Nvidia board 200
 	roslaunch realsense2_camera qolo_localization_t265.launch
 
 
+%% --> WAIT 15seconds  BEFORE THE NEXT CAMERA LAUNCH
+
 4. Nvidia-200 terminal:  Start front-left camera
 	cd /ssd_nvidia/autonomy_ws
 	. devel/setup.bash 
@@ -116,6 +118,9 @@ Nvidia board 200
 		# No tracker option: 
 		roslaunch rwth_crowdbot_launch qolo_detector.launch trt:=true
 
+		# Edit maximum tracking per sensor:
+		nano ~/tracker_ws/src/frame_soft/rwth_crowdbot_launch/config/qolo/detection_fusion/topics.yaml
+
 
 7. Start DS-based trajectory control (50m ahead)
 	####### For RDS trajectory #######	
@@ -145,8 +150,6 @@ rosbag record --duration=2m /chatter /tf /tf_static /qolo/pose2D /qolo/twist /qo
 	###### ROSbag with Frontal RGBD + odom + 3D points ######
 
 	rosbag record -O 1-03_15_outdoor.bag -a
-	
-
 	
 
 ## 	RESETTING SLAM: if needed or lost in the map
