@@ -63,6 +63,7 @@ JOYSTICK_MODE = rospy.get_param("/qolo_control/joystick_mode", False)
 REMOTE_MODE = rospy.get_param("/qolo_control/remote_mode", False)
 # For zero output to the wheels
 TESTING_MODE = False
+# Used to publish extra topics with 
 DEBUG_MODE = False
 TIMING_MODE = True
 
@@ -131,7 +132,7 @@ min_linear = -MIN_SPEED
 absolute_angular_at_min_linear = 0.
 absolute_angular_at_max_linear = 0.
 absolute_angular_at_zero_linear = MAX_OMEGA/W_RATIO
-linear_acceleration_limit = 1.5 # Tested:1.5
+linear_acceleration_limit = 2.5 # Tested:1.5
 angular_acceleration_limit = 4.5 # Tested: 4.5
 
 #########################################################
@@ -768,11 +769,11 @@ def control_node():
                 bumper_l=0.2425,
                 bumper_R=0.33,
                 Ts=1.0/200,
-                robot_mass=30.0,
+                robot_mass=2.0,
                 lambda_t=0.0,
                 lambda_n=1.5,
-                Fd=30,
-                activation_F=20,
+                Fd=20,
+                activation_F=15,
                 logger=logger
             )
         else:
