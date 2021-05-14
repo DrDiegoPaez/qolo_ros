@@ -3,7 +3,7 @@
 #######################
 
 You can get all packages on the github of LASA. 
-Download the Branch_July branch, it also contains packages required to use the realsense camera but you still need to follow the other guide to install NCSDK or Ncappzoo.
+it also contains packages required to use the realsense camera but you still need to follow the other guide to install NCSDK or Ncappzoo.
 
 #########################
 ## Install GSL library ##

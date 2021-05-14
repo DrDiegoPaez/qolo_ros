@@ -17,6 +17,9 @@ from scipy.interpolate import UnivariateSpline
 import dynamical_system_representation as ds
 #import matplotlib.pyplot as plt
 
+# Fast Clipper Function
+clipper = lambda x, l, u: l if x < l else u if x > u else x
+
 dx_prev = np.array([[0.0], [0.0]])
 dx = np.array([[0.0], [0.0]])
 
@@ -52,7 +55,7 @@ def control_pt_callback(data):
    control_pt[1] = data.y
 
 def ds_generation(x,y,phi):
-   global dx_prev, dx, previous_time, ref_vel
+   global dx_prev, dx, ref_vel
    try:
       # x = 1
       # y = 1
@@ -60,15 +63,15 @@ def ds_generation(x,y,phi):
       Ctime = time.clock()
       translation = np.array([[x], [y]])
       Rotation = np.array([
-         [np.cos(phi), -np.sin(phi)],
-         [np.sin(phi),  np.cos(phi)]])
+               [np.cos(phi), -np.sin(phi)],
+               [np.sin(phi),  np.cos(phi)]])
       p_ref_local = np.array([[control_pt[0]], [control_pt[1]]])
       p_ref_global = np.matmul(Rotation, p_ref_local) + translation
 
       if DEBUG_FLAG:
          print(" Attractor X, Y = ",Attractor[0,0],Attractor[1,0])
          print(" Current X, Y, Phi = ",p_ref_global[0,0],p_ref_global[1,0], np.rad2deg(phi))
-      
+
       dx = ds.linearAttractor_const(p_ref_global, Attractor, ref_vel, stop_distance)
       ## Call here Modulated DS
       # dx = ds.modulation( ) 
@@ -79,8 +82,8 @@ def ds_generation(x,y,phi):
          print(" V_global2 = ",v_command_p_ref_global[0,0],v_command_p_ref_global[1,0])
 
       J_p_ref_inv = np.array([
-            [1.0, p_ref_local[1,0]/p_ref_local[0,0]],
-            [0.0, 1/p_ref_local[0,0]]])
+                     [1.0, p_ref_local[1,0]/p_ref_local[0,0]],
+                     [0.0, 1/p_ref_local[0,0]]])
       
       v_command_p_ref_local = np.matmul(np.transpose(Rotation), v_command_p_ref_global)
       if DEBUG_FLAG:
@@ -88,19 +91,13 @@ def ds_generation(x,y,phi):
 
       cammand_robot = np.matmul(J_p_ref_inv, v_command_p_ref_local)
 
-      command_linear = cammand_robot[0,0]
+      command_angular = clipper(cammand_robot[1,0], -MaxAngular, MaxAngular)
+      command_linear = clipper(cammand_robot[0,0], -MaxSpeed, MaxSpeed)
 
-      if cammand_robot[1,0] > MaxAngular:
-         command_angular = MaxAngular
-      elif cammand_robot[1,0] < -MaxAngular:
-         command_angular = -MaxAngular
-      else:
-         command_angular = cammand_robot[1,0]
-      # previous_command_linear = command_linear
-      # previous_command_angular = command_angular
       if DEBUG_FLAG:
          print(" Robot Command = ",command_linear, command_angular)
          time.sleep(0.5)
+
       dx_prev = dx
       # commands = [command_linear, command_angular]
 

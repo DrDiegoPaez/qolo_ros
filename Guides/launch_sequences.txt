@@ -14,43 +14,146 @@ Nvidia board 200
 #### Establish 1 connetcion to Forntal Upboard 120
 #### Establish 2 connetcion to Nvidia Board 200
 
-1 110 terminal:
-	rosocre
+### Check that all dates and times are the same on all PCs ###
+	date
 
-2. 110 terminal: Starting main Qolo node
-	sudo -s
-	cd ~/catkin_ws/
-	. devel/setup.bash
-	./src/qolo_ros/run_scripts/remote_qolo.sh
+### If a PC is out of sync it might be that the internal NTP server went down ###
+	Manual setup:
+	sudo /etc/init.d/ntp restart
+	sudo ntpd -q 192.168.13.110
 
-3. 120 terminal
+1 main-pc-110 terminal:
+	rosclean purge -y
+	roscore
+
+2. front-pc-120 terminal:
+	########### For Using RDS only ###########
+	sudo ntpd -q 192.168.13.110
+	rosclean purge -y
 	cd ~/autonomy_ws/
 	. devel/setup.bash
-	rosrun rds_ros run_rds_localisation.sh
+	roslaunch rds_ros rds_front_lrf.launch det:="true"
 
-	 // roslaunch rds_ros rds_front_lrf_slam.launch
+			// Run rds + Laser-scan-matcher
+			rosrun rds_ros run_rds_localisation.sh
 
-4. Nvidia 200 terminal:  Start front-left camera
+			// Run modulation + Laser-scan-matcher
+			rosrun qolo_modulation run_localisation.sh
+
+			// Launching only RDS with Lidar:
+			roslaunch rds_ros rds_front_lrf.launch
+
+	########### For Using MDS or RDS ###########
+	rosrun qolo_modulation qolo_simulation_modulation.py
+
+3. Nvidia-200 terminal:  Start front-left camera
+	sudo ntpd -q 192.168.13.110
+	rosclean purge -y
 	cd /ssd_nvidia/autonomy_ws
 	. devel/setup.bash 
-	roslaunch realsense2_camera rs_qolo.launch
+	roslaunch realsense2_camera qolo_localization_t265.launch
 
-5. Nvidia 200 terminal:  Start tracker
+
+%% --> WAIT 15seconds  BEFORE THE NEXT CAMERA LAUNCH
+
+4. Nvidia-200 terminal:  Start front-left camera
+	cd /ssd_nvidia/autonomy_ws
+	. devel/setup.bash 
+	roslaunch realsense2_camera qolo_left_camera.launch
+
+			// Localization + left-front camera
+			roslaunch realsense2_camera qolo_localization_rgbd.launch
+
+			## Alterrnatively:
+			// Only Camera
+			roslaunch realsense2_camera qolo_left_camera.launch  
+
+			// Localization only
+			roslaunch realsense2_camera qolo_localization_t265.launch
+
+5. main-pc-110 terminal: Starting main Qolo node
+
+	sudo -s
+		
+	####### RDS + Attractor-DS #######
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo remote_qolo.sh
+
+	####### Modulated + Attractor-DS #######
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo modulation_qolo.sh
+
+	####### RDS-Shared-control #######
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo shared_qolo.sh
+
+	###### RSD with Compliance + Attractor-DS #######
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo compliant_remote_qolo.sh
+
+	###### RSD - SharedControl with Compliance + Shared-control #######
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo compliant_shared_qolo.sh
+
+	###### MDS with Compliance + Attractor-DS #######
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo compliant_modulation_qolo.sh
+
+	### NOTE: DEBUG_MODE --> Runtime: (20~30ms) --> 33~40 Hz
+	### NOTE: Normal Execution --> Runtime: (11~15ms) --> 65~90 Hz
+
+
+6. Nvidia-200 terminal:  Start People tracker
 	cd ~/tracker_ws
 	. /ssd_nvidia/venv_sensing/bin/activate
 	. devel/setup.bash
 	roslaunch rwth_crowdbot_launch qolo_onboard.launch trt:=true
 
+		# No tracker option: 
+		cd ~/tracker_ws
+		. /ssd_nvidia/venv_sensing/bin/activate
+		. devel/setup.bash
+		roslaunch rwth_crowdbot_launch qolo_detect.launch trt:=true
 
-7. 200 Nvidia terminal: Choose a recording at the bottom of the document that suits the test (the following is the simplest LRF + tracker + qolo)
+		# Edit maximum tracking per sensor:
+		nano ~/tracker_ws/src/frame_soft/rwth_crowdbot_launch/config/qolo/detection_fusion/topics.yaml
 
-	cd /ssd_nvidia/data/demo_2020
-		/ssd_nvidia/data/lidar_training/2_med_recordings
 
-	rosbag record -O 01_skirt_1m.bag -a
+7. Start DS-based trajectory control (50m ahead)
+	####### For RDS trajectory #######	
+	Main-pc-110 terminal:  
+	ssh qolo@192.168.13.110
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo ds_trajectory.py
+
+	####### For MDS trajectory #######
+	ssh qolo@192.168.13.120
+	cd ~/autonomy_ws/
+	. devel/setup.bash
+	rosrun qolo_modulation qolo_modulation_ros_controller.py
+
+
+8. 200 Nvidia terminal: Choose a recording at the bottom of the document that suits the test (the following is the simplest LRF + tracker + qolo)
+
+	cd /ssd_nvidia/data/crowdbot_2021
+
+rosbag record --duration=4m /chatter /tf /tf_static /qolo/pose2D /qolo/twist /qolo/remote_commands qolo/compliance/svr /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /t265/odom/sample /rokubi_node_front/ft_sensor_measurements
+
+
+
+	rosbag record --duration=2m /chatter -O 1-0322-Europe.bag /tf /tf_static /qolo /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /t265/odom/sample
+
+	###### ROSbag with Frontal RGBD + odom + 3D points ######
+
+	rosbag record -O 1-03_15_outdoor.bag -a
 	
-	rosbag record -O 01_demo.bag /tf /tf_static /qolo /front_lidar/scan /front_lidar/velodyne_points /rear_lidar/scan /rear_lidar/velodyne_points /map /map_metadata /move_base_simple/goal /poseupdate /rds_to_gui /slam_out_pose /rokubi_node_front/ft_sensor_measurements /diagnostics /rosout /rosout_agg
-
 
 ## 	RESETTING SLAM: if needed or lost in the map
 	rostopic pub /syscommand std_msgs/String "reset"
@@ -115,14 +218,19 @@ Nvidia board 200
 	sudo -s
 	cd ~/catkin_ws/
 	. devel/setup.bash
-	roslaunch qolo hasler_qolo.launch  // roslaunch qolo rear_lidar-slam.launch
+
+	roslaunch qolo hasler_qolo.launch  
+
+		// roslaunch qolo rear_lidar-slam.launch
+
 
 3. 120 terminal
 	cd ~/autonomy_ws/
 	. devel/setup.bash
-	roslaunch rds_ros rds_front_lrf_slam.launch
-		
-		Not used anymore //roslaunch hector_mapping mapping_qolo_rear.launch
+	# roslaunch rds_ros rds_front_lrf_slam.launch
+	
+	rosrun qolo_modulation run_localisation.sh
+
 
 ## 	RESETTING SLAM: if needed or lost in the map
 	rostopic pub /syscommand std_msgs/String "reset"
@@ -292,8 +400,6 @@ rosrun kalman_bounding_boxes kalman_bounding_boxes_node
 ###### ROSbag with 2LRF + RGBD ######
 	rosbag record -O rds_pedestrians_01.bag /tf /tf_static /qolo /front_lidar/scan /rear_lidar/scan /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /slam_out_pose /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw
 
-###### ROSbag with Frontal RGBD and 3D points ######
-	rosbag record -O driver_rds_points_5.bag /tf /tf_static /qolo /front_lidar/scan /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /slam_out_pose
 
 ###### ROSbag with Frontal RGBD and 3D points ######
 	rosbag record -O driver_rds_points_5.bag /tf /tf_static /qolo /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /slam_out_pose

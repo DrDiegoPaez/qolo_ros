@@ -1,8 +1,8 @@
 #! /usr/bin/env python3
 
 #########  ROS version of Remote Joystick with safety ##########
-##### Author: Diego F. Paez G. & Chen Yang
-##### Data: 2020/04/20
+##### Author: Diego Paez G.
+##### Data: 2021/02/15
 
 ##### This script subscribes to a webserver
 ## for receiving a virtual joystick commands 
@@ -29,6 +29,7 @@ import os.path
 import tornado.httpserver
 import tornado.websocket
 import tornado.ioloop
+
 import tornado.web
 # FLAG for fully manual control (TRUE) or shared control (FALSE)
 #Tonado server port
@@ -39,13 +40,13 @@ except PermissionError:
     rospy.logerr("Cannot set niceness for the process...")
     rospy.logerr("Run the script as sudo...")
 
-pub_remote = rospy.Publisher('qolo/remote_commands', Float32MultiArray, queue_size=1)
+pub_remote = rospy.Publisher('qolo/modulation_command', Float32MultiArray, queue_size=1)
 data_remote = Float32MultiArray()
 
 ### ---------- GLOBAL VARIABLES ---------- ####
 PORT = 8080
-Max_V = 0.8
-Max_W = 0.7
+Max_V = 1.2
+Max_W = 2.0
 
 level_relations = {
         # 'debug':logging.DEBUG,
@@ -114,8 +115,8 @@ def joystick_control():
         data_remote.layout.dim[0].size = 3
         data_remote.data = [0]*3
 
-        # rospy.init_node('qolo_joystick', anonymous=True)
-        # rate = rospy.Rate(50) #  50 hz
+        rospy.init_node('qolo_joystick', anonymous=True)
+        rate = rospy.Rate(50) #  50 hz
         print ("Tornado Server started")
         main_loop.start()
 
@@ -140,8 +141,6 @@ signal.signal(signal.SIGINT, exit)
 signal.signal(signal.SIGTERM, exit)
 
 if __name__ == '__main__':
-    rospy.init_node('qolo_joystick', anonymous=True)
-    rate = rospy.Rate(100) #  50 hz
     try:
         joystick_control()
     except rospy.ROSInterruptException:

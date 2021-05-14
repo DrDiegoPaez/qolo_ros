@@ -1,5 +1,14 @@
 <launch>
 
+  <node pkg="tf" type="static_transform_publisher" name="wheel_left" 
+      args="0 0.174 0 1 0 0 0 tf_qolo wheel_left 5" />
+
+  <node pkg="tf" type="static_transform_publisher" name="wheel_right" 
+      args="0 -0.174 0 1 0 0 0 tf_qolo wheel_right 5" />
+
+  <node pkg="tf" type="static_transform_publisher" name="bumper" 
+      args="0.0325 0 0 0 0 0 1 tf_qolo bumper 5" />
+
 <param name="robot_description" command="cat $(find qolo)/../visualisation/urdf/qolo.urdf" />
 
 <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />

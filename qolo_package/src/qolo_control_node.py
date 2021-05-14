@@ -1,10 +1,14 @@
 #! /usr/bin/env python3
-
+'''
 #########  Qolo Main Code for Shared / Embodied / Remore Control ##########
 ##### Author: Diego F. Paez G.
-##### Collaboration: Vaibhav Gupta
-##### Embodied sensing: Chen Yang
-##### Data: 2019/10/01
+##### Collaboration compliant control: Vaibhav Gupta
+##### Embodied sensing code: Chen Yang
+'''
+__author__ = "Diego Paez-Granados"
+__date__ = "2019-01-20"
+__email__ = "diego.paez@epfl.ch"
+
 
 from ADDA import ADDA as converter
 import time
@@ -59,7 +63,8 @@ JOYSTICK_MODE = rospy.get_param("/qolo_control/joystick_mode", False)
 REMOTE_MODE = rospy.get_param("/qolo_control/remote_mode", False)
 # For zero output to the wheels
 TESTING_MODE = False
-DEBUG_MODE = True
+# Used to publish extra topics with 
+DEBUG_MODE = False
 TIMING_MODE = True
 
 PORT = 8080
@@ -73,11 +78,12 @@ print(colored("Logging folder is '{}'".format(logger.folder), "yellow"))
 # Fast Clipper Function
 clipper = lambda x, l, u: l if x < l else u if x > u else x
 
-# coefficient for vmax and wmax(outout curve)
-forward_coefficient = 1
+###### EMBODIED CONTROL COSNTANTS ##########
+# coefficient for vmax and wmax (out curve)
+forward_coefficient = 1.2/1.5
 left_turning_coefficient = 1
 right_turning_coefficient = 1
-backward_coefficient = 0.5
+backward_coefficient = 0.7/1.5
 
 # Global Constatns for Communication
 # DAC0 --> Left Wheel Velocity
@@ -115,19 +121,19 @@ ORCA_Flag = False
 # Gain to this point
 weight_scaling_of_reference_point_for_command_limits = 0.
 # Some gain for velocity after proximity reaches limits
-tau = 1.5
+tau = 2.5 # Tested:1.5 and 2.5(faster response)
 # Minimal distance to obstacles
-delta = 0.05
+delta = 0.07 # Tested: 0.05
 # Some reference for controlling the non-holonomic base
-control_point = 0.4
+control_point = 0.3 # Tested:0.4
 
 max_linear = MAX_SPEED
 min_linear = -MIN_SPEED
 absolute_angular_at_min_linear = 0.
 absolute_angular_at_max_linear = 0.
 absolute_angular_at_zero_linear = MAX_OMEGA/W_RATIO
-linear_acceleration_limit = 1.5
-angular_acceleration_limit = 4.5
+linear_acceleration_limit = 2.5 # Tested:1.5
+angular_acceleration_limit = 4.5 # Tested: 4.5
 
 #########################################################
 ############ Setting for Compliant Control ##############
@@ -291,6 +297,71 @@ def read_FSR():
     Xin_temp[9] = round(conv.ReadChannel(4),4)
     # return Xin_temp
 
+
+# output curve: Linear/Angular Velocity-Pressure Center
+def FSR_output(a, b, c, d, e, f, g, h, ox):
+    global forward_coefficient, left_turning_coefficient, right_turning_coefficient, backward_coefficient
+    #sending value setting
+    # static_value = 20
+    dynamic_value = max(a,b,c,d,e,f,g,h)
+    # drive = dynamic_value - static_value
+    drive = dynamic_value
+
+    forward = 2500 + forward_coefficient * drive
+    if ox > 0 or ox < 0:
+        left_around = 2500 + left_turning_coefficient * drive * ox / abs(ox)
+    else:
+        left_around = 2500
+    if ox > 0 or ox < 0:
+        right_around = 2500 + right_turning_coefficient * drive * ox / abs(ox)
+    else:
+        right_around = 2500
+
+    global pl2, pl1, pr1, pr2
+
+    wl = math.pi / (pl2 - pl1) # w for smooth fucntion: sin(wx)
+    fai_l_for = math.pi / 2 - wl * pl1
+    fai_l_turn = math.pi / 2 - wl * pl2
+
+    wr = math.pi / (pr2 - pr1) # w for smooth fucntion: sin(wx)
+    fai_r_for = math.pi / 2 - wr * pr1
+    fai_r_turn = math.pi / 2 - wr * pr2
+
+    left_angle_for = 2500 + forward_coefficient * drive / 2 + forward_coefficient * drive / 2 * math.sin(wl * ox + fai_l_for)
+    left_angle_turn = 2500 - left_turning_coefficient * drive / 2 - left_turning_coefficient * drive / 2 * math.sin(wl * ox + fai_l_turn)
+    right_angle_for = 2500 + forward_coefficient * drive / 2 + forward_coefficient * drive / 2 * math.sin(wr * ox + fai_r_for)
+    right_angle_turn = 2500 + right_turning_coefficient * drive / 2 + right_turning_coefficient * drive / 2 * math.sin(wr * ox + fai_r_turn)
+
+    backward = 2500 - backward_coefficient * drive
+
+    # threshold value for keep safety(beyond this value, the joystick will report an error)
+    forward = clipper(forward, 0, 5000)
+    left_angle_for = clipper(left_angle_for, 0, 5000)
+    right_angle_for = clipper(right_angle_for, 0, 5000)
+    right_around = clipper(right_around, 0, 5000)
+    left_around = clipper(left_around, 100, 5000)
+    right_angle_turn = clipper(right_angle_turn, 0, 5000)
+    left_angle_turn = clipper(left_angle_turn, 100, 5000)
+    backward = clipper(backward, 300, 5000)
+    # if forward >= 4800:
+    #     forward = 4800
+    # if left_angle_for >= 4800:
+    #     left_angle_for = 4800
+    # if right_angle_for >= 4800:
+    #     right_angle_for = 4800
+    # if right_around >= 4800:
+    #     right_around = 4800
+    # if left_around <= 300:
+    #     left_around = 300
+    # if right_angle_turn >= 4800:
+    #     right_angle_turn = 4800
+    # if left_angle_turn <= 300:
+    #     left_angle_turn = 300
+    # if backward <= 800:
+    #     backward = 800
+
+    return forward, backward, left_angle_for, left_angle_turn, right_angle_for, right_angle_turn, left_around, right_around
+
 # execution command to DAC board based on the output curve
 def FSR_execution():
     global pl2, pl1, pr1, pr2
@@ -429,62 +500,6 @@ def write_DA(Write_DAC0,Write_DAC1):
     conv.SetChannel(0, Send_DAC0)
     conv.SetChannel(1, Send_DAC1)
 
-# output curve: Linear/Angular Velocity-Pressure Center
-def FSR_output(a, b, c, d, e, f, g, h, ox):
-    global forward_coefficient, left_turning_coefficient, right_turning_coefficient, backward_coefficient
-    #sending value setting
-    # static_value = 20
-    dynamic_value = max(a,b,c,d,e,f,g,h)
-    # drive = dynamic_value - static_value
-    drive = dynamic_value
-
-    forward = 2500 + forward_coefficient * drive
-    if ox > 0 or ox < 0:
-        left_around = 2500 + left_turning_coefficient * drive * ox / abs(ox)
-    else:
-        left_around = 2500
-    if ox > 0 or ox < 0:
-        right_around = 2500 + right_turning_coefficient * drive * ox / abs(ox)
-    else:
-        right_around = 2500
-
-    global pl2, pl1, pr1, pr2
-
-    wl = math.pi / (pl2 - pl1) # w for smooth fucntion: sin(wx)
-    fai_l_for = math.pi / 2 - wl * pl1
-    fai_l_turn = math.pi / 2 - wl * pl2
-
-    wr = math.pi / (pr2 - pr1) # w for smooth fucntion: sin(wx)
-    fai_r_for = math.pi / 2 - wr * pr1
-    fai_r_turn = math.pi / 2 - wr * pr2
-
-    left_angle_for = 2500 + forward_coefficient * drive / 2 + forward_coefficient * drive / 2 * math.sin(wl * ox + fai_l_for)
-    left_angle_turn = 2500 - left_turning_coefficient * drive / 2 - left_turning_coefficient * drive / 2 * math.sin(wl * ox + fai_l_turn)
-    right_angle_for = 2500 + forward_coefficient * drive / 2 + forward_coefficient * drive / 2 * math.sin(wr * ox + fai_r_for)
-    right_angle_turn = 2500 + right_turning_coefficient * drive / 2 + right_turning_coefficient * drive / 2 * math.sin(wr * ox + fai_r_turn)
-
-    backward = 2500 - backward_coefficient * drive
-
-    # threshold value for keep safety(beyond this value, the joystick will report an error)
-    if forward >= 4800:
-        forward = 4800
-    if left_angle_for >= 4800:
-        left_angle_for = 4800
-    if right_angle_for >= 4800:
-        right_angle_for = 4800
-    if right_around >= 4800:
-        right_around = 4800
-    if left_around <= 300:
-        left_around = 300
-    if right_angle_turn >= 4800:
-        right_angle_turn = 4800
-    if left_angle_turn <= 300:
-        left_angle_turn = 300
-    if backward <= 800:
-        backward = 800
-
-    return forward, backward, left_angle_for, left_angle_turn, right_angle_for, right_angle_turn, left_around, right_around
-
 def rds_service():
     global Output_V, Output_W, last_v, last_w, cycle, feasible, Corrected_V, Corrected_W
     # print "Waiting for RDS Service"
@@ -511,8 +526,8 @@ def rds_service():
 
     request.nominal_command.linear = Corrected_V
     request.nominal_command.angular = Corrected_W
-    request.capsule_center_front_y = 0.2 # Actual: 0.051
-    request.capsule_center_rear_y = -0.50
+    request.capsule_center_front_y = 0.1 # Actual: 0.051
+    request.capsule_center_rear_y = -0.52  # Actual: -0.515
     request.capsule_radius = 0.45
     
     request.reference_point_y = control_point
@@ -685,13 +700,14 @@ def control():
         Corrected_V = round(compliant_V,6)
         Corrected_W = round(compliant_W,6)
 
-        # Update Control Point
-        if abs(compliance_control._Fmag) > compliance_control.activation_F:
-            qolo_control_pt.x = compliance_control.bumper_l + compliance_control.bumper_R * np.cos(compliance_control._theta)
-            qolo_control_pt.y = compliance_control.bumper_R * np.sin(compliance_control._theta)
-        else:
-            qolo_control_pt.x = compliance_control.bumper_l + compliance_control.bumper_R
-            qolo_control_pt.y = 0
+        if DEBUG_MODE:
+            # Update Control Point
+            if abs(compliance_control._Fmag) > compliance_control.activation_F:
+                qolo_control_pt.x = compliance_control.bumper_l + compliance_control.bumper_R * np.cos(compliance_control._theta)
+                qolo_control_pt.y = compliance_control.bumper_R * np.sin(compliance_control._theta)
+            else:
+                qolo_control_pt.x = compliance_control.bumper_l + compliance_control.bumper_R
+                qolo_control_pt.y = 0
             
     else:
         Corrected_V = User_V
@@ -753,10 +769,10 @@ def control_node():
                 bumper_l=0.2425,
                 bumper_R=0.33,
                 Ts=1.0/200,
-                robot_mass=30.0,
+                robot_mass=2.0,
                 lambda_t=0.0,
                 lambda_n=1.5,
-                Fd=45,
+                Fd=20,
                 activation_F=15,
                 logger=logger
             )
@@ -919,7 +935,6 @@ def control_node():
         if COMPLIANCE_MODE:
             compliance_control.log()
             logger.log('svr', *svr_data)
-            pub_control_pt.publish(qolo_control_pt)
         
         if TIMING_MODE:
             logger.log('timings', DA_time, RDS_time, Compute_time, FSR_time, Compliance_time, cycle_T, FULL_time)
@@ -936,6 +951,7 @@ def control_node():
             pub_user.publish(dat_user)
             if COMPLIANCE_MODE:
                 pub_compliance_bumper_loc.publish(dat_compliance_bumper_loc)
+                pub_control_pt.publish(qolo_control_pt)
 
         FULL_time = time.clock() - prevT
         if COMPLIANCE_MODE:

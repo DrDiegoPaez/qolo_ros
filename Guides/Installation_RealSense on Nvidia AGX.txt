@@ -23,3 +23,17 @@ Make sure there are no RealSense cameras attached to the Xavier. Now build libre
 
 $ ./installLibrealsense.sh
 
+
+
+##### Disable GUI o nUbuntu-18 for Nvidia Board ########
+
+# Disable GUI on boot
+sudo systemctl set-default multi-user.target
+	# Edits: /etc/systemd/system/default.target
+
+# Enable GUI on boot
+sudo systemctl set-default graphical.target
+
+# Starting GUI after text mode:
+sudo systemctl start gdm3.service
+
