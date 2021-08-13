@@ -13,7 +13,7 @@ terminal 0
 terminal 1
 	cd  ~/rosbags/
 	rosparam set use_sim_time true
-	rosbag play -l imu_record_0.bag --clock
+	rosbag play -l nocam_2021-04-24-13-16-58.bag --clock
 
 terminal 2
 	cd  ~/catkin_ws
@@ -24,6 +24,22 @@ terminal 2
 	# corwdbot.rvz --> For tracker visualisation
 	# qolo_rviz_all.rvz --> For all sensors visualisation
 
+terminal 3:
+	cd ~/catkin_ws
+	source devel/setup.bash
+	rosbag filter 2021-04-24-11-48-21.bag nocam_2021-04-24-11-48-21.bag "topic != '/camera_left/color/image_raw' and topic != '/camera_left/depth/image_rect_raw' and topic != '/camera_left/aligned_depth_to_color/image_raw' and topic != '/image_with_bounding_boxes' and topic != '/camera_left/depth/color/points' and topic != '/darknet_ros/detection_image'"
+
+Topics to remove from Rosbags for sharing:		
+	/camera_left/color/image_raw
+	/camera_left/depth/image_rect_raw
+	/camera_left/aligned_depth_to_color/image_raw
+	/image_with_bounding_boxes
+	/darknet_ros/detection_image
+	/camera_left/depth/color/points
+
+	/camera_left/aligned_depth_to_color/camera_info
+	/camera_left/color/camera_info
+	/camera_left/depth/camera_info
 ============================================================
 ===================== RDS GUI Usage ========================
 ============================================================

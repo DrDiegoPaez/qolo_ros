@@ -35,6 +35,6 @@
     
     <node name="qolo_joystick" pkg="qolo" type="qolo_joystick.py" />
 
-    <include file="$(find qolo)/launch/tf_qolo.launch"/>
+    <include file="$(find qolo)/launch/tf_qolo_laserscanmatcher.launch"/>
 
 </launch>

@@ -49,16 +49,9 @@ sleep 5
 #----- Launch qolo control -----
 echo -e "${IMP_INFO}Launching QOLO Control Node...${NORMAL}"
 # eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
-eval "roslaunch qolo modulation_compliant_qolo.launch log_folder:=${LOG_FOLDER} &"
+eval "roslaunch qolo sliding_qolo.launch log_folder:=${LOG_FOLDER} &"
 PID_LIST+="$! "
 sleep 15
-
-#----- Launch qolo's Odometry -----
-echo -e "${IMP_INFO}Launching QOLO Odometry Node...${NORMAL}"
-# eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
-eval "rosrun qolo localization_qolo.py "
-PID_LIST+="$! "
-sleep 3
 
 # Wait till all pids to be finished or killed
 echo -e "${IMP_GREEN}All PIDs : ${PID_LIST}${NORMAL}"
