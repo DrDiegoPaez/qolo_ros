@@ -105,7 +105,7 @@ https://gitlab.inria.fr/CrowdBot/CrowdBotUnity
 https://github.com/FabienGrzeskowiakInria/CrowdBot_robots
 
 
-## References for citations:
+## References:
 Qolo Design:
 
 > [1] Paez-Granados, D. F., Kadone, H., & Suzuki, K. (2018). Unpowered Lower-Body Exoskeleton with Torso Lifting Mechanism for Supporting Sit-to-Stand Transitions. IEEE International Conference on Intelligent Robots and Systems, 2755–2761. https://doi.org/10.1109/IROS.2018.8594199
