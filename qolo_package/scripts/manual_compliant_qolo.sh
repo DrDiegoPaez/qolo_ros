@@ -62,7 +62,7 @@ sleep 5
 echo -e "${IMP_INFO}Launching QOLO Control Node...${NORMAL}"
 eval ". devel/setup.bash"
 # eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
-eval "roslaunch qolo remote_compliant_qolo.launch log_folder:=${LOG_FOLDER} &"
+eval "roslaunch qolo manual_compliant_qolo.launch log_folder:=${LOG_FOLDER} &"
 PID_LIST+="$! "
 sleep 15
 

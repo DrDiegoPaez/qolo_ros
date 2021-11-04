@@ -110,6 +110,11 @@ Nvidia board 200
 	. devel/setup.bash
 	rosrun qolo compliant_modulation_qolo.sh
 
+	###### Torso Control with Compliance #######
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo manual_compliant_qolo.sh
+
 	### NOTE: DEBUG_MODE --> Runtime: (20~30ms) --> 33~40 Hz
 	### NOTE: Normal Execution --> Runtime: (11~15ms) --> 65~90 Hz
 

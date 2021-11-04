@@ -3,8 +3,8 @@
     <arg name="constant_mode" default="false" />
     <arg name="shared_mode" default="false" />
     <arg name="compliance_mode" default="true" />
-    <arg name="joystick_mode" default="true" />
-    <arg name="remote_mode" default="true" />
+    <arg name="joystick_mode" default="false" />
+    <arg name="remote_mode" default="false" />
 
     <include file="$(find qolo)/launch/joystick_qolo.launch"/>
     
@@ -35,7 +35,6 @@
                value="$(arg log_folder)"/>
     </node>
 
-     <!-- <include file="$(find qolo)/launch/tf_qolo.launch"/> -->
-     <include file="$(find qolo)/launch/tf_qolo_laserscanmatcher.launch"/>
+     <include file="$(find qolo)/launch/tf_qolo.launch"/>
 
 </launch>

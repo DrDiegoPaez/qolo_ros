@@ -769,10 +769,10 @@ def control_node():
                 bumper_l=0.2425,
                 bumper_R=0.33,
                 Ts=1.0/200,
-                robot_mass=2.0,
+                robot_mass=5.0,
                 lambda_t=0.0,
                 lambda_n=1.5,
-                Fd=20,
+                Fd=45,
                 activation_F=15,
                 logger=logger
             )
