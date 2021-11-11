@@ -32,6 +32,9 @@ Nvidia board 200
 	rosclean purge -y
 	cd ~/autonomy_ws/
 	. devel/setup.bash
+	rosrun qolo_modulation run_localisation.sh
+
+	// RDS with detections only:
 	roslaunch rds_ros rds_front_lrf.launch det:="true"
 
 			// Run rds + Laser-scan-matcher
@@ -114,6 +117,11 @@ Nvidia board 200
 	cd ~/catkin_ws/
 	. devel/setup.bash
 	rosrun qolo manual_compliant_qolo.sh
+
+	###### Joystick Remote Control #######
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	roslaunch qolo remote_qolo_laser.launch
 
 	### NOTE: DEBUG_MODE --> Runtime: (20~30ms) --> 33~40 Hz
 	### NOTE: Normal Execution --> Runtime: (11~15ms) --> 65~90 Hz

@@ -26,11 +26,11 @@ import mraa
 import signal
 import datetime
 import rospy
-# import threading
 
-from geometry_msgs.msg import Wrench, WrenchStamped, Vector3, PoseStamped, Quaternion, Twist, TwistStamped, Pose2D
+from geometry_msgs.msg import Wrench, WrenchStamped, Vector3, PoseStamped, Quaternion, Twist, TwistStamped, Pose2D, Pose, Point
 from std_msgs.msg import String, Bool, Float32MultiArray, Float32, Int32MultiArray
 from std_msgs.msg import MultiArrayLayout, MultiArrayDimension, Header
+from nav_msgs.msg import Odometry
 
 from rds_network_ros.srv import *
 # from builtins import PermissionError
@@ -61,6 +61,8 @@ COMPLIANCE_MODE = rospy.get_param("/qolo_control/compliance_mode", False)
 JOYSTICK_MODE = rospy.get_param("/qolo_control/joystick_mode", False)
 # For using DS or trajectory tracking
 REMOTE_MODE = rospy.get_param("/qolo_control/remote_mode", False)
+# For using publishing ODOMETRY topic
+ODOM_FLAG = rospy.get_param("/qolo_control/odom_publisher", False)
 # For zero output to the wheels
 TESTING_MODE = False
 # Used to publish extra topics with 
@@ -78,14 +80,19 @@ print(colored("Logging folder is '{}'".format(logger.folder), "yellow"))
 # Fast Clipper Function
 clipper = lambda x, l, u: l if x < l else u if x > u else x
 
-###### EMBODIED CONTROL COSNTANTS ##########
+#########################################################
+############# EMBODIED CONTROL COSNTANTS ################
+#########################################################
+
 # coefficient for vmax and wmax (out curve)
 forward_coefficient = 1.2/1.5
 left_turning_coefficient = 1
 right_turning_coefficient = 1
 backward_coefficient = 0.7/1.5
 
-# Global Constatns for Communication
+#########################################################
+########## Global Constatns for Communication ###########
+#########################################################
 # DAC0 --> Left Wheel Velocity
 # DAC1 --> Right Wheel Velocity
 # DAC2 --> Enable Qolo Motion
@@ -136,22 +143,20 @@ linear_acceleration_limit = 2.5 # Tested:1.5
 angular_acceleration_limit = 4.5 # Tested: 4.5
 
 #########################################################
-############ Setting for Compliant Control ##############
+#########    Settings for Compliant Control   ###########
 #########################################################
 compliant_V =0.
 compliant_W =0.
-
 # Type of compliance controller to use
 #   * admittance (default)
 #   * passive_ds
 COMPLIANCE_TYPE = "passive_ds"
-
 compliance_control = None
 qolo_control_pt = None
-
 # Global Variables for Compliant mode
 svr_data =  np.zeros((3,))
 
+# Global variables for low level control
 feasible = 0
 Output_V = 0.
 Output_W = 0.
@@ -163,11 +168,9 @@ FlagRemote = False
 last_msg = 0.
 time_msg = 0.
 Count_msg_lost = 0
-
 last_v = 0.
 last_w = 0.
 cycle=0.
-
 Command_V = 0.
 Command_W = 0.
 Comand_DAC0 = 0
@@ -196,6 +199,19 @@ t2=0.
 counter1 = 0
 number = 100
 
+#########################################################
+###########      ROS Global Variables       #############
+#########################################################
+qolo_odom = Odometry()
+pose_x =0.0 
+pose_y=0.0
+pose_th = 0.0
+current_time = []
+last_time = []
+
+#########################################################
+#########    Settings for Embodied Control    ###########
+#########################################################
 # real zero point of each sensor
 a_zero, b_zero, c_zero, d_zero, e_zero, f_zero, g_zero, h_zero = 305.17, 264.7, 441.57, 336.46, 205.11, 441.57, 336.46, 205.11
 
@@ -243,6 +259,36 @@ level_relations = {
         # 'error':logging.ERROR,
         # 'crit':logging.CRITICAL
     }
+
+def quaternion_from_euler(yaw, pitch, roll):
+        qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+        qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
+        qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
+        qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+
+        return [qx, qy, qz, qw]
+
+def euler_from_quaternion(x, y, z, w):
+  """
+  Convert a quaternion into euler angles (roll, pitch, yaw)
+  roll is rotation around x in radians (counterclockwise)
+  pitch is rotation around y in radians (counterclockwise)
+  yaw is rotation around z in radians (counterclockwise)
+  """
+  t0 = +2.0 * (w * x + y * z)
+  t1 = +1.0 - 2.0 * (x * x + y * y)
+  roll_x = math.atan2(t0, t1)
+
+  t2 = +2.0 * (w * y - z * x)
+  t2 = +1.0 if t2 > +1.0 else t2
+  t2 = -1.0 if t2 < -1.0 else t2
+  pitch_y = math.asin(t2)
+
+  t3 = +2.0 * (w * z + x * y)
+  t4 = +1.0 - 2.0 * (y * y + z * z)
+  yaw_z = math.atan2(t3, t4)
+
+  return roll_x, pitch_y, yaw_z # in radians
 
 # for interruption
 def exit(signum, frame):
@@ -687,10 +733,6 @@ def control():
         FSR_time = round((time.clock() - t1),6)
         t1 = time.clock()
 
-    if TIMING_MODE:
-        RDS_time = round((time.clock() - t1),6)
-        t1 = time.clock()
-
     if COMPLIANCE_MODE:
         (compliant_V, compliant_W) = compliance_control.step(
             compliant_V, compliant_W,
@@ -717,10 +759,12 @@ def control():
         rds_service()
         # Corrected_V = User_V
         # Corrected_W = User_W
+        if TIMING_MODE:
+            RDS_time = round((time.clock() - t1),6)
+            t1 = time.clock()
 
     Output_V = Corrected_V
     Output_W = Corrected_W
-
 
     if TIMING_MODE:
         Compliance_time = round((time.clock() - t1),6)
@@ -759,6 +803,7 @@ def control_node():
     global RemoteE, ComError
     global DA_time, RDS_time, Compute_time, FSR_time, Compliance_time, extra_time,last_msg, time_msg, FULL_time
     global compliant_V, compliant_W, offset_ft_data, compliance_control, initialising_ft, qolo_control_pt
+    global last_v, last_w, Output_V, Output_W, pose_x, pose_y, pose_th, current_time, last_time
     prevT = 0
     FlagEmergency=False
     # Call the calibration File
@@ -803,9 +848,10 @@ def control_node():
 
     ########### Starting ROS Publishers ###########
     pub_emg = rospy.Publisher('qolo/emergency', Bool, queue_size=1)
-
     pub_twist = rospy.Publisher('qolo/twist', TwistStamped, queue_size=1)
     qolo_twist = TwistStamped()
+    if ODOM_FLAG:
+        pub_odom = rospy.Publisher('qolo/odom', Odometry, queue_size=1)
 
     # pub_vel = rospy.Publisher('qolo/velocity', Float32MultiArray, queue_size=1)
     # dat_vel = Float32MultiArray()
@@ -852,6 +898,8 @@ def control_node():
     ########### Starting ROS Node ###########
     rospy.init_node('qolo_control', anonymous=True)
     rate = rospy.Rate(200) #  100 [Hz]
+    current_time = rospy.Time.now()
+    last_time = rospy.Time.now()
 
     if COMPLIANCE_MODE:
         ftsub = rospy.Subscriber("qolo/compliance/svr",WrenchStamped,ft_sensor_callback, queue_size=1)
@@ -925,6 +973,29 @@ def control_node():
         if TIMING_MODE:
             cycle_T = time.clock() - prevT
 
+        # Computing the estimated current position from
+        if ODOM_FLAG:
+            current_time = rospy.Time.now()
+            # compute odometry in a typical way given the velocities of the robot
+            # dt = (current_time - last_time).to_sec()
+            dt = FULL_time
+            delta_th = last_w * dt
+            delta_x = (last_v * math.cos(pose_th) ) * dt
+            delta_y = (last_v * math.sin(pose_th) ) * dt
+            pose_x += delta_x
+            pose_y += delta_y
+            pose_th += delta_th
+
+            # since all odometry is 6DOF we'll need a quaternion created from yaw
+            odom_quat = quaternion_from_euler(0, 0, pose_th)
+            qolo_odom.header.stamp = current_time
+            qolo_odom.header.frame_id = "tf_qolo_world"
+            # set the position
+            qolo_odom.pose.pose = Pose(Point(pose_x, pose_y, 0.), Quaternion(*odom_quat))
+            # set the velocity
+            qolo_odom.child_frame_id = "tf_qolo_odom"
+            qolo_odom.twist.twist = qolo_twist.twist #Twist(Vector3(vx, vy, 0), Vector3(0, 0, vth))
+
         # ----- CSV Logs -----
         logger.log('corr_velocity',
                    User_V, User_W,
@@ -942,8 +1013,9 @@ def control_node():
         # ----- Publish ROS topics -----
         pub_emg.publish(FlagEmergency)
         pub_twist.publish(qolo_twist)
-
-        # pub_vel.publish(dat_vel)
+        
+        if ODOM_FLAG:
+            pub_odom.publish(qolo_odom)    
 
         if DEBUG_MODE:
             pub_cor_vel.publish(dat_cor_vel)

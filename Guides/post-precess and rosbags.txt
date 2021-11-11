@@ -8,7 +8,7 @@ modify ROS_MASTER to local
 	export ROS_HOSTNAME=localhost
 	export ROS_MASTER_URI=http://localhost:11311
 terminal 0
-	reoscore
+	roscore
 
 terminal 1
 	cd  ~/rosbags/

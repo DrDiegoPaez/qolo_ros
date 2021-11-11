@@ -19,19 +19,16 @@ Nvidia board 200
 	sudo -s
 	cd ~/catkin_ws/
 	. devel/setup.bash
-
-	roslaunch qolo hasler_qolo.launch  
+	roslaunch qolo hasler_qolo.launch
 
 		// roslaunch qolo rear_lidar-slam.launch
-
 
 3. 120 terminal
 	cd ~/autonomy_ws/
 	. devel/setup.bash
-	# roslaunch rds_ros rds_front_lrf_slam.launch
-	
 	rosrun qolo_modulation run_localisation.sh
-
+	
+	# roslaunch rds_ros rds_front_lrf_slam.launch
 
 ## 	RESETTING SLAM: if needed or lost in the map
 	rostopic pub /syscommand std_msgs/String "reset"

@@ -66,10 +66,10 @@ eval "roslaunch qolo remote_compliant_qolo.launch log_folder:=${LOG_FOLDER} &"
 PID_LIST+="$! "
 sleep 15
 
-#----- Launch qolo's odometry -----
+#----- Launch qolo's odometry from T265  -----
 echo -e "${IMP_INFO}Launching QOLO Odometry Node...${NORMAL}"
 # eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
-eval "rosrun qolo localization_qolo.py "
+eval "rosrun qolo t265_pose_qolo.py "
 PID_LIST+="$! "
 sleep 3
 
