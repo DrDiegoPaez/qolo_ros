@@ -18,10 +18,10 @@ trap _kill EXIT
 
 #----- Get Test Number -----
 TEST_NO=0
-while [ -d "csv_logs/flon/remote${TEST_NO}" ]; do
+while [ -d "csv_logs/IRL/remote${TEST_NO}" ]; do
    TEST_NO=$(( $TEST_NO + 1 ))
 done
-LOG_FOLDER="$(pwd)/csv_logs/flon/remote${TEST_NO}"
+LOG_FOLDER="$(pwd)/csv_logs/IRL/remote${TEST_NO}"
 eval "mkdir -p ${LOG_FOLDER}/compliance"
 echo -e "${IMP_INFO}Current Test Number : ${TEST_NO}${NORMAL}"
 
@@ -32,13 +32,13 @@ eval ". /home/qolo/collision_ws/src/rokubimini_interface/run_rokubimini_ros.sh -
 PID_LIST+="$! "
 sleep 5
 
-#----- Launch Rear Lidar  -----
-echo -e "${IMP_INFO}Launching REAR LIDAR...${NORMAL}"
-eval ". devel/setup.bash"
-eval "roslaunch qolo rear_lidar-cloud.launch &"
-PID_LIST+="$! "
+# #----- Launch Rear Lidar  -----
+# echo -e "${IMP_INFO}Launching REAR LIDAR...${NORMAL}"
+# eval ". devel/setup.bash"
+# eval "roslaunch qolo rear_lidar-cloud.launch &"
+# PID_LIST+="$! "
 
-sleep 5
+# sleep 5
 
 
 #----- Launch and record realsense camera -----
@@ -61,7 +61,8 @@ sleep 5
 #----- Launch qolo control -----
 echo -e "${IMP_INFO}Launching QOLO Control Node...${NORMAL}"
 # eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
-eval "roslaunch qolo shared_compliant_qolo.launch log_folder:=${LOG_FOLDER} &"
+eval ". devel/setup.bash"
+eval "roslaunch qolo shared_remote_compliant_qolo.launch log_folder:=${LOG_FOLDER} &"
 PID_LIST+="$! "
 sleep 15
 

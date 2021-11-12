@@ -40,8 +40,6 @@ from logger import Logger
 from compliance_controller import AdmittanceController, PassiveDSController
 
 from termcolor import colored
-
-# FLAG for fully manual control (TRUE) or shared control (FALSE)
 #Tonado server port
 try:
     os.nice(-10)
@@ -130,9 +128,9 @@ weight_scaling_of_reference_point_for_command_limits = 0.
 # Some gain for velocity after proximity reaches limits
 tau = 2.5 # Tested:1.5 and 2.5(faster response)
 # Minimal distance to obstacles
-delta = 0.07 # Tested: 0.05
+delta = 0.05 # Tested: 0.05
 # Some reference for controlling the non-holonomic base
-control_point = 0.3 # Tested:0.4
+control_point = 0.4 # Tested:0.4
 
 max_linear = MAX_SPEED
 min_linear = -MIN_SPEED
@@ -572,9 +570,9 @@ def rds_service():
 
     request.nominal_command.linear = Corrected_V
     request.nominal_command.angular = Corrected_W
-    request.capsule_center_front_y = 0.1 # Actual: 0.051
+    request.capsule_center_front_y = 0.06 # Actual: 0.051
     request.capsule_center_rear_y = -0.52  # Actual: -0.515
-    request.capsule_radius = 0.45
+    request.capsule_radius = 0.40 # Tested = 0.45
     
     request.reference_point_y = control_point
 
