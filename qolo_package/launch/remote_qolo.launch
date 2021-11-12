@@ -5,6 +5,7 @@
     <arg name="compliance_mode" default="false" />
     <arg name="joystick_mode" default="true" />
     <arg name="remote_mode" default="true" />
+    <arg name="odom_publisher" default="true" />
 
     <include file="$(find qolo)/launch/joystick_qolo.launch"/>
     
@@ -27,6 +28,9 @@
         <param name="remote_mode"
                type="bool"
                value="$(arg remote_mode)"/>
+        <param name="odom_publisher"
+               type="bool"
+               value="$(arg odom_publisher)"/>
     </node>
 
 <!--  <include file="$(find qolo)/launch/rear_lidar-lrf.launch"/> 
@@ -34,5 +38,7 @@
         -->
 
     <include file="$(find qolo)/launch/tf_qolo.launch"/>
+
+    <!-- <include file="$(find qolo)/launch/odometry_t265.launch"/> -->
 
 </launch>

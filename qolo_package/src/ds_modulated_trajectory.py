@@ -31,11 +31,13 @@ D_linear = 10
 
 ref_vel = 0.5
 # control_point = 0.9      ## WHY 0.9 ??
-control_pt = [0.5275, 0.]
+# control_pt = [0.5275, 0.]
+control_pt = [0.7, 0.]
 stop_distance = 0.5
 time_limit = 90
 
-Attractor = np.array([[4.0+control_pt[0]], [0.0+control_pt[1]]])
+# Setting the Attractor at the origin --> Requires starting the robot's odometry with the desired offset instead
+Attractor = np.array([[0.0 + control_pt[0]], [0.0+control_pt[1]]])
 
 pose = [0., 0., 0.]
 command_publisher = None

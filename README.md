@@ -105,7 +105,7 @@ https://gitlab.inria.fr/CrowdBot/CrowdBotUnity
 https://github.com/FabienGrzeskowiakInria/CrowdBot_robots
 
 
-## References for citations:
+## References:
 Qolo Design:
 
 > [1] Paez-Granados, D. F., Kadone, H., & Suzuki, K. (2018). Unpowered Lower-Body Exoskeleton with Torso Lifting Mechanism for Supporting Sit-to-Stand Transitions. IEEE International Conference on Intelligent Robots and Systems, 2755–2761. https://doi.org/10.1109/IROS.2018.8594199
@@ -116,13 +116,19 @@ Qolo Hands-free control:
 
 Qolo shared control:
 
-> [3] Gonon, D. Paez-Granados, D., Billard, A. (2021). Reactive Controller for a Convex Non-holonomic Robot to Travel in Crowds. IEEE Robotics and Automation Letters (IEEE-RAL). [Accepted for publication]
+> [3] Gonon, D. J., Paez-Granados, D., & Billard, A. (2021). Reactive Navigation in Crowds for Non-holonomic Robots with Convex Bounding Shape. IEEE Robotics and Automation Letters, 6(3), 4728–4735. https://doi.org/10.1109/LRA.2021.3068660
 
 > [4] Paez-Granados, D., Billard, A., & Suzuki, K. (2020). Materializing Personal Standing Mobility from Design to Shared Control. In ETH Zurich Rehabilitation Engineering Lab (Ed.), CYBATHLON Symposium. Cybathlon. https://cybathlon-symposium.ethz.ch
 
-Qolo safety for collisions:
+Crowd Navigation & safety assessment:
 
 > [5] Paez-granados, D., Gonon, D., Salvini, P., & Billard, A. (2020). Physical Safety in Collisions Between Robots and Pedestrians. IEEEE International Conference on Robot and Human Interaactive Communication (ROMAN-2020) Workshop on Robots from Pathways to Crowds, 1–2. https://doi.org/10.13140/RG.2.2.28087.55209
+
+> [6] Grzeskowiak, F., Gonon, D., Dugas, D., Paez-granados, D., Chung, J. J., Nieto, J., Siegwart, R., Billard, A., Babel, M., & Pettr, J. (2021). Crowd against the machine : A simulation-based benchmark tool to evaluate and compare robot capabilities to navigate a human crowd. IEEE International Conference on Robotics and Automation (ICRA-2021).
+
+Compliant Control:
+
+> [7] Paez-Granados, D., Gupta, V., & Billard, A. (2021). Unfreezing Social Navigation : Dynamical Systems based Compliance for Contact Control in Robot Navigation. Robotics Science and Systems (RSS) - Workshop on Social Robot Navigation, 1(1), 1–4.http://infoscience.epfl.ch/record/287442?&ln=en.  https://youtu.be/y7D-YeJ0mmg
 
 **Contact**: 
 [Dr. Diego Paez]

@@ -18,10 +18,10 @@ trap _kill EXIT
 
 # ----- Get Test Number -----
 TEST_NO=0
-while [ -d "csv_logs/flon/MDS${TEST_NO}" ]; do
+while [ -d "csv_logs/paper/MDS${TEST_NO}" ]; do
    TEST_NO=$(( $TEST_NO + 1 ))
 done
-LOG_FOLDER="$(pwd)/csv_logs/flon/MDS${TEST_NO}"
+LOG_FOLDER="$(pwd)/csv_logs/paper/MDS${TEST_NO}"
 eval "mkdir -p ${LOG_FOLDER}/compliance"
 echo -e "${IMP_INFO}Current Test Number : ${TEST_NO}${NORMAL}"
 
@@ -56,7 +56,7 @@ sleep 15
 #----- Launch qolo's Odometry -----
 echo -e "${IMP_INFO}Launching QOLO Odometry Node...${NORMAL}"
 # eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
-eval "rosrun qolo localization_qolo.py "
+eval "rosrun qolo t265_pose_qolo.py "
 PID_LIST+="$! "
 sleep 3
 
