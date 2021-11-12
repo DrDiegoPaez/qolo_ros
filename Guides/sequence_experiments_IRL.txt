@@ -1,0 +1,55 @@
+############ Launch Sequence for experiments in Qolo robot ##########
+
+ssh -X qolo@192.168.13.XXX
+main UpBoard 110
+Frontal Lidar 120
+Hasler 130
+Nvidia board 200
+	pass: ....
+
+============== Experiments for OA recordings - Including Collisions ==========================
+
+#### Establish 4 connetcions to main UpBoard 110
+#### Establish 1 connetcion to Frontal Upboard 120
+#### Establish 2 connetcion to Frontal Upboard 200
+
+### Check that all dates and times are the same on all PCs ###
+	date
+### If a PC is out of sync it might be that the internal NTP server went down ###
+	Manual setup:
+	sudo /etc/init.d/ntp restart
+	sudo ntpd -q 192.168.13.110
+
+1. 110 terminal:
+	rosclean purge -y
+	roscore
+
+2. 110 terminal:rear LIDAR
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	roslaunch qolo rear_lidar-cloud.launch
+
+3. 120 terminal: Launching Front Lidar and Low-level avoidance (RDS)
+	cd ~/autonomy_ws/
+	. devel/setup.bash
+	roslaunch rds_ros rds_front_lrf.launch det:="true"
+
+4. 200: Localization from T265 camera
+	rosclean purge -y
+	cd /ssd_nvidia/autonomy_ws
+	. devel/setup.bash 
+	roslaunch realsense2_camera qolo_localization_t265.launch
+
+5. 110 terminal: Starting main Qolo Control Node
+	sudo -s
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo compliant_remote_shared_qolo.sh
+
+6. 200: Rosbag Recording
+	rosbag record --duration=1m /chatter /tf /tf_static /qolo/pose2D /qolo/twist /qolo/odom /qolo/remote_commands qolo/compliance/svr /qolo/emergency /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_points /rear_lidar/scan /map /map_metadata /move_base_simple/goal /poseupdate /rds_to_gui /t265/odom/sample /rokubi_node_front/ft_sensor_measurements
+
+7. 110 terminal: DS trajectory
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo ds_modulated_trajectory.py

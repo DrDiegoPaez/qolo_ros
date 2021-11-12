@@ -32,15 +32,18 @@ Nvidia board 200
 	rosclean purge -y
 	cd ~/autonomy_ws/
 	. devel/setup.bash
-	roslaunch rds_ros rds_front_lrf.launch det:="true"
+	rosrun qolo_modulation run_localisation.sh
 
-			// Run rds + Laser-scan-matcher
-			rosrun rds_ros run_rds_localisation.sh
+	// RDS with detections only:
+	roslaunch rds_ros rds_front_lrf.launch det:="true"
 
 			// Run modulation + Laser-scan-matcher
 			rosrun qolo_modulation run_localisation.sh
 
-			// Launching only RDS with Lidar:
+			// Run rds + Laser-scan-matcher
+			rosrun rds_ros run_rds_localisation.sh
+
+			// Launching only RDS with Lidar + People tracking:
 			roslaunch rds_ros rds_front_lrf.launch
 
 	########### For Using MDS or RDS ###########
@@ -95,15 +98,15 @@ Nvidia board 200
 	. devel/setup.bash
 	rosrun qolo shared_qolo.sh
 
-	###### RSD with Compliance + Attractor-DS #######
+	###### Compliance + Attractor-DS #######
 	cd ~/catkin_ws/
 	. devel/setup.bash
 	rosrun qolo compliant_remote_qolo.sh
 
-	###### RSD - SharedControl with Compliance + Shared-control #######
+	###### RSD - with Compliance + Shared-control + Remote #######
 	cd ~/catkin_ws/
 	. devel/setup.bash
-	rosrun qolo compliant_shared_qolo.sh
+	rosrun qolo compliant_remote_shared_qolo.sh
 
 	###### MDS with Compliance + Attractor-DS #######
 	cd ~/catkin_ws/
@@ -114,6 +117,14 @@ Nvidia board 200
 	cd ~/catkin_ws/
 	. devel/setup.bash
 	rosrun qolo manual_compliant_qolo.sh
+
+	###### Joystick Remote Control #######
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	roslaunch qolo remote_qolo_laser.launch
+
+	## Launching with T265 Odometry
+	roslaunch qolo remote_qolo.launch
 
 	### NOTE: DEBUG_MODE --> Runtime: (20~30ms) --> 33~40 Hz
 	### NOTE: Normal Execution --> Runtime: (11~15ms) --> 65~90 Hz

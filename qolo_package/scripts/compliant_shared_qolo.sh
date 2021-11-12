@@ -68,7 +68,8 @@ sleep 15
 #----- Launch qolo's odometry -----
 echo -e "${IMP_INFO}Launching QOLO Odometry Node...${NORMAL}"
 # eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
-eval "rosrun qolo localization_qolo.py "
+# eval "rosrun qolo t265_pose_qolo.py "
+eval "roslaunch qolo odometry_t265.launch"
 PID_LIST+="$! "
 sleep 3
 
