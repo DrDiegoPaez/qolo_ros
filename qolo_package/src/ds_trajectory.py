@@ -28,16 +28,20 @@ dx = np.array([[0.0], [0.0]])
 DEBUG_FLAG = False
 
 ref_vel = 0.8
-control_point = 0.9
-stop_distance = 0.5
-time_limit = 60
+
+control_point = 0.7
+stop_distance = 0.1
+time_limit = 40
 
 pose = [0., 0., 0.]
-Local_Attractor = np.array([[20.0+control_point], [0.0]])
+# Attractor for Lausanne-city experiments:
+# Local_Attractor = np.array([[20.0+control_point], [0.0]])
+# Attractor for IRL experiments:
+Local_Attractor = np.array([[0.0], [0.0]])
 
 Attractor = np.array([[0.0], [0.0]])
 
-tf_listener = None
+# tf_listener = None
 command_publisher = None
 t_lost_tf = -1.0
 previous_command_linear = None
@@ -133,10 +137,11 @@ def trajectory_service(t):
 
 
 def main():
-   global tf_listener, command_publisher, data_remote, trajectory_xyt, pose, Attractor
+   global command_publisher, data_remote, trajectory_xyt, pose, Attractor, Local_Attractor
+   # global tf_listener
    rospy.init_node('qolo_ds_trajectory', anonymous=True)
    rate = rospy.Rate(200) #  100 [Hz]
-   tf_listener = tf.TransformListener()
+   # tf_listener = tf.TransformListener()
    pose_sub = rospy.Subscriber("qolo/pose2D", Pose2D, pose_callback, queue_size=1)
    command_publisher = rospy.Publisher('qolo/remote_commands',Float32MultiArray, queue_size=1)
 
@@ -153,8 +158,11 @@ def main():
    print(" Local Attractor X, Y = ",Local_Attractor[0,0],Local_Attractor[1,0])
    print(" Robot Position X, Y = ",pose[0],pose[1])
    print(" Robot Orientation Theta = ",pose[2])
-   Attractor[0,0] = Local_Attractor[0,0]*np.cos(pose[2]) - Local_Attractor[1,0]*np.sin(pose[2]) + pose[0]*np.cos(pose[2]) - pose[1]*np.sin(pose[2])
-   Attractor[1,0] = Local_Attractor[0,0]*np.sin(pose[2]) + Local_Attractor[1,0]*np.sin(pose[2]) + pose[0]*np.cos(pose[2]) + pose[1]*np.cos(pose[2])
+   # Attractor[0,0] = Local_Attractor[0,0]*np.cos(pose[2]) - Local_Attractor[1,0]*np.sin(pose[2]) + pose[0]*np.cos(pose[2]) - pose[1]*np.sin(pose[2])
+   # Attractor[1,0] = Local_Attractor[0,0]*np.sin(pose[2]) + Local_Attractor[1,0]*np.sin(pose[2]) + pose[0]*np.sin(pose[2]) + pose[1]*np.cos(pose[2])
+
+   Attractor[0,0] = Local_Attractor[0,0]*np.cos(pose[2])
+   Attractor[1,0] = Local_Attractor[0,0]*np.sin(pose[2])
 
    print(" Attractor X, Y = ",Attractor[0,0],Attractor[1,0])
    # end_time = trajectory_xyt[-1][2]

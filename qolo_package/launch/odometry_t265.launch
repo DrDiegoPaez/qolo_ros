@@ -11,7 +11,7 @@
 
   <!--  Using an INCLINED T265 upwards and World at the attractor -->
   <node pkg="tf" type="static_transform_publisher" name="tf_qolo_world" 
-      args="3.85 0.0 -0.430 0 0 0 1 t265_odom_frame tf_qolo_world 5" />
+      args="3.905 0.0 -0.430 0 0 0 1 t265_odom_frame tf_qolo_world 5" />
 
   <node pkg="tf" type="static_transform_publisher" name="tf_qolo" 
       args="-0.095 0.0 -0.235 -0.012 0.225 0 0.975 t265_pose_frame tf_qolo 5" />
