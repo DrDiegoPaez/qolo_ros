@@ -17,6 +17,7 @@ from scipy.interpolate import UnivariateSpline
 # Fast Clipper Function
 clipper = lambda x, l, u: l if x < l else u if x > u else x
 
+tf_listener = None
 pose_qolo = Pose2D()
 pose_pub = None
 pose_t265 = Pose2D()
@@ -39,6 +40,22 @@ pose_t265.theta = 0
 #             print "Position of the fingertip in the robot base:"
 #             print p_in_base
 
+def get_pose_tf():
+  global pose_qolo, tf_listener
+  rot = np.zeros((4,))
+  tf_qolo = PoseStamped()
+  # print Odometry.pose.pose
+  try:
+    (trans, rot) = tf_listener.lookupTransform('/tf_qolo_world', '/tf_qolo', rospy.Time(0))
+    rpy = tf.transformations.euler_from_quaternion(rot)    
+    pose_qolo.x = trans[0]
+    pose_qolo.y = trans[1]
+    pose_qolo.theta = rpy[2]
+    # print ("pose = ", pose_qolo.x, pose_qolo.y, pose_qolo.theta)
+  except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+    return
+
+  return
 
 def get_pose(odom_data):
   global pose_qolo, pose_t265
@@ -49,7 +66,7 @@ def get_pose(odom_data):
   # tf_qolo.pose = odom_data.pose.pose
   # tf_qolo = tf_listener.transformPose("/tf_qolo",tempPose)
   # print ("t265 = ", odom_data.pose.pose.position.x, odom_data.pose.pose.position.y)
-  pose_qolo.x = odom_data.pose.pose.position.x
+  pose_qolo.x = odom_data.pose.pose.position.x - 3.905
   pose_qolo.y = odom_data.pose.pose.position.y
   # rot[0] = odom_data.pose.pose.orientation.x
   # rot[1] = odom_data.pose.pose.orientation.y
@@ -62,17 +79,18 @@ def get_pose(odom_data):
 
 
 def main():
-  global pose_pub, pose_qolo, pose_t265
-
+  global pose_pub, pose_qolo, pose_t265, tf_listener
   # pose_sub = rospy.Subscriber("qolo/pose2D", Pose2D, pose_callback, queue_size=1)
-   
   rospy.init_node('qolo_odom', anonymous=True)
   rate = rospy.Rate(200) #  100 [Hz]
   pose_pub = rospy.Publisher('qolo/pose2D',Pose2D, queue_size=1) 
+  tf_listener = tf.TransformListener()
   # Example call for subscriber
   # pose_sub = rospy.Subscriber("qolo/pose2D", Pose2D, pose_callback, queue_size=1)
   odom_sub = rospy.Subscriber('/t265/odom/sample', Odometry, get_pose)
+  time.sleep(2)
   while not rospy.is_shutdown():
+    # get_pose_tf()
     pose_pub.publish(pose_qolo)
     rate.sleep()
 
