@@ -24,13 +24,8 @@ Nvidia board 200
 	rosclean purge -y
 	roscore
 
-2. 110 terminal:rear LIDAR
-	cd ~/catkin_ws/
-	. devel/setup.bash
-	roslaunch qolo rear_lidar-cloud.launch
-
 3. 120 terminal: Launching Front Lidar and Low-level avoidance (RDS)
-	cd ~/autonomy_ws/
+	cd ~/hadi_ws/
 	. devel/setup.bash
 	roslaunch rds_ros rds_front_lrf.launch det:="true"
 
@@ -38,7 +33,7 @@ Nvidia board 200
 	sudo -s
 	cd ~/catkin_ws/
 	. devel/setup.bash
-	rosrun qolo compliant_remote_shared_qolo.sh
+	rosrun qolo bug_compliant_remote_qolo.sh
 
 5. 200: Localization from T265 camera
 	rosclean purge -y
@@ -47,10 +42,14 @@ Nvidia board 200
 	roslaunch realsense2_camera qolo_localization_t265.launch
 
 6. 200: Rosbag Recording
-	cd /ssd_nvidia/data/irl_obstacles/
+	cd /ssd_nvidia/data/bug_experiments/
 	rosbag record --duration=1m /tf /tf_static /diagnostics /front_lidar/scan /front_lidar/velodyne_points /joint_states /qolo/compliance/svr /qolo/emergency /qolo/odom /qolo/pose2D /qolo/remote_commands /qolo/twist /rds_to_gui /rear_lidar/scan /rear_lidar/velodyne_points /rokubi_node_front/ft_sensor_measurements /rosout /rosout_agg /t265/accel/imu_info /t265/accel/sample /t265/fisheye1/camera_info /t265/fisheye1/image_raw /t265/fisheye2/camera_info /t265/fisheye2/image_raw /t265/gyro/imu_info /t265/gyro/sample /t265/odom/sample
 
 7. 110 terminal: DS trajectory
 	cd ~/catkin_ws/
 	. devel/setup.bash
 	rosrun qolo ds_trajectory.py
+
+8. Remote Joystick commands:
+	On your phone: Conenct to QoloNet
+	on a web browser access: 192.168.13.110:8080

@@ -571,7 +571,7 @@ def rds_service():
     request.nominal_command.linear = Corrected_V
     request.nominal_command.angular = Corrected_W
     request.capsule_center_front_y = 0.05 # Actual: 0.051
-    request.capsule_center_rear_y = -0.45  # Actual: -0.515
+    request.capsule_center_rear_y = -0.51  # Actual: -0.515
     request.capsule_radius = 0.40 # Tested = 0.45
     
     request.reference_point_y = control_point
