@@ -36,10 +36,12 @@ sleep 5
 echo -e "${IMP_INFO}Launching REAR LIDAR...${NORMAL}"
 eval ". devel/setup.bash"
 eval "roslaunch qolo rear_lidar-cloud.launch &"
+# eval "roslaunch qolo rear_lidar-cloud_2_lrf.launch &"
 PID_LIST+="$! "
-
 sleep 5
 
+# eval "roslaunch qolo lidar2lrf_rear.launch &"
+# PID_LIST+="$! "
 
 #----- Launch and record realsense camera -----
 # echo -e "Launching RealSense Camera..."

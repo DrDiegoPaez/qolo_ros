@@ -1,4 +1,4 @@
-<!-- -*- mode: XML -*- -->
+<?xml version="1.0"?>
 <!-- run velodyne_pointcloud/CloudNodelet in a nodelet manager for a VLP-16 -->
 
 <launch>

@@ -34,6 +34,8 @@ Nvidia board 200
 	. devel/setup.bash
 	roslaunch rds_ros rds_front_lrf.launch det:="true"
 
+	roslaunch rds_ros rds_front_lidar2lrf.launch det:="true"
+
 	## Testing MDS 
 	rosrun qolo_modulation run_localisation.sh
 
@@ -44,14 +46,12 @@ Nvidia board 200
 	. devel/setup.bash 
 	roslaunch realsense2_camera qolo_localization_t265.launch
 
-
 %% --> WAIT 15seconds  BEFORE THE NEXT CAMERA LAUNCH
 
 4. Nvidia-200 terminal:  Start front-left camera
 	cd /ssd_nvidia/autonomy_ws
 	. devel/setup.bash 
 	roslaunch realsense2_camera qolo_left_camera.launch
-\
 
 5. main-pc-110 terminal: Starting main Qolo node
 

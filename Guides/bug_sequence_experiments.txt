@@ -27,6 +27,8 @@ Nvidia board 200
 3. 120 terminal: Launching Front Lidar and Low-level avoidance (RDS)
 	cd ~/hadi_ws/
 	. devel/setup.bash
+	rosrun rds_ros bug_lidar2lrf.sh
+
 	roslaunch rds_ros rds_front_lrf.launch det:="true"
 
 4. 110 terminal: Starting main Qolo Control Node

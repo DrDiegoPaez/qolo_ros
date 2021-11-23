@@ -35,7 +35,7 @@ echo -e "${IMP_INFO}Current Test Number : ${TEST_NO}${NORMAL}"
 #----- Launch Rear Lidar  -----
 echo -e "${IMP_INFO}Launching REAR LIDAR...${NORMAL}"
 eval ". devel/setup.bash"
-eval "roslaunch qolo rear_lidar-cloud.launch &"
+eval "roslaunch qolo rear_lidar-cloud_2_lrf.launch &"
 PID_LIST+="$! "
 
 sleep 5
@@ -52,6 +52,13 @@ echo -e "${IMP_INFO}Launching QOLO Odometry Node...${NORMAL}"
 eval "roslaunch qolo odometry_t265.launch"
 PID_LIST+="$! "
 sleep 3
+
+# #----- Launch LIDAR 2 LRF -----
+echo -e "${IMP_INFO}Launching Rear LIDAR-2-LRF Node...${NORMAL}"
+eval "roslaunch pointcloud_to_laserscan lidar2lrf_rear.launch"
+PID_LIST+="$! "
+sleep 3
+
 
 # Wait till all pids to be finished or killed
 echo -e "${IMP_GREEN}All PIDs : ${PID_LIST}${NORMAL}"
