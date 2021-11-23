@@ -29,7 +29,7 @@ Nvidia board 200
 	. devel/setup.bash
 	rosrun rds_ros bug_lidar2lrf.sh
 
-	roslaunch rds_ros rds_front_lrf.launch det:="true"
+			roslaunch rds_ros rds_front_lrf.launch det:="true"
 
 4. 110 terminal: Starting main Qolo Control Node
 	sudo -s
@@ -55,3 +55,7 @@ Nvidia board 200
 8. Remote Joystick commands:
 	On your phone: Conenct to QoloNet
 	on a web browser access: 192.168.13.110:8080
+
+9.  cd ~/qolo_ws/
+	. devel/setup.bash
+	roslaunch qolo rviz.launch
