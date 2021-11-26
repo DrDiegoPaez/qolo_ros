@@ -40,7 +40,6 @@ sleep 5
 
 # sleep 5
 
-
 #----- Launch and record realsense camera -----
 # echo -e "Launching RealSense Camera..."
 # eval "source devel/setup.bash"

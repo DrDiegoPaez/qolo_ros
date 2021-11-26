@@ -34,8 +34,6 @@ Nvidia board 200
 	. devel/setup.bash
 	roslaunch rds_ros rds_front_lrf.launch det:="true"
 
-	roslaunch rds_ros rds_front_lidar2lrf.launch det:="true"
-
 	## Testing MDS 
 	rosrun qolo_modulation run_localisation.sh
 

@@ -34,6 +34,14 @@ list of kernels:
 	sudo nano /etc/default/grub
 		GRUB_DEFAULT=3
 
+Switch ubuntu to terminal mode only
+	GRUB_CMDLINE_LINUX_DEFAULT="text"
+	GRUB_TERMINAL=console
+After saving changes you need to run:
+	sudo update-grub
+	sudo systemctl enable multi-user.target --force
+	sudo systemctl set-default multi-user.target
+
 
 install pip
 	sudo apt install python-pip

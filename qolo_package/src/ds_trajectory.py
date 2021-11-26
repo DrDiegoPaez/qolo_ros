@@ -27,9 +27,9 @@ dx = np.array([[0.0], [0.0]])
 
 DEBUG_FLAG = False
 
-ref_vel = 0.8
+ref_vel = 0.6
 
-control_point = 0.7
+control_point = 0.8
 stop_distance = 0.1
 time_limit = 40
 
@@ -37,7 +37,7 @@ pose = [0., 0., 0.]
 # Attractor for Lausanne-city experiments:
 # Local_Attractor = np.array([[20.0+control_point], [0.0]])
 # Attractor for IRL experiments:
-Local_Attractor = np.array([[0.0], [0.0]])
+Local_Attractor = np.array([[0.0], [2.0]])
 
 Attractor = np.array([[0.0], [0.0]])
 
