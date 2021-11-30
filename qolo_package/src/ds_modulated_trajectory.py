@@ -33,7 +33,7 @@ ref_vel = 0.5
 # control_point = 0.9      ## WHY 0.9 ??
 # control_pt = [0.5275, 0.]
 control_pt = [0.7, 0.]
-stop_distance = 0.5
+stop_distance = 0.2
 time_limit = 90
 
 # Setting the Attractor at the origin --> Requires starting the robot's odometry with the desired offset instead

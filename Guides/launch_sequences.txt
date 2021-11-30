@@ -27,13 +27,14 @@ Nvidia board 200
 	roscore
 
 2. front-pc-120 terminal:
-	########### For Using RDS only ###########
+	########### For Using MDS only ###########
 	sudo ntpd -q 192.168.13.110
 	rosclean purge -y
 	cd ~/autonomy_ws/
 	. devel/setup.bash
 	rosrun qolo_modulation run_localisation.sh
 
+	########### For Using RDS  ###########
 	// RDS with detections only:
 	roslaunch rds_ros rds_front_lrf.launch det:="true"
 
@@ -77,6 +78,26 @@ Nvidia board 200
 5. main-pc-110 terminal: Starting main Qolo node
 
 	sudo -s
+
+	####### RDS-Shared-control + Compliant #######
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo comlpiant_shared_qolo.sh
+
+	###### Torso Control with Compliance #######
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo manual_compliant_qolo.sh
+
+	###### RDS - with Compliance + Shared-control + Remote #######
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo compliant_remote_shared_qolo.sh
+
+	###### MDS with Compliance + Attractor-DS #######
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo compliant_modulation_qolo.sh
 	
 	####### Compliant-DS only #######
 	cd ~/catkin_ws/
@@ -102,21 +123,6 @@ Nvidia board 200
 	cd ~/catkin_ws/
 	. devel/setup.bash
 	rosrun qolo compliant_remote_qolo.sh
-
-	###### RSD - with Compliance + Shared-control + Remote #######
-	cd ~/catkin_ws/
-	. devel/setup.bash
-	rosrun qolo compliant_remote_shared_qolo.sh
-
-	###### MDS with Compliance + Attractor-DS #######
-	cd ~/catkin_ws/
-	. devel/setup.bash
-	rosrun qolo compliant_modulation_qolo.sh
-
-	###### Torso Control with Compliance #######
-	cd ~/catkin_ws/
-	. devel/setup.bash
-	rosrun qolo manual_compliant_qolo.sh
 
 	###### Joystick Remote Control #######
 	cd ~/catkin_ws/
@@ -165,7 +171,7 @@ Nvidia board 200
 
 	cd /ssd_nvidia/data/crowdbot_2021
 
-rosbag record --duration=4m /chatter /tf /tf_static /qolo/pose2D /qolo/twist /qolo/remote_commands qolo/compliance/svr /qolo/emergency /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /t265/odom/sample /rokubi_node_front/ft_sensor_measurements
+rosbag record --duration=3m /chatter /tf /tf_static /qolo/pose2D /qolo/twist /qolo/remote_commands qolo/compliance/svr /qolo/emergency /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /t265/odom/sample /rokubi_node_front/ft_sensor_measurements
 
 
 
@@ -430,3 +436,98 @@ rosrun kalman_bounding_boxes kalman_bounding_boxes_node
 
 ###### ROSbag with Frontal RGBD + LIDAR + ft sensing ######
 	rosbag record -O imu_record_3.bag /tf /tf_static /front_lidar/scan /camera_front/color/image_raw /camera_front/color/camera_info /camera_front/depth/camera_info /camera_front/depth/image_rect_raw /camera_front/depth/color/points /camera_front/aligned_depth_to_color/camera_info /camera_front/aligned_depth_to_color/image_raw /camera_front/gyro/sample /camera_front/accel/sample /qolo /rokubi_node_front/ft_sensor_measurements
+
+
+List of Topics:
+
+/camera_left/aligned_depth_to_color/camera_info
+/camera_left/aligned_depth_to_color/image_raw
+/camera_left/aligned_depth_to_infra1/camera_info
+/camera_left/aligned_depth_to_infra1/image_raw
+/camera_left/color/camera_info
+/camera_left/color/image_raw
+/camera_left/depth/camera_info
+/camera_left/depth/color/points
+/camera_left/depth/image_rect_raw
+/camera_left/extrinsics/depth_to_color
+/camera_left/extrinsics/depth_to_infra1
+/camera_left/extrinsics/depth_to_infra2
+/camera_left/infra1/camera_info
+/camera_left/infra1/image_rect_raw
+/camera_left/infra2/camera_info
+/camera_left/infra2/image_rect_raw
+/camera_left/pointcloud/parameter_descriptions
+/camera_left/pointcloud/parameter_updates
+/camera_left/realsense2_camera_manager/bond
+/camera_left/rgb_camera/auto_exposure_roi/parameter_descriptions
+/camera_left/rgb_camera/auto_exposure_roi/parameter_updates
+/camera_left/rgb_camera/parameter_descriptions
+/camera_left/rgb_camera/parameter_updates
+/camera_left/stereo_module/auto_exposure_roi/parameter_descriptions
+/camera_left/stereo_module/auto_exposure_roi/parameter_updates
+/camera_left/stereo_module/parameter_descriptions
+/camera_left/stereo_module/parameter_updates
+/clicked_point
+/darknet_ros/bounding_boxes
+/darknet_ros/detection_image
+/detected_persons/yolo
+/detected_persons_synchronized
+/diagnostics
+/drow_detected_persons_front
+/drow_detected_persons_rear
+/front_lidar/scan
+/front_lidar/scan_all
+/front_lidar/tf_front_lidar_nodelet_manager/bond
+/front_lidar/tf_front_lidar_nodelet_manager_cloud/parameter_descriptions
+/front_lidar/tf_front_lidar_nodelet_manager_cloud/parameter_updates
+/front_lidar/tf_front_lidar_nodelet_manager_driver/parameter_descriptions
+/front_lidar/tf_front_lidar_nodelet_manager_driver/parameter_updates
+/front_lidar/tf_front_lidar_nodelet_manager_laserscan/parameter_descriptions
+/front_lidar/tf_front_lidar_nodelet_manager_laserscan/parameter_updates
+/front_lidar/velodyne_packets
+/front_lidar/velodyne_points
+/front_to_laserscan_manager/bond
+/ground_plane
+/ground_plane_visual_marker
+/image_with_bounding_boxes
+/initialpose
+/joint_states
+/move_base_simple/goal
+/qolo/compliance/svr
+/qolo/emergency
+/qolo/odom
+/qolo/pose2D
+/qolo/remote_commands
+/qolo/twist
+/rds_to_gui
+/rear_lidar/scan
+/rear_lidar/scan_all
+/rear_lidar/tf_rear_lidar_nodelet_manager/bond
+/rear_lidar/tf_rear_lidar_nodelet_manager_cloud/parameter_descriptions
+/rear_lidar/tf_rear_lidar_nodelet_manager_cloud/parameter_updates
+/rear_lidar/tf_rear_lidar_nodelet_manager_driver/parameter_descriptions
+/rear_lidar/tf_rear_lidar_nodelet_manager_driver/parameter_updates
+/rear_lidar/tf_rear_lidar_nodelet_manager_laserscan/parameter_descriptions
+/rear_lidar/tf_rear_lidar_nodelet_manager_laserscan/parameter_updates
+/rear_lidar/velodyne_packets
+/rear_lidar/velodyne_points
+/rear_to_laserscan_manager/bond
+/rokubi_node_front/ft_sensor_measurements
+/rosout
+/rosout_agg
+/rwth_tracker/pedestrian_array
+/rwth_tracker/tracked_persons
+/t265/accel/imu_info
+/t265/accel/sample
+/t265/fisheye1/camera_info
+/t265/fisheye1/image_raw
+/t265/fisheye2/camera_info
+/t265/fisheye2/image_raw
+/t265/gyro/imu_info
+/t265/gyro/sample
+/t265/odom/sample
+/t265/realsense2_camera_manager/bond
+/t265/tracking_module/parameter_descriptions
+/t265/tracking_module/parameter_updates
+/tf
+/tf_static

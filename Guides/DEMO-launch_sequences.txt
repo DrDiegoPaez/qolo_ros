@@ -26,18 +26,28 @@ Nvidia board 200
 	rosclean purge -y
 	roscore
 
-2. front-pc-120 terminal:
+2. 110 terminal:rear LIDAR
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo rear_lidar2lrf.sh
+
+3/4. front-pc-120 terminal:
 	########### For Using RDS only ###########
 	sudo ntpd -q 192.168.13.110
 	rosclean purge -y
 	cd ~/autonomy_ws/
 	. devel/setup.bash
-	roslaunch rds_ros rds_front_lrf.launch det:="true"
+	rosrun rds_ros rds_lidar2lrf.sh
+
+	# launch separetly: 
+		roslaunch rds_ros rds_front_lrf.launch det:="true"
+
+		roslaunch pointcloud_to_laserscan lidar2lrf_front.launch
 
 	## Testing MDS 
-	rosrun qolo_modulation run_localisation.sh
+	rosrun qolo_modulation run_modulation_live.sh
 
-3. Nvidia-200 terminal:  Start front-left camera
+5. Nvidia-200 terminal:  Start front-left camera
 	sudo ntpd -q 192.168.13.110
 	rosclean purge -y
 	cd /ssd_nvidia/autonomy_ws
@@ -52,11 +62,27 @@ Nvidia board 200
 	roslaunch realsense2_camera qolo_left_camera.launch
 
 5. main-pc-110 terminal: Starting main Qolo node
-
 	sudo -s
+
+	####### Embodied RDS-Shared_control + Compliant #######
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo compliant_shared_qolo.sh
+
+	###### Torso Control with Compliance #######
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo manual_compliant_qolo.sh
+
+	###### RDS - with Compliance + Shared-control + Remote #######
 	cd ~/catkin_ws/
 	. devel/setup.bash
 	rosrun qolo compliant_remote_shared_qolo.sh
+
+	###### MDS with Compliance + Attractor-DS #######
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo compliant_modulation_qolo.sh
 
 6. Nvidia-200 terminal:  Start People tracker
 	cd ~/tracker_ws
@@ -91,9 +117,9 @@ Nvidia board 200
 
 8. 200 Nvidia terminal: Choose a recording at the bottom of the document that suits the test (the following is the simplest LRF + tracker + qolo)
 
-	cd /ssd_nvidia/data/crowdbot_2021
+	cd /ssd_nvidia/data/crowdbot_2021/29_11_2021/shared_control
 
-rosbag record --duration=4m /chatter /tf /tf_static /qolo/pose2D /qolo/twist /qolo/remote_commands qolo/compliance/svr /qolo/emergency /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /t265/odom/sample /rokubi_node_front/ft_sensor_measurements
+rosbag record --duration=3m /chatter /tf /tf_static /qolo/pose2D /qolo/twist /qolo/remote_commands qolo/compliance/svr /qolo/emergency /front_lidar/velodyne_points /front_lidar/scan /rear_lidar/velodyne_points /rear_lidar/scan /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /t265/odom/sample /rokubi_node_front/ft_sensor_measurements /t265/accel/imu_info /t265/accel/sample /t265/gyro/imu_info /t265/gyro/sample
 
 
 ############ Local Setup for visualization #################

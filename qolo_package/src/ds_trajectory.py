@@ -22,22 +22,22 @@ import dynamical_system_representation as ds
 # Fast Clipper Function
 clipper = lambda x, l, u: l if x < l else u if x > u else x
 
-dx_prev = np.array([[0.0], [0.0]])
+dx_prev = np.array([[20.0], [0.0]])
 dx = np.array([[0.0], [0.0]])
 
 DEBUG_FLAG = False
 
-ref_vel = 0.6
+ref_vel = 0.8
 
-control_point = 0.8
-stop_distance = 0.1
-time_limit = 40
+control_point = 0.9
+stop_distance = 0.05
+time_limit = 20
 
 pose = [0., 0., 0.]
 # Attractor for Lausanne-city experiments:
 # Local_Attractor = np.array([[20.0+control_point], [0.0]])
 # Attractor for IRL experiments:
-Local_Attractor = np.array([[0.0], [2.0]])
+Local_Attractor = np.array([[0.0], [0.0]])
 
 Attractor = np.array([[0.0], [0.0]])
 
@@ -49,7 +49,7 @@ previous_command_angular = None
 data_remote = Float32MultiArray()
 
 MaxSpeed = 1.5 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
-MaxAngular = 4.124/8
+MaxAngular = 4.124/6
 D_angular = 10
 D_linear = 10
 
@@ -129,8 +129,10 @@ def trajectory_service(t):
       # (x, y, phi) = get_pose()
       # (Trajectory_V, Trajectory_W) = ds_generation(x,y,phi)
       (Trajectory_V, Trajectory_W) = ds_generation(*pose)
+      print(Trajectory_V, Trajectory_W, t)
       if ~DEBUG_FLAG:
          publish_command(Trajectory_V, Trajectory_W, t)
+
    except:
         publish_command(0., 0., 0.)
         print ('No Pose Setting [V,W] = [0, 0]')

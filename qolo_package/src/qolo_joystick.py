@@ -44,7 +44,7 @@ data_remote = Float32MultiArray()
 
 ### ---------- GLOBAL VARIABLES ---------- ####
 PORT = 8080
-Max_V = 0.8
+Max_V = 0.9
 Max_W = 0.7
 
 level_relations = {

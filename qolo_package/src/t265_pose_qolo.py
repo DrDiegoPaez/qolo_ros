@@ -26,6 +26,8 @@ pose_t265.x = -0.126
 pose_t265.y = 0
 pose_t265.theta = 0
 
+ds_attractor = 0.0 # IRL experiments: 3.95
+
 # class myNode:
 #     def __init__(self, *args):
 #         self.tf_listener_ = TransformListener()
@@ -58,7 +60,7 @@ def get_pose_tf():
   return
 
 def get_pose(odom_data):
-  global pose_qolo, pose_t265
+  global pose_qolo, pose_t265, ds_attractor
   # rot = np.zeros((4,))
   # tf_qolo = PoseStamped()
   # print Odometry.pose.pose
@@ -66,7 +68,7 @@ def get_pose(odom_data):
   # tf_qolo.pose = odom_data.pose.pose
   # tf_qolo = tf_listener.transformPose("/tf_qolo",tempPose)
   # print ("t265 = ", odom_data.pose.pose.position.x, odom_data.pose.pose.position.y)
-  pose_qolo.x = odom_data.pose.pose.position.x - 3.905
+  pose_qolo.x = odom_data.pose.pose.position.x - ds_attractor
   pose_qolo.y = odom_data.pose.pose.position.y
   # rot[0] = odom_data.pose.pose.orientation.x
   # rot[1] = odom_data.pose.pose.orientation.y
