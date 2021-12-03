@@ -53,6 +53,8 @@ K_vel = 0.2
 CONSTANT_VEL_MODE = rospy.get_param("/qolo_control/constant_mode", False)
 # For testing collision avoidance 
 SHARED_MODE = rospy.get_param("/qolo_control/shared_mode", False)
+# For testing Modulated based Shared control
+MDS_SHARED_MODE = rospy.get_param("/qolo_control/mds_shared_mode", False)
 # For testing collision control
 COMPLIANCE_MODE = rospy.get_param("/qolo_control/compliance_mode", False)
 # For using remote app Joystick
@@ -154,7 +156,18 @@ qolo_control_pt = None
 # Global Variables for Compliant mode
 svr_data =  np.zeros((3,))
 
-# Global variables for low level control
+
+#########################################################
+######    Settings for Modulated Shared Control   #######
+#########################################################
+
+if MDS_SHARED_MODE:
+    pub_remote = rospy.Publisher('qolo/user_commands', Float32MultiArray, queue_size=1)
+    user_embodied = Float32MultiArray()
+    # pub_remote = rospy.Publisher('qolo/user_commands', TwistStamped, queue_size=1)
+    # user_embodied = TwistStamped()
+
+###### Global variables for low level control ########
 feasible = 0
 Output_V = 0.
 Output_W = 0.
@@ -572,7 +585,7 @@ def rds_service():
     request.nominal_command.angular = Corrected_W
     request.capsule_center_front_y = 0.06 # Actual: 0.051
     request.capsule_center_rear_y = -0.51  # Actual: -0.515
-    request.capsule_radius = 0.35 # Tested = 0.45
+    request.capsule_radius = 0.32 # Tested = 0.45
     
     request.reference_point_y = control_point
 
@@ -678,11 +691,10 @@ def joystick_control():
         print ("Exception triggered - Tornado Server stopped.")
         # GPIO.cleanup()
 
-
 def control():
     global A1, B1, C1, D1, E1, F1, G1, H1
     # global r1, r2, r3, r4, r5, r6, r7, r8
-    global Rcenter, Count_msg_lost, time_msg, last_msg
+    global Rcenter, Count_msg_lost, time_msg, last_msg, user_embodied, pub_remote
     global Command_V, Command_W, Comand_DAC0, Comand_DAC1, User_V, User_W, Output_V, Output_W, last_w, last_v, Corrected_V, Corrected_W
     global counter1, compliant_V, compliant_W, raw_ft_data, ft_data, svr_data, offset_ft_data, compliance_control
     global DA_time, RDS_time, Compute_time, FSR_time, Compliance_time
@@ -726,6 +738,21 @@ def control():
         motor_w = (2*MAX_MOTOR_V/(DISTANCE_CW)*Command_W/5000 - MAX_MOTOR_V/(DISTANCE_CW)) / W_RATIO # In [RPM]
         User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),6)
         User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),6)
+        if MDS_SHARED_MODE:
+            user_embodied.data = [time.clock(),User_V,User_W]
+            pub_remote.publish(user_embodied)
+
+            if time_msg == last_msg:
+                Count_msg_lost=Count_msg_lost+1
+            else:
+                last_msg = time_msg
+                Count_msg_lost = 0
+            if Count_msg_lost <10:
+                User_V = Remote_V
+                User_W = Remote_W
+            else:
+                User_V = 0.
+                User_W = 0.
 
     if TIMING_MODE:
         FSR_time = round((time.clock() - t1),6)
@@ -798,7 +825,7 @@ def make_header(frame_name):
 
 def control_node():
     global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Send_DAC2, Send_DAC3, Xin
-    global RemoteE, ComError
+    global RemoteE, ComError, user_embodied, pub_remote
     global DA_time, RDS_time, Compute_time, FSR_time, Compliance_time, extra_time,last_msg, time_msg, FULL_time
     global compliant_V, compliant_W, offset_ft_data, compliance_control, initialising_ft, qolo_control_pt
     global last_v, last_w, Output_V, Output_W, pose_x, pose_y, pose_th, current_time, last_time
@@ -815,8 +842,8 @@ def control_node():
                 robot_mass=2.0,
                 lambda_t=0.0,
                 lambda_n=1.5,
-                Fd=40, # 45
-                activation_F=20,
+                Fd=35, # 45
+                activation_F=25,
                 logger=logger
             )
         else:
@@ -848,6 +875,13 @@ def control_node():
     pub_emg = rospy.Publisher('qolo/emergency', Bool, queue_size=1)
     pub_twist = rospy.Publisher('qolo/twist', TwistStamped, queue_size=1)
     qolo_twist = TwistStamped()
+
+    if MDS_SHARED_MODE:
+        user_embodied.layout.dim.append(MultiArrayDimension())
+        user_embodied.layout.dim[0].label = 'User Command:[V, W]'
+        user_embodied.layout.dim[0].size = 3
+        user_embodied.data = [0]*3
+
     if ODOM_FLAG:
         pub_odom = rospy.Publisher('qolo/odom', Odometry, queue_size=1)
 
@@ -906,15 +940,22 @@ def control_node():
         print('Starting WITHOUT FT Sensing')
     
     if JOYSTICK_MODE:
-        sub_remote = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
+        sub_joystick = rospy.Subscriber("qolo/user_commands", Float32MultiArray, callback_remote, queue_size=1)
         control_type = 'joystick'
         print('Subscribed to JOYSTICK Mode')
-    elif REMOTE_MODE:
+    
+    if REMOTE_MODE :
         sub_remote = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
         control_type = 'remote'
         print('Subscribed to REMOTE Mode')
     else:
         control_type = 'embodied'
+        print('Starting in Manual EMBODIED Mode')        
+
+    if MDS_SHARED_MODE: 
+        # sub_remote = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
+        control_type = 'embodied_mds'
+        print('Starting in Modulated EMBODIED Mode')
     
     if SHARED_MODE:
         print('STARTING SHARED CONTROL MODE')

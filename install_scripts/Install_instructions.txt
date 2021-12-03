@@ -92,6 +92,10 @@ PYYAML: For FT model
 		BEFORE:    set(SDL2_LIBRARIES "-L${SDL2_LIBDIR}  -lSDL2 ")
 		AFTER :    set(SDL2_LIBRARIES "-L${SDL2_LIBDIR}  -lSDL2")
 
+	References for switching ROS to Python3:
+	https://medium.com/@beta_b0t/how-to-setup-ros-with-python-3-44a69ca36674
+	tf2_ros for python has to be built from scratch for python 3
+
 
 ######################## New Install requirements ############################
 

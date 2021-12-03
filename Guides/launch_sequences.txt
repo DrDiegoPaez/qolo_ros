@@ -7,7 +7,6 @@ Hasler 130
 Nvidia board 200
 	pass
 
-
 ============== Qolo DEMO - RDS/Compliance ==========================
 
 #### Establish 2 connetcions to main UpBoard 110

@@ -7,7 +7,7 @@
     <arg name="joystick_mode" default="true" />
     <arg name="remote_mode" default="true" />
     <arg name="odom_publisher" default="true" />
-    <arg name="mds_shared_mode" default="false" />
+    <arg name="mds_shared_mode" default="true" />
     
     <node name="qolo_control" pkg="qolo" type="qolo_control_node.py" output="screen">
         <param name="log_folder"
@@ -43,7 +43,6 @@
     </node>
     
     <node name="qolo_joystick" pkg="qolo" type="qolo_joystick.py" />
-
     <include file="$(find qolo)/launch/tf_qolo.launch"/>
 
 </launch>

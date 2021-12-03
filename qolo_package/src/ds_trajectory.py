@@ -27,19 +27,17 @@ dx = np.array([[0.0], [0.0]])
 
 DEBUG_FLAG = False
 
-ref_vel = 0.8
+ref_vel = 1.1
 
 control_point = 0.9
 stop_distance = 0.05
-time_limit = 20
+time_limit = 60*1
 
 pose = [0., 0., 0.]
 # Attractor for Lausanne-city experiments:
 # Local_Attractor = np.array([[20.0+control_point], [0.0]])
 # Attractor for IRL experiments:
-Local_Attractor = np.array([[0.0], [0.0]])
-
-Attractor = np.array([[0.0], [0.0]])
+Local_Attractor = np.array([[30.0], [0.0]])
 
 # tf_listener = None
 command_publisher = None
@@ -52,6 +50,9 @@ MaxSpeed = 1.5 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 k
 MaxAngular = 4.124/6
 D_angular = 10
 D_linear = 10
+
+Attractor = np.array([[0.0], [0.0]])
+
 
 def pose_callback(data):
    global pose

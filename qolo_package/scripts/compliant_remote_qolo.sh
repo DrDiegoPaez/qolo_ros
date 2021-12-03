@@ -18,10 +18,10 @@ trap _kill EXIT
 
 #----- Get Test Number -----
 TEST_NO=0
-while [ -d "csv_logs/flon/remote${TEST_NO}" ]; do
+while [ -d "csv_logs/bon-mds/remote${TEST_NO}" ]; do
    TEST_NO=$(( $TEST_NO + 1 ))
 done
-LOG_FOLDER="$(pwd)/csv_logs/flon/remote${TEST_NO}"
+LOG_FOLDER="$(pwd)/csv_logs/bon-mds/remote${TEST_NO}"
 eval "mkdir -p ${LOG_FOLDER}/compliance"
 echo -e "${IMP_INFO}Current Test Number : ${TEST_NO}${NORMAL}"
 

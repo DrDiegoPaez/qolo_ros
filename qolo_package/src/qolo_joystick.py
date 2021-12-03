@@ -39,12 +39,12 @@ except PermissionError:
     rospy.logerr("Cannot set niceness for the process...")
     rospy.logerr("Run the script as sudo...")
 
-pub_remote = rospy.Publisher('qolo/remote_commands', Float32MultiArray, queue_size=1)
+pub_remote = rospy.Publisher('qolo/user_commands', Float32MultiArray, queue_size=1)
 data_remote = Float32MultiArray()
 
 ### ---------- GLOBAL VARIABLES ---------- ####
 PORT = 8080
-Max_V = 0.9
+Max_V = 0.7
 Max_W = 0.7
 
 level_relations = {

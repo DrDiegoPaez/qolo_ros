@@ -40,7 +40,7 @@ except PermissionError:
     rospy.logerr("Cannot set niceness for the process...")
     rospy.logerr("Run the script as sudo...")
 
-pub_remote = rospy.Publisher('qolo/modulation_command', Float32MultiArray, queue_size=1)
+pub_remote = rospy.Publisher('qolo/user_command', Float32MultiArray, queue_size=1)
 data_remote = Float32MultiArray()
 
 ### ---------- GLOBAL VARIABLES ---------- ####
@@ -102,7 +102,6 @@ def publishJoystick(time,Vel,Omega):
     data_remote.data = [time,Vel,Omega]
     pub_remote.publish(data_remote)
     rospy.loginfo(data_remote)
-
 
 def joystick_control():
     global pub_remote, data_remote
