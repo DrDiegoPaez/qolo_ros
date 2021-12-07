@@ -129,17 +129,22 @@ ORCA_Flag = False
 weight_scaling_of_reference_point_for_command_limits = 0.
 # Some gain for velocity after proximity reaches limits
 tau = 2.5 # Tested:1.5 and 2.5(faster response)
-# Minimal distance to obstacles
-delta = 0.05 # Tested: 0.05
 # Some reference for controlling the non-holonomic base
-control_point = 0.7 # Tested:0.4
+control_point = 0.9 # Tested:0.9
+# Minimal distance to obstacles
+delta = 0.08 # Tested: 0.05
+# Capsule size around each lidar real == 0.40
+capsule_radius = 0.35
+# Capsule size around each lidar location
+capsule_center_front = 0.15  # Actual value: 0.051
+capsule_center_rear = -0.51  # Actual value: -0.515
 
 max_linear = MAX_SPEED
 min_linear = -MIN_SPEED
 absolute_angular_at_min_linear = 0.
 absolute_angular_at_max_linear = 0.
 absolute_angular_at_zero_linear = MAX_OMEGA/W_RATIO
-linear_acceleration_limit = 2.5 # Tested:1.5   # Real absolute 2.5
+linear_acceleration_limit = 1.5 # Tested:1.5   # Real absolute 2.5
 angular_acceleration_limit = 4.5 # Tested: 4.5
 
 #########################################################
@@ -565,27 +570,12 @@ def rds_service():
     RDS = rospy.ServiceProxy('rds_velocity_command_correction',VelocityCommandCorrectionRDS)
 
     request = VelocityCommandCorrectionRDSRequest()
-    # y_coordinate_of_reference_point_for_command_limits = 0.5
-    # # Gain to this point
-    # weight_scaling_of_reference_point_for_command_limits = 0.
-    # # Some gain for velocity after proximity reaches limits
-    # tau = 2.
-    # # Minimal distance to obstacles
-    # delta = 0.08
-    # clearance_from_axle_of_final_reference_point = 0.15
-    # max_linear = MAX_SPEED
-    # min_linear = -MIN_SPEED
-    # absolute_angular_at_min_linear = 0.
-    # absolute_angular_at_max_linear = 0.
-    # absolute_angular_at_zero_linear = MAX_OMEGA/W_RATIO
-    # linear_acceleration_limit = 1.1
-    # angular_acceleration_limit = 1.5
 
     request.nominal_command.linear = Corrected_V
     request.nominal_command.angular = Corrected_W
-    request.capsule_center_front_y = 0.06 # Actual: 0.051
-    request.capsule_center_rear_y = -0.51  # Actual: -0.515
-    request.capsule_radius = 0.32 # Tested = 0.45
+    request.capsule_center_front_y = capsule_center_front # Actual: 0.051
+    request.capsule_center_rear_y = capsule_center_rear  # Actual: -0.515
+    request.capsule_radius = capsule_radius # Tested = 0.45
     
     request.reference_point_y = control_point
 
@@ -1025,7 +1015,7 @@ def control_node():
             pose_y += delta_y
             pose_th += delta_th
 
-            # since all odometry is 6DOF we'll need a quaternion created from yaw
+            # since all odometry is 6 DOF we'll need a quaternion created from yaw
             odom_quat = quaternion_from_euler(0, 0, pose_th)
             qolo_odom.header.stamp = current_time
             qolo_odom.header.frame_id = "tf_qolo_world"

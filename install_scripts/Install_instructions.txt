@@ -74,7 +74,6 @@ PYYAML: For FT model
 		## Need Pyaml 5.1
 	python -m pip install --upgrade pyyaml
 
-
  ########################### RDS Compile and Install Instructions ###########################
 
 	rosrun rds_gui_ros rds_gui_ros_node

@@ -26,7 +26,7 @@ pose_t265.x = -0.126
 pose_t265.y = 0
 pose_t265.theta = 0
 
-ds_attractor = 0.0 # IRL experiments: 3.95
+ds_attractor = 3.95 # IRL experiments: 3.95
 
 # class myNode:
 #     def __init__(self, *args):

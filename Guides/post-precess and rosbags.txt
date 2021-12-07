@@ -40,11 +40,19 @@ Topics to remove from Rosbags for sharing:
 	/camera_left/aligned_depth_to_color/camera_info
 	/camera_left/color/camera_info
 	/camera_left/depth/camera_info
+
+
+============================================================
+======================= Face Blur ==========================
+============================================================
+
+The tool "deface" detects faces in given video and blurs them automatically (taking about 10 minutes for a crowded video of 15 seconds recorded at 60 fps). Deface on Github
+https://github.com/ORB-HD/deface
+
 ============================================================
 ===================== RDS GUI Usage ========================
 ============================================================
 
-	
 	--- If building is necesary:
 	cd ~/autonomy_ws/
 	. make_rds.bash 
