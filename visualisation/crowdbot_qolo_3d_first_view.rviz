@@ -5,12 +5,11 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
-        - //rwth_tracker/tracked_persons1
+        - //detected_persons_synchronized1/Style1
         - /left_camera2/Auto Size1
-        - /SVR_Wrench1
-        - /RobotModel1
-      Splitter Ratio: 0.6666666865348816
-    Tree Height: 1021
+        - /rear_scan-All1
+      Splitter Ratio: 0.666666687
+    Tree Height: 1071
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -19,7 +18,7 @@ Panels:
       - /2D Nav Goal1
       - /Publish Point1
     Name: Tool Properties
-    Splitter Ratio: 0.5886790156364441
+    Splitter Ratio: 0.588679016
   - Class: rviz/Views
     Expanded:
       - /Current View1
@@ -29,9 +28,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: rear_scan
-Preferences:
-  PromptSaveOnExit: true
+    SyncSource: front_scan
 Toolbars:
   toolButtonStyle: 2
 Visualization Manager:
@@ -39,44 +36,44 @@ Visualization Manager:
   Displays:
     - Class: rviz/Axes
       Enabled: true
-      Length: 0.20000000298023224
+      Length: 0.200000003
       Name: <Fixed Frame>
-      Radius: 0.05000000074505806
+      Radius: 0.0500000007
       Reference Frame: <Fixed Frame>
       Value: true
     - Class: rviz/Axes
-      Enabled: false
-      Length: 0.10000000149011612
+      Enabled: true
+      Length: 0.100000001
       Name: tf_qolo
-      Radius: 0.10000000149011612
+      Radius: 0.100000001
       Reference Frame: tf_qolo
-      Value: false
+      Value: true
     - Class: rviz/Axes
       Enabled: false
-      Length: 0.20000000298023224
+      Length: 0.200000003
       Name: camera_color_optical_frame
-      Radius: 0.029999999329447746
+      Radius: 0.0299999993
       Reference Frame: camera_front_color_optical_frame
       Value: false
     - Class: rviz/Axes
       Enabled: false
-      Length: 0.20000000298023224
+      Length: 0.200000003
       Name: front_lidar
-      Radius: 0.019999999552965164
+      Radius: 0.0199999996
       Reference Frame: tf_front_lidar
       Value: false
     - Class: rviz/Axes
       Enabled: false
-      Length: 0.20000000298023224
+      Length: 0.200000003
       Name: rear_lidar
-      Radius: 0.019999999552965164
+      Radius: 0.0199999996
       Reference Frame: tf_rear_lidar
       Value: false
     - Class: rviz/Axes
       Enabled: false
-      Length: 0.20000000298023224
+      Length: 0.200000003
       Name: left_camera
-      Radius: 0.019999999552965164
+      Radius: 0.0199999996
       Reference Frame: camera_left_color_optical_frame
       Value: false
     - Alpha: 0.5
@@ -85,7 +82,7 @@ Visualization Manager:
       Color: 85; 87; 83
       Enabled: true
       Line Style:
-        Line Width: 0.029999999329447746
+        Line Width: 0.0299999993
         Value: Lines
       Name: Grid
       Normal Cell Count: 0
@@ -115,9 +112,9 @@ Visualization Manager:
       Value: false
     - Alpha: 1
       Class: spencer_tracking_rviz_plugin/DetectedPersons
-      Color: 130; 130; 130
+      Color: 200; 200; 200
       Color map offset: 0
-      Color transform: Rainbow
+      Color transform: Constant color
       Enabled: false
       Excluded person IDs: ""
       Font color: 255; 255; 255
@@ -129,13 +126,13 @@ Visualization Manager:
       Name: /drow_detected_persons_front
       Render confidences: false
       Render covariances:
-        Line width: 0.10000000149011612
+        Line width: 0.100000001
         Value: true
-      Render detection IDs: true
+      Render detection IDs: false
       Render modality text: false
       Render orientation arrows: true
       Style:
-        Line width: 0.05000000074505806
+        Line width: 0.0500000007
         Scaling factor: 1
         Value: Cylinders
       Text spacing: 1
@@ -147,9 +144,9 @@ Visualization Manager:
         Value: 0
     - Alpha: 1
       Class: spencer_tracking_rviz_plugin/DetectedPersons
-      Color: 130; 130; 130
+      Color: 200; 200; 200
       Color map offset: 0
-      Color transform: Rainbow
+      Color transform: Constant color
       Enabled: false
       Excluded person IDs: ""
       Font color: 255; 255; 255
@@ -161,13 +158,13 @@ Visualization Manager:
       Name: /drow_detected_persons_rear
       Render confidences: false
       Render covariances:
-        Line width: 0.10000000149011612
+        Line width: 0.100000001
         Value: true
-      Render detection IDs: true
+      Render detection IDs: false
       Render modality text: false
       Render orientation arrows: true
       Style:
-        Line width: 0.05000000074505806
+        Line width: 0.0500000007
         Scaling factor: 1
         Value: Cylinders
       Text spacing: 1
@@ -179,9 +176,9 @@ Visualization Manager:
         Value: 0
     - Alpha: 1
       Class: spencer_tracking_rviz_plugin/DetectedPersons
-      Color: 130; 130; 130
+      Color: 0; 130; 130
       Color map offset: 0
-      Color transform: Rainbow
+      Color transform: Constant color
       Enabled: false
       Excluded person IDs: ""
       Font color: 255; 255; 255
@@ -193,13 +190,13 @@ Visualization Manager:
       Name: /detected_persons/yolo
       Render confidences: false
       Render covariances:
-        Line width: 0.10000000149011612
+        Line width: 0.100000001
         Value: true
-      Render detection IDs: true
+      Render detection IDs: false
       Render modality text: false
       Render orientation arrows: true
       Style:
-        Line width: 0.05000000074505806
+        Line width: 0.0500000007
         Scaling factor: 1
         Value: Cylinders
       Text spacing: 1
@@ -211,10 +208,10 @@ Visualization Manager:
         Value: 0
     - Alpha: 1
       Class: spencer_tracking_rviz_plugin/DetectedPersons
-      Color: 130; 130; 130
+      Color: 17; 163; 170
       Color map offset: 0
-      Color transform: Rainbow
-      Enabled: false
+      Color transform: Constant color
+      Enabled: true
       Excluded person IDs: ""
       Font color: 255; 255; 255
       Font color style: Same color
@@ -225,19 +222,19 @@ Visualization Manager:
       Name: /detected_persons_synchronized
       Render confidences: false
       Render covariances:
-        Line width: 0.10000000149011612
+        Line width: 0.100000001
         Value: true
-      Render detection IDs: true
+      Render detection IDs: false
       Render modality text: false
       Render orientation arrows: true
       Style:
-        Line width: 0.05000000074505806
+        Line width: 0.0500000007
         Scaling factor: 1
         Value: Cylinders
       Text spacing: 1
       Topic: /detected_persons_synchronized
       Unreliable: false
-      Value: false
+      Value: true
       Z offset:
         Use Z position from message: false
         Value: 0
@@ -245,42 +242,42 @@ Visualization Manager:
       Class: spencer_tracking_rviz_plugin/TrackedPersons
       Color: 130; 130; 130
       Color map offset: 0
-      Color transform: Rainbow
-      Delete after no. cycles: 100
-      Enabled: true
+      Color transform: SRL Tracking Colors
+      Delete after no. cycles: 2
+      Enabled: false
       Excluded person IDs: ""
       Font color: 255; 255; 255
       Font color style: Same color
-      Font scale: 2
+      Font scale: 1
       History as line:
-        Line width: 0.05000000074505806
-        Value: false
-      History size: 100
+        Line width: 0.0500000007
+        Value: true
+      History size: 1
       Included person IDs: ""
-      Min. history point distance: 0.4000000059604645
+      Min. history point distance: 0.400000006
       Missed alpha: 0.5
       Name: /rwth_tracker/tracked_persons
-      Occlusion alpha: 0.30000001192092896
+      Occlusion alpha: 0.300000012
       Render covariances:
-        Line width: 0.10000000149011612
+        Line width: 0.100000001
         Value: false
       Render detection IDs: false
-      Render history: false
+      Render history: true
       Render person visual: true
-      Render track IDs: false
+      Render track IDs: true
       Render track state: false
       Render velocities: true
       Show DELETED tracks: false
       Show MATCHED tracks: true
-      Show MISSED tracks: true
+      Show MISSED tracks: false
       Show OCCLUDED tracks: true
       Style:
-        Line width: 0.05000000074505806
+        Line width: 0.0500000007
         Scaling factor: 1
         Value: Cylinders
       Topic: /rwth_tracker/tracked_persons
       Unreliable: false
-      Value: true
+      Value: false
       Z offset:
         Use Z position from message: false
         Value: 0
@@ -292,78 +289,18 @@ Visualization Manager:
       Min Value: 0
       Name: /image_with_bounding_boxes
       Normalize Range: true
-      Queue Size: 2
+      Queue Size: 1
       Transport Hint: raw
       Unreliable: false
       Value: false
-    - Alpha: 1
-      Autocompute Intensity Bounds: true
-      Autocompute Value Bounds:
-        Max Value: 0.36399999260902405
-        Min Value: 0.36399999260902405
-        Value: true
-      Axis: Z
-      Channel Name: x
-      Class: rviz/LaserScan
-      Color: 167; 167; 167
-      Color Transformer: FlatColor
-      Decay Time: 0
-      Enabled: true
-      Invert Rainbow: false
-      Max Color: 255; 255; 255
-      Max Intensity: 22.896615982055664
-      Min Color: 0; 0; 0
-      Min Intensity: -5.3462018966674805
-      Name: rear_scan
-      Position Transformer: XYZ
-      Queue Size: 1
-      Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.07999999821186066
-      Style: Spheres
-      Topic: /rear_lidar/scan
-      Unreliable: false
-      Use Fixed Frame: true
-      Use rainbow: true
-      Value: true
-    - Alpha: 1
-      Autocompute Intensity Bounds: true
-      Autocompute Value Bounds:
-        Max Value: 0.5560063719749451
-        Min Value: 0.2990000545978546
-        Value: true
-      Axis: Z
-      Channel Name: x
-      Class: rviz/LaserScan
-      Color: 255; 255; 255
-      Color Transformer: FlatColor
-      Decay Time: 0
-      Enabled: true
-      Invert Rainbow: false
-      Max Color: 255; 255; 255
-      Max Intensity: 18.67278480529785
-      Min Color: 0; 0; 0
-      Min Intensity: 0.23281659185886383
-      Name: front_scan
-      Position Transformer: XYZ
-      Queue Size: 1
-      Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.07999999821186066
-      Style: Spheres
-      Topic: /front_lidar/scan
-      Unreliable: false
-      Use Fixed Frame: true
-      Use rainbow: true
-      Value: true
     - Alpha: 1
       Auto Size:
         Auto Size Factor: 1
         Value: true
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 27.041481018066406
-        Min Value: 1.1127698421478271
+        Max Value: 27.041481
+        Min Value: 1.11276984
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -375,7 +312,7 @@ Visualization Manager:
       Decay Time: 0
       Depth Map Topic: /camera_front/aligned_depth_to_color/image_raw
       Depth Map Transport Hint: raw
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 4096
@@ -393,32 +330,92 @@ Visualization Manager:
       Topic Filter: true
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 2.4147567749023438
-        Min Value: -0.3262387216091156
+        Max Value: 0.556006372
+        Min Value: 0.299000055
         Value: true
       Axis: Z
-      Channel Name: intensity
+      Channel Name: x
+      Class: rviz/LaserScan
+      Color: 255; 255; 255
+      Color Transformer: FlatColor
+      Decay Time: 0
+      Enabled: false
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 18.6727848
+      Min Color: 0; 0; 0
+      Min Intensity: 0.232816592
+      Name: front_scan
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.0399999991
+      Style: Spheres
+      Topic: /front_lidar/scan
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: false
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 0.363999993
+        Min Value: 0.363999993
+        Value: true
+      Axis: Z
+      Channel Name: x
+      Class: rviz/LaserScan
+      Color: 167; 167; 167
+      Color Transformer: FlatColor
+      Decay Time: 0
+      Enabled: false
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 22.896616
+      Min Color: 0; 0; 0
+      Min Intensity: -5.3462019
+      Name: rear_scan
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.0399999991
+      Style: Spheres
+      Topic: /rear_lidar/scan
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: false
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 0.946779311
+        Min Value: -2.90291834
+        Value: true
+      Axis: Y
+      Channel Name: x
       Class: rviz/PointCloud2
       Color: 255; 255; 255
-      Color Transformer: AxisColor
+      Color Transformer: Intensity
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 157
+      Max Intensity: 23.5658188
       Min Color: 0; 0; 0
-      Min Intensity: 0
+      Min Intensity: -9.91545105
       Name: front_lidar
       Position Transformer: XYZ
       Queue Size: 1
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.009999999776482582
-      Style: Flat Squares
+      Size (m): 0.0199999996
+      Style: Spheres
       Topic: /front_lidar/velodyne_points
       Unreliable: false
       Use Fixed Frame: true
@@ -427,28 +424,28 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 2.414172887802124
-        Min Value: -0.471775621175766
+        Max Value: -0.155902863
+        Min Value: -12.9061489
         Value: true
-      Axis: Z
-      Channel Name: intensity
+      Axis: X
+      Channel Name: x
       Class: rviz/PointCloud2
       Color: 255; 255; 255
-      Color Transformer: AxisColor
+      Color Transformer: Intensity
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 107
+      Max Intensity: 23.1520901
       Min Color: 0; 0; 0
-      Min Intensity: 0
+      Min Intensity: -14.5532207
       Name: rear_lidar
       Position Transformer: XYZ
       Queue Size: 1
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.009999999776482582
-      Style: Flat Squares
+      Size (m): 0.0199999996
+      Style: Spheres
       Topic: /rear_lidar/velodyne_points
       Unreliable: false
       Use Fixed Frame: true
@@ -469,17 +466,17 @@ Visualization Manager:
       Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 2.26344633102417
+      Max Intensity: 2.18552208
       Min Color: 0; 0; 0
-      Min Intensity: -8.737410545349121
+      Min Intensity: -5.11811399
       Name: front_camera
       Position Transformer: XYZ
-      Queue Size: 10
+      Queue Size: 1
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.009999999776482582
+      Size (m): 0.00999999978
       Style: Squares
-      Topic: /camera_front/depth/color/points
+      Topic: /camera_left/depth/color/points
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -490,8 +487,8 @@ Visualization Manager:
         Value: true
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 27.041481018066406
-        Min Value: 1.1127698421478271
+        Max Value: 27.041481
+        Min Value: 1.11276984
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -536,17 +533,16 @@ Visualization Manager:
       Arrow Width: 0.5
       Class: rviz/WrenchStamped
       Enabled: true
-      Force Arrow Scale: 0.009999999776482582
+      Force Arrow Scale: 0.00999999978
       Force Color: 204; 51; 51
-      Hide Small Values: true
       History Length: 1
       Name: SVR_Wrench
       Topic: /qolo/compliance/svr
-      Torque Arrow Scale: 0.10000000149011612
+      Torque Arrow Scale: 0.100000001
       Torque Color: 245; 121; 0
-      Unreliable: false
+      Unreliable: true
       Value: true
-    - Alpha: 0.30000001192092896
+    - Alpha: 0.699999988
       Class: rviz/RobotModel
       Collision Enabled: false
       Enabled: true
@@ -582,12 +578,107 @@ Visualization Manager:
       Update Interval: 0
       Value: true
       Visual Enabled: true
+    - Class: rviz/Axes
+      Enabled: false
+      Length: 0.200000003
+      Name: left-wheel
+      Radius: 0.0199999996
+      Reference Frame: wheel_left
+      Value: false
+    - Class: rviz/Axes
+      Enabled: false
+      Length: 0.200000003
+      Name: right-wheel
+      Radius: 0.0199999996
+      Reference Frame: wheel_right
+      Value: false
+    - Class: rviz/Axes
+      Enabled: false
+      Length: 0.200000003
+      Name: bumper
+      Radius: 0.0199999996
+      Reference Frame: bumper
+      Value: false
+    - Class: rviz/Axes
+      Enabled: false
+      Length: 0.200000003
+      Name: t265_pose
+      Radius: 0.0500000007
+      Reference Frame: t265_pose_frame
+      Value: false
+    - Class: rviz/Axes
+      Enabled: false
+      Length: 0.200000003
+      Name: t265_odom
+      Radius: 0.0799999982
+      Reference Frame: t265_odom_frame
+      Value: false
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 0.556006372
+        Min Value: 0.299000055
+        Value: true
+      Axis: Z
+      Channel Name: x
+      Class: rviz/LaserScan
+      Color: 2; 179; 255
+      Color Transformer: FlatColor
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 18.6727848
+      Min Color: 0; 0; 0
+      Min Intensity: 0.232816592
+      Name: front_scan-All
+      Position Transformer: XYZ
+      Queue Size: 1
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.0399999991
+      Style: Spheres
+      Topic: /front_lidar/scan_all
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 0.556006372
+        Min Value: 0.299000055
+        Value: true
+      Axis: Z
+      Channel Name: x
+      Class: rviz/LaserScan
+      Color: 3; 222; 255
+      Color Transformer: FlatColor
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 18.6727848
+      Min Color: 0; 0; 0
+      Min Intensity: 0.232816592
+      Name: rear_scan-All
+      Position Transformer: XYZ
+      Queue Size: 1
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.0399999991
+      Style: Spheres
+      Topic: /rear_lidar/scan_all
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
     Fixed Frame: tf_qolo
-    Frame Rate: 10
+    Frame Rate: 30
   Name: root
   Tools:
     - Class: rviz/Interact
@@ -597,10 +688,7 @@ Visualization Manager:
     - Class: rviz/FocusCamera
     - Class: rviz/Measure
     - Class: rviz/SetInitialPose
-      Theta std deviation: 0.2617993950843811
       Topic: /initialpose
-      X std deviation: 0.5
-      Y std deviation: 0.5
     - Class: rviz/SetGoal
       Topic: /move_base_simple/goal
     - Class: rviz/PublishPoint
@@ -610,35 +698,35 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 4.812585353851318
+      Distance: 8.12989712
       Enable Stereo Rendering:
-        Stereo Eye Separation: 0.05999999865889549
+        Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.7762921452522278
-        Y: -0.0238339826464653
-        Z: -1.5122714103199542e-7
+        X: -0.973991394
+        Y: -0.047601223
+        Z: 6.66723099e-06
       Focal Shape Fixed Size: true
-      Focal Shape Size: 0.05000000074505806
+      Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
-      Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5647973418235779
+      Near Clip Distance: 0.00999999978
+      Pitch: 0.729797304
       Target Frame: camera_color_optical_frame
       Value: ThirdPersonFollower (rviz)
-      Yaw: 3.1420693397521973
+      Yaw: 3.1153338
     Saved: ~
 Window Geometry:
   /image_with_bounding_boxes:
-    collapsed: true
+    collapsed: false
   Displays:
-    collapsed: true
-  Height: 1383
-  Hide Left Dock: true
+    collapsed: false
+  Height: 1388
+  Hide Left Dock: false
   Hide Right Dock: true
-  QMainWindow State: 000000ff00000000fd000000040000000000000511000004c9fc0200000012fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afc0000003d000004c90000000000fffffffa000000000100000003fb00000034002f0069006d006100670065005f0077006900740068005f0062006f0075006e00640069006e0067005f0062006f0078006500730100000000ffffffff0000000000000000fb00000034002f0069006d006100670065005f0077006900740068005f0062006f0075006e00640069006e0067005f0062006f0078006500730000000000ffffffff0000010100fffffffb000000100044006900730070006c0061007900730000000000000002300000015600fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000a0049006d00610067006501000002cc000001670000000000000000fb0000002c002f0064006500740065006300740069006f006e005f0076006f007400650073005f0069006d006100670065000000037f000000b40000000000000000fb0000000c00430061006d00650072006102000000000000003d000002450000007cfb00000008005200650061007202000000000000023100000245000000fefb00000008004c0065006600740200000000000000bf000002450000009ffb0000000a0052006900670068007402000000000000016400000245000000c7fb0000002a002f006f00700074006900630061006c005f0066006c006f0077005f006800730076005f006f00750074010000041d000000160000000000000000fb0000001800660072006f006e0074005f00630061006d0065007200610000000000ffffffff0000000000000000fb000000160072006500610072005f00630061006d0065007200610000000000ffffffff0000000000000000fb00000016006c006500660074005f00630061006d0065007200610000000000ffffffff0000000000000000000000010000010f00000398fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002700000398000000a400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b2000000000000000000000002000007a7000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e1000001970000000300000ca80000003efc0100000002fb0000000800540069006d0065010000000000000ca8000002eb00fffffffb0000000800540069006d0065010000000000000450000000000000000000000ca8000004c900000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd000000040000000000000504000004e2fc0200000013fc00000028000004e2000000d700fffffffa000000000100000002fb000000100044006900730070006c0061007900730100000000ffffffff0000016a00fffffffb00000034002f0069006d006100670065005f0077006900740068005f0062006f0075006e00640069006e0067005f0062006f00780065007300000000000000022e000000ff00fffffffb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006100fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000a0049006d00610067006501000002cc000001670000000000000000fb0000002c002f0064006500740065006300740069006f006e005f0076006f007400650073005f0069006d006100670065000000037f000000b40000000000000000fb0000000c00430061006d00650072006102000000000000003d000002450000007cfb00000008005200650061007202000000000000023100000245000000fefb00000008004c0065006600740200000000000000bf000002450000009ffb0000000a0052006900670068007402000000000000016400000245000000c7fb00000034002f0069006d006100670065005f0077006900740068005f0062006f0075006e00640069006e0067005f0062006f0078006500730000000364000000cf0000000000000000fb0000002a002f006f00700074006900630061006c005f0066006c006f0077005f006800730076005f006f00750074010000041d000000160000000000000000fb0000001800660072006f006e0074005f00630061006d0065007200610000000000ffffffff0000000000000000fb000000160072006500610072005f00630061006d0065007200610000000000ffffffff0000000000000000fb00000016006c006500660074005f00630061006d0065007200610000000000ffffffff0000000000000000000000010000010f00000398fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002700000398000000ad00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000bb5000000d7fc0100000001fb0000000a00560069006500770073030000004e00000080000002e1000001970000000300000bb50000003efc0100000002fb0000000800540069006d0065010000000000000bb50000030000fffffffb0000000800540069006d00650100000000000004500000000000000000000006ab000004e200000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -647,6 +735,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: true
-  Width: 3240
-  X: 95
-  Y: 27
+  Width: 2997
+  X: 65
+  Y: 24
