@@ -18,43 +18,47 @@ trap _kill EXIT
 
 #----- Get Test Number -----
 TEST_NO=0
-while [ -d "csv_logs/Bon/rds_shared${TEST_NO}" ]; do
+while [ -d "csv_logs/bug/remote${TEST_NO}" ]; do
    TEST_NO=$(( $TEST_NO + 1 ))
 done
-LOG_FOLDER="$(pwd)/csv_logs/Bon/rds_shared${TEST_NO}"
+LOG_FOLDER="$(pwd)/csv_logs/bug/remote${TEST_NO}"
 eval "mkdir -p ${LOG_FOLDER}/compliance"
 echo -e "${IMP_INFO}Current Test Number : ${TEST_NO}${NORMAL}"
 
 #----- Launch and record force sensors -----
-echo -e "${IMP_INFO}Launching FT Sensors...${NORMAL}"
-eval "source /home/qolo/collision_ws/devel/setup.bash"
-eval ". /home/qolo/collision_ws/src/rokubimini_interface/run_rokubimini_ros.sh -f ${LOG_FOLDER} &"
+# echo -e "${IMP_INFO}Launching FT Sensors...${NORMAL}"
+# eval "source /home/qolo/collision_ws/devel/setup.bash"
+# eval ". /home/qolo/collision_ws/src/rokubimini_interface/run_rokubimini_ros.sh -f ${LOG_FOLDER} &"
+# PID_LIST+="$! "
+# sleep 5
+
+#----- Launch Rear Lidar  -----
+echo -e "${IMP_INFO}Launching REAR LIDAR...${NORMAL}"
+eval ". devel/setup.bash"
+eval "roslaunch qolo rear_lidar-cloud_2_lrf.launch &"
 PID_LIST+="$! "
+
 sleep 5
 
 #----- Launch qolo control -----
 echo -e "${IMP_INFO}Launching QOLO Control Node...${NORMAL}"
 eval ". devel/setup.bash"
-eval "roslaunch qolo shared_compliant_qolo.launch log_folder:=${LOG_FOLDER} &"
+eval "roslaunch qolo bug_remote_compliant_qolo.launch log_folder:=${LOG_FOLDER} &"
 PID_LIST+="$! "
 sleep 15
 
-
-#----- Launch qolo's odometry -----
+# #----- Launch qolo's odometry -----
 echo -e "${IMP_INFO}Launching QOLO Odometry Node...${NORMAL}"
-# eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
-# eval "rosrun qolo t265_pose_qolo.py "
-eval ". devel/setup.bash"
 eval "roslaunch qolo odometry_t265.launch"
 PID_LIST+="$! "
 sleep 3
 
-# # #----- Launch LIDAR 2 LRF -----
-# echo -e "${IMP_INFO}Launching Rear LIDAR-2-LRF Node...${NORMAL}"
-# eval ". devel/setup.bash"
-# eval "roslaunch pointcloud_to_laserscan lidar2lrf_rear.launch"
-# PID_LIST+="$! "
-# sleep 3
+# #----- Launch LIDAR 2 LRF -----
+echo -e "${IMP_INFO}Launching Rear LIDAR-2-LRF Node...${NORMAL}"
+eval "roslaunch pointcloud_to_laserscan lidar2lrf_rear.launch"
+PID_LIST+="$! "
+sleep 3
+
 
 # Wait till all pids to be finished or killed
 echo -e "${IMP_GREEN}All PIDs : ${PID_LIST}${NORMAL}"

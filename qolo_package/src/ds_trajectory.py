@@ -22,22 +22,24 @@ import dynamical_system_representation as ds
 # Fast Clipper Function
 clipper = lambda x, l, u: l if x < l else u if x > u else x
 
-dx_prev = np.array([[0.0], [0.0]])
+dx_prev = np.array([[20.0], [0.0]])
 dx = np.array([[0.0], [0.0]])
 
 DEBUG_FLAG = False
 
-ref_vel = 0.8
+ref_vel = 1.1
+
 control_point = 0.9
-stop_distance = 0.5
-time_limit = 60
+stop_distance = 0.05
+time_limit = 60*1
 
 pose = [0., 0., 0.]
-Local_Attractor = np.array([[20.0+control_point], [0.0]])
+# Attractor for Lausanne-city experiments:
+# Local_Attractor = np.array([[20.0+control_point], [0.0]])
+# Attractor for IRL experiments:
+Local_Attractor = np.array([[30.0], [0.0]])
 
-Attractor = np.array([[0.0], [0.0]])
-
-tf_listener = None
+# tf_listener = None
 command_publisher = None
 t_lost_tf = -1.0
 previous_command_linear = None
@@ -45,9 +47,12 @@ previous_command_angular = None
 data_remote = Float32MultiArray()
 
 MaxSpeed = 1.5 # max Qolo speed: 1.51 m/s               --> Equivalent to 5.44 km/h
-MaxAngular = 4.124/8
+MaxAngular = 4.124/6
 D_angular = 10
 D_linear = 10
+
+Attractor = np.array([[0.0], [0.0]])
+
 
 def pose_callback(data):
    global pose
@@ -125,18 +130,21 @@ def trajectory_service(t):
       # (x, y, phi) = get_pose()
       # (Trajectory_V, Trajectory_W) = ds_generation(x,y,phi)
       (Trajectory_V, Trajectory_W) = ds_generation(*pose)
+      print(Trajectory_V, Trajectory_W, t)
       if ~DEBUG_FLAG:
          publish_command(Trajectory_V, Trajectory_W, t)
+
    except:
         publish_command(0., 0., 0.)
         print ('No Pose Setting [V,W] = [0, 0]')
 
 
 def main():
-   global tf_listener, command_publisher, data_remote, trajectory_xyt, pose, Attractor
+   global command_publisher, data_remote, trajectory_xyt, pose, Attractor, Local_Attractor
+   # global tf_listener
    rospy.init_node('qolo_ds_trajectory', anonymous=True)
    rate = rospy.Rate(200) #  100 [Hz]
-   tf_listener = tf.TransformListener()
+   # tf_listener = tf.TransformListener()
    pose_sub = rospy.Subscriber("qolo/pose2D", Pose2D, pose_callback, queue_size=1)
    command_publisher = rospy.Publisher('qolo/remote_commands',Float32MultiArray, queue_size=1)
 
@@ -153,8 +161,11 @@ def main():
    print(" Local Attractor X, Y = ",Local_Attractor[0,0],Local_Attractor[1,0])
    print(" Robot Position X, Y = ",pose[0],pose[1])
    print(" Robot Orientation Theta = ",pose[2])
-   Attractor[0,0] = Local_Attractor[0,0]*np.cos(pose[2]) - Local_Attractor[1,0]*np.sin(pose[2]) + pose[0]*np.cos(pose[2]) - pose[1]*np.sin(pose[2])
-   Attractor[1,0] = Local_Attractor[0,0]*np.sin(pose[2]) + Local_Attractor[1,0]*np.sin(pose[2]) + pose[0]*np.cos(pose[2]) + pose[1]*np.cos(pose[2])
+   # Attractor[0,0] = Local_Attractor[0,0]*np.cos(pose[2]) - Local_Attractor[1,0]*np.sin(pose[2]) + pose[0]*np.cos(pose[2]) - pose[1]*np.sin(pose[2])
+   # Attractor[1,0] = Local_Attractor[0,0]*np.sin(pose[2]) + Local_Attractor[1,0]*np.sin(pose[2]) + pose[0]*np.sin(pose[2]) + pose[1]*np.cos(pose[2])
+
+   Attractor[0,0] = Local_Attractor[0,0]*np.cos(pose[2])
+   Attractor[1,0] = Local_Attractor[0,0]*np.sin(pose[2])
 
    print(" Attractor X, Y = ",Attractor[0,0],Attractor[1,0])
    # end_time = trajectory_xyt[-1][2]

@@ -1,12 +1,15 @@
+<?xml version="1.0"?>
 <launch>
+    <include file="$(find qolo)/launch/tf_qolo.launch"/>
+    <include file="$(find qolo)/launch/joystick_qolo.launch"/>
+
     <arg name="log_folder" default="$(env PWD)/csv_logs/test" />
     <arg name="constant_mode" default="false" />
     <arg name="shared_mode" default="false" />
     <arg name="compliance_mode" default="true" />
     <arg name="joystick_mode" default="false" />
     <arg name="remote_mode" default="false" />
-
-    <include file="$(find qolo)/launch/joystick_qolo.launch"/>
+    <arg name="odom_publisher" default="true" />
     
     <node name="qolo_control" pkg="qolo" type="qolo_control_node.py" output="screen">
         <param name="log_folder"
@@ -34,7 +37,5 @@
                type="str"
                value="$(arg log_folder)"/>
     </node>
-
-     <include file="$(find qolo)/launch/tf_qolo.launch"/>
 
 </launch>
