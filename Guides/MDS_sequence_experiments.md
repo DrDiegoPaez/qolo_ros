@@ -21,8 +21,10 @@ Nvidia board 200
 	sudo ntpd -q 192.168.13.110
 
 1. 110 terminal:
-	rosclean purge -y
-	roscore
+``` bash
+rosclean purge -y
+roscore
+```
 
 **2. 110 terminal:rear LIDAR**
 	cd ~/catkin_ws/
