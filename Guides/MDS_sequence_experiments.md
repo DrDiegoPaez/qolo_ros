@@ -62,8 +62,15 @@ cd ~/catkin_ws/
 . devel/setup.bash
 rosrun qolo compliant_mds_shared_qolo.sh
 ```
+**6. Nvidia-200 terminal:  Start People tracker**
+``` bash
+cd ~/tracker_ws
+. /ssd_nvidia/venv_sensing/bin/activate
+. devel/setup.bash
+roslaunch rwth_crowdbot_launch qolo_onboard.launch trt:=true
+```
 
-**6. 200: Rosbag Recording**
+**7. 200: Rosbag Recording**
 ``` bash
 cd /ssd_nvidia/data/irl_obstacles/
 rosbag record --duration=30s /tf /tf_static /diagnostics /front_lidar/scan /front_lidar/scan_all /front_lidar/velodyne_points /rear_lidar/velodyne_points /rear_lidar/scan /rear_lidar/scan_all /joint_states /qolo/compliance/svr /qolo/emergency /qolo/odom /qolo/pose2D /qolo/remote_commands /qolo/twist /rds_to_gui /rokubi_node_front/ft_sensor_measurements /rosout /rosout_agg /t265/accel/imu_info /t265/accel/sample /t265/gyro/imu_info /t265/gyro/sample /t265/odom/sample
@@ -71,7 +78,7 @@ rosbag record --duration=30s /tf /tf_static /diagnostics /front_lidar/scan /fron
 /t265/fisheye1/camera_info /t265/fisheye1/image_raw /t265/fisheye2/camera_info /t265/fisheye2/image_raw
 ```
 
-**7. 120 terminal: MDS Modulation with Underlying linear DS**
+**8. 120 terminal: MDS Modulation with Underlying linear DS**
 ``` bash
 cd ~/autonomy_ws/
 . devel/setup.bash
@@ -80,7 +87,7 @@ python src/qolo_modulation/scripts/qolo_modulation_ros_controller.py
 rosrun qolo_modulation qolo_modulation_ros_controller.py
 ```
 
-**8. Visualization- RUN LOCALLY**
+**9. Visualization- RUN LOCALLY**
 # Change to the local workspace with the qolo_ros package
 ``` bash
 cd ~/qolo_ws/
