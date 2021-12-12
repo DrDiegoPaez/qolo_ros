@@ -70,7 +70,7 @@ TESTING_MODE = False
 DEBUG_MODE = False
 TIMING_MODE = True
 
-AO_MODE = True
+AO_MODE = rospy.get_param("/qolo_control/ao_mode", False)
 AO_V = None
 AO_W = None
 timeAO_VW = None
