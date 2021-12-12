@@ -1,10 +1,14 @@
 #! /usr/bin/env python3
-
+'''
 #########  Qolo Main Code for Shared / Embodied / Remore Control ##########
 ##### Author: Diego F. Paez G.
-##### Collaboration: Vaibhav Gupta
-##### Embodied sensing: Chen Yang
-##### Data: 2019/10/01
+##### Collaboration compliant control: Vaibhav Gupta
+##### Embodied sensing code: Chen Yang
+'''
+__author__ = "Diego Paez-Granados"
+__date__ = "2019-01-20"
+__email__ = "diego.paez@epfl.ch"
+
 
 from ADDA import ADDA as converter
 import time
@@ -22,11 +26,11 @@ import mraa
 import signal
 import datetime
 import rospy
-# import threading
 
-from geometry_msgs.msg import Wrench, WrenchStamped, Vector3, PoseStamped, Quaternion, Twist, TwistStamped, Pose2D
+from geometry_msgs.msg import Wrench, WrenchStamped, Vector3, PoseStamped, Quaternion, Twist, TwistStamped, Pose2D, Pose, Point
 from std_msgs.msg import String, Bool, Float32MultiArray, Float32, Int32MultiArray
 from std_msgs.msg import MultiArrayLayout, MultiArrayDimension, Header
+from nav_msgs.msg import Odometry
 
 from rds_network_ros.srv import *
 # from builtins import PermissionError
@@ -36,8 +40,6 @@ from logger import Logger
 from compliance_controller import AdmittanceController, PassiveDSController
 
 from termcolor import colored
-
-# FLAG for fully manual control (TRUE) or shared control (FALSE)
 #Tonado server port
 try:
     os.nice(-10)
@@ -51,15 +53,20 @@ K_vel = 0.2
 CONSTANT_VEL_MODE = rospy.get_param("/qolo_control/constant_mode", False)
 # For testing collision avoidance 
 SHARED_MODE = rospy.get_param("/qolo_control/shared_mode", False)
+# For testing Modulated based Shared control
+MDS_SHARED_MODE = rospy.get_param("/qolo_control/mds_shared_mode", False)
 # For testing collision control
 COMPLIANCE_MODE = rospy.get_param("/qolo_control/compliance_mode", False)
 # For using remote app Joystick
 JOYSTICK_MODE = rospy.get_param("/qolo_control/joystick_mode", False)
 # For using DS or trajectory tracking
 REMOTE_MODE = rospy.get_param("/qolo_control/remote_mode", False)
+# For using publishing ODOMETRY topic
+ODOM_FLAG = rospy.get_param("/qolo_control/odom_publisher", False)
 # For zero output to the wheels
 TESTING_MODE = False
-DEBUG_MODE = True
+# Used to publish extra topics with 
+DEBUG_MODE = False
 TIMING_MODE = True
 
 PORT = 8080
@@ -73,13 +80,19 @@ print(colored("Logging folder is '{}'".format(logger.folder), "yellow"))
 # Fast Clipper Function
 clipper = lambda x, l, u: l if x < l else u if x > u else x
 
-# coefficient for vmax and wmax(outout curve)
-forward_coefficient = 1
+#########################################################
+############# EMBODIED CONTROL COSNTANTS ################
+#########################################################
+
+# coefficient for vmax and wmax (out curve)
+forward_coefficient = 1.4/1.5
 left_turning_coefficient = 1
 right_turning_coefficient = 1
-backward_coefficient = 0.5
+backward_coefficient = 0.7/1.5
 
-# Global Constatns for Communication
+#########################################################
+########## Global Constatns for Communication ###########
+#########################################################
 # DAC0 --> Left Wheel Velocity
 # DAC1 --> Right Wheel Velocity
 # DAC2 --> Enable Qolo Motion
@@ -115,37 +128,51 @@ ORCA_Flag = False
 # Gain to this point
 weight_scaling_of_reference_point_for_command_limits = 0.
 # Some gain for velocity after proximity reaches limits
-tau = 1.5
-# Minimal distance to obstacles
-delta = 0.05
+tau = 2.5 # Tested:1.5 and 2.5(faster response)
 # Some reference for controlling the non-holonomic base
-control_point = 0.4
+control_point = 0.9 # Tested:0.9
+# Minimal distance to obstacles
+delta = 0.01 # Tested: 0.05
+# Capsule size around each lidar real == 0.40
+capsule_radius = 0.32
+# Capsule size around each lidar location
+capsule_center_front = 0.05  # Actual value: 0.051
+capsule_center_rear = -0.51  # Actual value: -0.515
 
 max_linear = MAX_SPEED
 min_linear = -MIN_SPEED
 absolute_angular_at_min_linear = 0.
 absolute_angular_at_max_linear = 0.
 absolute_angular_at_zero_linear = MAX_OMEGA/W_RATIO
-linear_acceleration_limit = 1.5
-angular_acceleration_limit = 4.5
+linear_acceleration_limit = 4.5 # Tested:1.5   # Real absolute 2.5
+angular_acceleration_limit = 4.5 # Tested: 4.5
 
 #########################################################
-############ Setting for Compliant Control ##############
+#########    Settings for Compliant Control   ###########
 #########################################################
 compliant_V =0.
 compliant_W =0.
-
 # Type of compliance controller to use
 #   * admittance (default)
 #   * passive_ds
 COMPLIANCE_TYPE = "passive_ds"
-
 compliance_control = None
 qolo_control_pt = None
-
 # Global Variables for Compliant mode
 svr_data =  np.zeros((3,))
 
+
+#########################################################
+######    Settings for Modulated Shared Control   #######
+#########################################################
+
+if MDS_SHARED_MODE:
+    pub_remote = rospy.Publisher('qolo/user_commands', Float32MultiArray, queue_size=1)
+    user_embodied = Float32MultiArray()
+    # pub_remote = rospy.Publisher('qolo/user_commands', TwistStamped, queue_size=1)
+    # user_embodied = TwistStamped()
+
+###### Global variables for low level control ########
 feasible = 0
 Output_V = 0.
 Output_W = 0.
@@ -157,11 +184,9 @@ FlagRemote = False
 last_msg = 0.
 time_msg = 0.
 Count_msg_lost = 0
-
 last_v = 0.
 last_w = 0.
 cycle=0.
-
 Command_V = 0.
 Command_W = 0.
 Comand_DAC0 = 0
@@ -190,6 +215,19 @@ t2=0.
 counter1 = 0
 number = 100
 
+#########################################################
+###########      ROS Global Variables       #############
+#########################################################
+qolo_odom = Odometry()
+pose_x =0.0 
+pose_y=0.0
+pose_th = 0.0
+current_time = []
+last_time = []
+
+#########################################################
+#########    Settings for Embodied Control    ###########
+#########################################################
 # real zero point of each sensor
 a_zero, b_zero, c_zero, d_zero, e_zero, f_zero, g_zero, h_zero = 305.17, 264.7, 441.57, 336.46, 205.11, 441.57, 336.46, 205.11
 
@@ -237,6 +275,36 @@ level_relations = {
         # 'error':logging.ERROR,
         # 'crit':logging.CRITICAL
     }
+
+def quaternion_from_euler(yaw, pitch, roll):
+        qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+        qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
+        qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
+        qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+
+        return [qx, qy, qz, qw]
+
+def euler_from_quaternion(x, y, z, w):
+  """
+  Convert a quaternion into euler angles (roll, pitch, yaw)
+  roll is rotation around x in radians (counterclockwise)
+  pitch is rotation around y in radians (counterclockwise)
+  yaw is rotation around z in radians (counterclockwise)
+  """
+  t0 = +2.0 * (w * x + y * z)
+  t1 = +1.0 - 2.0 * (x * x + y * y)
+  roll_x = math.atan2(t0, t1)
+
+  t2 = +2.0 * (w * y - z * x)
+  t2 = +1.0 if t2 > +1.0 else t2
+  t2 = -1.0 if t2 < -1.0 else t2
+  pitch_y = math.asin(t2)
+
+  t3 = +2.0 * (w * z + x * y)
+  t4 = +1.0 - 2.0 * (y * y + z * z)
+  yaw_z = math.atan2(t3, t4)
+
+  return roll_x, pitch_y, yaw_z # in radians
 
 # for interruption
 def exit(signum, frame):
@@ -290,6 +358,71 @@ def read_FSR():
     Xin_temp[8] = round(conv.ReadChannel(8),4)
     Xin_temp[9] = round(conv.ReadChannel(4),4)
     # return Xin_temp
+
+
+# output curve: Linear/Angular Velocity-Pressure Center
+def FSR_output(a, b, c, d, e, f, g, h, ox):
+    global forward_coefficient, left_turning_coefficient, right_turning_coefficient, backward_coefficient
+    #sending value setting
+    # static_value = 20
+    dynamic_value = max(a,b,c,d,e,f,g,h)
+    # drive = dynamic_value - static_value
+    drive = dynamic_value
+
+    forward = 2500 + forward_coefficient * drive
+    if ox > 0 or ox < 0:
+        left_around = 2500 + left_turning_coefficient * drive * ox / abs(ox)
+    else:
+        left_around = 2500
+    if ox > 0 or ox < 0:
+        right_around = 2500 + right_turning_coefficient * drive * ox / abs(ox)
+    else:
+        right_around = 2500
+
+    global pl2, pl1, pr1, pr2
+
+    wl = math.pi / (pl2 - pl1) # w for smooth fucntion: sin(wx)
+    fai_l_for = math.pi / 2 - wl * pl1
+    fai_l_turn = math.pi / 2 - wl * pl2
+
+    wr = math.pi / (pr2 - pr1) # w for smooth fucntion: sin(wx)
+    fai_r_for = math.pi / 2 - wr * pr1
+    fai_r_turn = math.pi / 2 - wr * pr2
+
+    left_angle_for = 2500 + forward_coefficient * drive / 2 + forward_coefficient * drive / 2 * math.sin(wl * ox + fai_l_for)
+    left_angle_turn = 2500 - left_turning_coefficient * drive / 2 - left_turning_coefficient * drive / 2 * math.sin(wl * ox + fai_l_turn)
+    right_angle_for = 2500 + forward_coefficient * drive / 2 + forward_coefficient * drive / 2 * math.sin(wr * ox + fai_r_for)
+    right_angle_turn = 2500 + right_turning_coefficient * drive / 2 + right_turning_coefficient * drive / 2 * math.sin(wr * ox + fai_r_turn)
+
+    backward = 2500 - backward_coefficient * drive
+
+    # threshold value for keep safety(beyond this value, the joystick will report an error)
+    forward = clipper(forward, 0, 5000)
+    left_angle_for = clipper(left_angle_for, 0, 5000)
+    right_angle_for = clipper(right_angle_for, 0, 5000)
+    right_around = clipper(right_around, 0, 5000)
+    left_around = clipper(left_around, 100, 5000)
+    right_angle_turn = clipper(right_angle_turn, 0, 5000)
+    left_angle_turn = clipper(left_angle_turn, 100, 5000)
+    backward = clipper(backward, 300, 5000)
+    # if forward >= 4800:
+    #     forward = 4800
+    # if left_angle_for >= 4800:
+    #     left_angle_for = 4800
+    # if right_angle_for >= 4800:
+    #     right_angle_for = 4800
+    # if right_around >= 4800:
+    #     right_around = 4800
+    # if left_around <= 300:
+    #     left_around = 300
+    # if right_angle_turn >= 4800:
+    #     right_angle_turn = 4800
+    # if left_angle_turn <= 300:
+    #     left_angle_turn = 300
+    # if backward <= 800:
+    #     backward = 800
+
+    return forward, backward, left_angle_for, left_angle_turn, right_angle_for, right_angle_turn, left_around, right_around
 
 # execution command to DAC board based on the output curve
 def FSR_execution():
@@ -429,62 +562,6 @@ def write_DA(Write_DAC0,Write_DAC1):
     conv.SetChannel(0, Send_DAC0)
     conv.SetChannel(1, Send_DAC1)
 
-# output curve: Linear/Angular Velocity-Pressure Center
-def FSR_output(a, b, c, d, e, f, g, h, ox):
-    global forward_coefficient, left_turning_coefficient, right_turning_coefficient, backward_coefficient
-    #sending value setting
-    # static_value = 20
-    dynamic_value = max(a,b,c,d,e,f,g,h)
-    # drive = dynamic_value - static_value
-    drive = dynamic_value
-
-    forward = 2500 + forward_coefficient * drive
-    if ox > 0 or ox < 0:
-        left_around = 2500 + left_turning_coefficient * drive * ox / abs(ox)
-    else:
-        left_around = 2500
-    if ox > 0 or ox < 0:
-        right_around = 2500 + right_turning_coefficient * drive * ox / abs(ox)
-    else:
-        right_around = 2500
-
-    global pl2, pl1, pr1, pr2
-
-    wl = math.pi / (pl2 - pl1) # w for smooth fucntion: sin(wx)
-    fai_l_for = math.pi / 2 - wl * pl1
-    fai_l_turn = math.pi / 2 - wl * pl2
-
-    wr = math.pi / (pr2 - pr1) # w for smooth fucntion: sin(wx)
-    fai_r_for = math.pi / 2 - wr * pr1
-    fai_r_turn = math.pi / 2 - wr * pr2
-
-    left_angle_for = 2500 + forward_coefficient * drive / 2 + forward_coefficient * drive / 2 * math.sin(wl * ox + fai_l_for)
-    left_angle_turn = 2500 - left_turning_coefficient * drive / 2 - left_turning_coefficient * drive / 2 * math.sin(wl * ox + fai_l_turn)
-    right_angle_for = 2500 + forward_coefficient * drive / 2 + forward_coefficient * drive / 2 * math.sin(wr * ox + fai_r_for)
-    right_angle_turn = 2500 + right_turning_coefficient * drive / 2 + right_turning_coefficient * drive / 2 * math.sin(wr * ox + fai_r_turn)
-
-    backward = 2500 - backward_coefficient * drive
-
-    # threshold value for keep safety(beyond this value, the joystick will report an error)
-    if forward >= 4800:
-        forward = 4800
-    if left_angle_for >= 4800:
-        left_angle_for = 4800
-    if right_angle_for >= 4800:
-        right_angle_for = 4800
-    if right_around >= 4800:
-        right_around = 4800
-    if left_around <= 300:
-        left_around = 300
-    if right_angle_turn >= 4800:
-        right_angle_turn = 4800
-    if left_angle_turn <= 300:
-        left_angle_turn = 300
-    if backward <= 800:
-        backward = 800
-
-    return forward, backward, left_angle_for, left_angle_turn, right_angle_for, right_angle_turn, left_around, right_around
-
 def rds_service():
     global Output_V, Output_W, last_v, last_w, cycle, feasible, Corrected_V, Corrected_W
     # print "Waiting for RDS Service"
@@ -493,27 +570,12 @@ def rds_service():
     RDS = rospy.ServiceProxy('rds_velocity_command_correction',VelocityCommandCorrectionRDS)
 
     request = VelocityCommandCorrectionRDSRequest()
-    # y_coordinate_of_reference_point_for_command_limits = 0.5
-    # # Gain to this point
-    # weight_scaling_of_reference_point_for_command_limits = 0.
-    # # Some gain for velocity after proximity reaches limits
-    # tau = 2.
-    # # Minimal distance to obstacles
-    # delta = 0.08
-    # clearance_from_axle_of_final_reference_point = 0.15
-    # max_linear = MAX_SPEED
-    # min_linear = -MIN_SPEED
-    # absolute_angular_at_min_linear = 0.
-    # absolute_angular_at_max_linear = 0.
-    # absolute_angular_at_zero_linear = MAX_OMEGA/W_RATIO
-    # linear_acceleration_limit = 1.1
-    # angular_acceleration_limit = 1.5
 
     request.nominal_command.linear = Corrected_V
     request.nominal_command.angular = Corrected_W
-    request.capsule_center_front_y = 0.2 # Actual: 0.051
-    request.capsule_center_rear_y = -0.50
-    request.capsule_radius = 0.45
+    request.capsule_center_front_y = capsule_center_front # Actual: 0.051
+    request.capsule_center_rear_y = capsule_center_rear  # Actual: -0.515
+    request.capsule_radius = capsule_radius # Tested = 0.45
     
     request.reference_point_y = control_point
 
@@ -619,11 +681,10 @@ def joystick_control():
         print ("Exception triggered - Tornado Server stopped.")
         # GPIO.cleanup()
 
-
 def control():
     global A1, B1, C1, D1, E1, F1, G1, H1
     # global r1, r2, r3, r4, r5, r6, r7, r8
-    global Rcenter, Count_msg_lost, time_msg, last_msg
+    global Rcenter, Count_msg_lost, time_msg, last_msg, user_embodied, pub_remote
     global Command_V, Command_W, Comand_DAC0, Comand_DAC1, User_V, User_W, Output_V, Output_W, last_w, last_v, Corrected_V, Corrected_W
     global counter1, compliant_V, compliant_W, raw_ft_data, ft_data, svr_data, offset_ft_data, compliance_control
     global DA_time, RDS_time, Compute_time, FSR_time, Compliance_time
@@ -667,13 +728,24 @@ def control():
         motor_w = (2*MAX_MOTOR_V/(DISTANCE_CW)*Command_W/5000 - MAX_MOTOR_V/(DISTANCE_CW)) / W_RATIO # In [RPM]
         User_V = round(((motor_v/GEAR)*RADIUS)*(np.pi/30),6)
         User_W = round(((motor_w/GEAR)*RADIUS)*(np.pi/30),6)
+        if MDS_SHARED_MODE:
+            user_embodied.data = [time.clock(),User_V,User_W]
+            pub_remote.publish(user_embodied)
+
+            if time_msg == last_msg:
+                Count_msg_lost=Count_msg_lost+1
+            else:
+                last_msg = time_msg
+                Count_msg_lost = 0
+            if Count_msg_lost <10:
+                User_V = Remote_V
+                User_W = Remote_W
+            else:
+                User_V = 0.
+                User_W = 0.
 
     if TIMING_MODE:
         FSR_time = round((time.clock() - t1),6)
-        t1 = time.clock()
-
-    if TIMING_MODE:
-        RDS_time = round((time.clock() - t1),6)
         t1 = time.clock()
 
     if COMPLIANCE_MODE:
@@ -685,13 +757,14 @@ def control():
         Corrected_V = round(compliant_V,6)
         Corrected_W = round(compliant_W,6)
 
-        # Update Control Point
-        if abs(compliance_control._Fmag) > compliance_control.activation_F:
-            qolo_control_pt.x = compliance_control.bumper_l + compliance_control.bumper_R * np.cos(compliance_control._theta)
-            qolo_control_pt.y = compliance_control.bumper_R * np.sin(compliance_control._theta)
-        else:
-            qolo_control_pt.x = compliance_control.bumper_l + compliance_control.bumper_R
-            qolo_control_pt.y = 0
+        if DEBUG_MODE:
+            # Update Control Point
+            if abs(compliance_control._Fmag) > compliance_control.activation_F:
+                qolo_control_pt.x = compliance_control.bumper_l + compliance_control.bumper_R * np.cos(compliance_control._theta)
+                qolo_control_pt.y = compliance_control.bumper_R * np.sin(compliance_control._theta)
+            else:
+                qolo_control_pt.x = compliance_control.bumper_l + compliance_control.bumper_R
+                qolo_control_pt.y = 0
             
     else:
         Corrected_V = User_V
@@ -701,10 +774,12 @@ def control():
         rds_service()
         # Corrected_V = User_V
         # Corrected_W = User_W
+        if TIMING_MODE:
+            RDS_time = round((time.clock() - t1),6)
+            t1 = time.clock()
 
     Output_V = Corrected_V
     Output_W = Corrected_W
-
 
     if TIMING_MODE:
         Compliance_time = round((time.clock() - t1),6)
@@ -740,9 +815,10 @@ def make_header(frame_name):
 
 def control_node():
     global Comand_DAC0, Comand_DAC1, Send_DAC0, Send_DAC1, Send_DAC2, Send_DAC3, Xin
-    global RemoteE, ComError
+    global RemoteE, ComError, user_embodied, pub_remote
     global DA_time, RDS_time, Compute_time, FSR_time, Compliance_time, extra_time,last_msg, time_msg, FULL_time
     global compliant_V, compliant_W, offset_ft_data, compliance_control, initialising_ft, qolo_control_pt
+    global last_v, last_w, Output_V, Output_W, pose_x, pose_y, pose_th, current_time, last_time
     prevT = 0
     FlagEmergency=False
     # Call the calibration File
@@ -753,11 +829,11 @@ def control_node():
                 bumper_l=0.2425,
                 bumper_R=0.33,
                 Ts=1.0/200,
-                robot_mass=30.0,
+                robot_mass=2.0,
                 lambda_t=0.0,
                 lambda_n=1.5,
-                Fd=45,
-                activation_F=15,
+                Fd=35, # 45
+                activation_F=25,
                 logger=logger
             )
         else:
@@ -787,9 +863,17 @@ def control_node():
 
     ########### Starting ROS Publishers ###########
     pub_emg = rospy.Publisher('qolo/emergency', Bool, queue_size=1)
-
     pub_twist = rospy.Publisher('qolo/twist', TwistStamped, queue_size=1)
     qolo_twist = TwistStamped()
+
+    if MDS_SHARED_MODE:
+        user_embodied.layout.dim.append(MultiArrayDimension())
+        user_embodied.layout.dim[0].label = 'User Command:[V, W]'
+        user_embodied.layout.dim[0].size = 3
+        user_embodied.data = [0]*3
+
+    if ODOM_FLAG:
+        pub_odom = rospy.Publisher('qolo/odom', Odometry, queue_size=1)
 
     # pub_vel = rospy.Publisher('qolo/velocity', Float32MultiArray, queue_size=1)
     # dat_vel = Float32MultiArray()
@@ -836,6 +920,8 @@ def control_node():
     ########### Starting ROS Node ###########
     rospy.init_node('qolo_control', anonymous=True)
     rate = rospy.Rate(200) #  100 [Hz]
+    current_time = rospy.Time.now()
+    last_time = rospy.Time.now()
 
     if COMPLIANCE_MODE:
         ftsub = rospy.Subscriber("qolo/compliance/svr",WrenchStamped,ft_sensor_callback, queue_size=1)
@@ -844,15 +930,22 @@ def control_node():
         print('Starting WITHOUT FT Sensing')
     
     if JOYSTICK_MODE:
-        sub_remote = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
+        sub_joystick = rospy.Subscriber("qolo/user_commands", Float32MultiArray, callback_remote, queue_size=1)
         control_type = 'joystick'
         print('Subscribed to JOYSTICK Mode')
-    elif REMOTE_MODE:
+    
+    if REMOTE_MODE :
         sub_remote = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
         control_type = 'remote'
         print('Subscribed to REMOTE Mode')
     else:
         control_type = 'embodied'
+        print('Starting in Manual EMBODIED Mode')        
+
+    if MDS_SHARED_MODE: 
+        # sub_remote = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
+        control_type = 'embodied_mds'
+        print('Starting in Modulated EMBODIED Mode')
     
     if SHARED_MODE:
         print('STARTING SHARED CONTROL MODE')
@@ -909,6 +1002,29 @@ def control_node():
         if TIMING_MODE:
             cycle_T = time.clock() - prevT
 
+        # Computing the estimated current position from
+        if ODOM_FLAG:
+            current_time = rospy.Time.now()
+            # compute odometry in a typical way given the velocities of the robot
+            # dt = (current_time - last_time).to_sec()
+            dt = FULL_time
+            delta_th = last_w * dt
+            delta_x = (last_v * math.cos(pose_th) ) * dt
+            delta_y = (last_v * math.sin(pose_th) ) * dt
+            pose_x += delta_x
+            pose_y += delta_y
+            pose_th += delta_th
+
+            # since all odometry is 6 DOF we'll need a quaternion created from yaw
+            odom_quat = quaternion_from_euler(0, 0, pose_th)
+            qolo_odom.header.stamp = current_time
+            qolo_odom.header.frame_id = "tf_qolo_world"
+            # set the position
+            qolo_odom.pose.pose = Pose(Point(pose_x, pose_y, 0.), Quaternion(*odom_quat))
+            # set the velocity
+            qolo_odom.child_frame_id = "tf_qolo_odom"
+            qolo_odom.twist.twist = qolo_twist.twist #Twist(Vector3(vx, vy, 0), Vector3(0, 0, vth))
+
         # ----- CSV Logs -----
         logger.log('corr_velocity',
                    User_V, User_W,
@@ -919,7 +1035,6 @@ def control_node():
         if COMPLIANCE_MODE:
             compliance_control.log()
             logger.log('svr', *svr_data)
-            pub_control_pt.publish(qolo_control_pt)
         
         if TIMING_MODE:
             logger.log('timings', DA_time, RDS_time, Compute_time, FSR_time, Compliance_time, cycle_T, FULL_time)
@@ -927,8 +1042,9 @@ def control_node():
         # ----- Publish ROS topics -----
         pub_emg.publish(FlagEmergency)
         pub_twist.publish(qolo_twist)
-
-        # pub_vel.publish(dat_vel)
+        
+        if ODOM_FLAG:
+            pub_odom.publish(qolo_odom)    
 
         if DEBUG_MODE:
             pub_cor_vel.publish(dat_cor_vel)
@@ -936,6 +1052,7 @@ def control_node():
             pub_user.publish(dat_user)
             if COMPLIANCE_MODE:
                 pub_compliance_bumper_loc.publish(dat_compliance_bumper_loc)
+                pub_control_pt.publish(qolo_control_pt)
 
         FULL_time = time.clock() - prevT
         if COMPLIANCE_MODE:
