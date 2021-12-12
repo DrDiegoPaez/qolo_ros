@@ -33,6 +33,7 @@ from std_msgs.msg import MultiArrayLayout, MultiArrayDimension, Header
 from nav_msgs.msg import Odometry
 
 from rds_network_ros.srv import *
+from rds_network_ros.msg import VelocityCommand
 # from builtins import PermissionError
 
 from filters import MultiLowPassFilter
@@ -68,6 +69,11 @@ TESTING_MODE = False
 # Used to publish extra topics with 
 DEBUG_MODE = False
 TIMING_MODE = True
+
+AO_MODE = rospy.get_param("/qolo_control/ao_mode", False)
+AO_V = None
+AO_W = None
+timeAO_VW = None
 
 PORT = 8080
 control_type ='embodied'
@@ -562,6 +568,14 @@ def write_DA(Write_DAC0,Write_DAC1):
     conv.SetChannel(0, Send_DAC0)
     conv.SetChannel(1, Send_DAC1)
 
+def callbackAO(msg):
+    global AO_V
+    global AO_W
+    global timeAO_VW
+    AO_V = msg.linear
+    AO_W = msg.angular
+    timeAO_VW = time.time()
+
 def rds_service():
     global Output_V, Output_W, last_v, last_w, cycle, feasible, Corrected_V, Corrected_W
     # print "Waiting for RDS Service"
@@ -770,7 +784,7 @@ def control():
         Corrected_V = User_V
         Corrected_W = User_W
 
-    if SHARED_MODE:
+    if SHARED_MODE and not AO_MODE:
         rds_service()
         # Corrected_V = User_V
         # Corrected_W = User_W
@@ -780,6 +794,11 @@ def control():
 
     Output_V = Corrected_V
     Output_W = Corrected_W
+
+    if AO_MODE and not timeAO_VW is None and time.time() - timeAO_VW < 0.1:
+        Output_V = AO_V
+        Output_W = AO_W
+
 
     if TIMING_MODE:
         Compliance_time = round((time.clock() - t1),6)
@@ -882,6 +901,10 @@ def control_node():
     # dat_vel.layout.dim[0].size = 5
     # dat_vel.data = [0]*4
 
+    if AO_MODE:
+        aoPublisher = rospy.Publisher("aoInput", VelocityCommand, queue_size=1)
+        aoSubscriber = rospy.Subscriber("aoOutput", VelocityCommand, callbackAO, queue_size=1)
+
     if DEBUG_MODE:
         pub_cor_vel = rospy.Publisher('qolo/corrected_velocity', Float32MultiArray, queue_size=1)
         dat_cor_vel = Float32MultiArray()
@@ -960,6 +983,10 @@ def control_node():
         prevT = time.clock()
 
         control()   # Function of control for Qolo
+
+        if AO_MODE:
+            aoPublisher.publish(VelocityCommand(User_V, User_W))
+
 
         # # Checking emergency inputs
         RemoteE = conv.ReadChannel(7) # THRESHOLD_V - 1 # conv.ReadChannel(7)
