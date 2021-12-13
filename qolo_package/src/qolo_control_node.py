@@ -33,7 +33,6 @@ from std_msgs.msg import MultiArrayLayout, MultiArrayDimension, Header
 from nav_msgs.msg import Odometry
 
 from rds_network_ros.srv import *
-from rds_network_ros.msg import VelocityCommand
 # from builtins import PermissionError
 
 from filters import MultiLowPassFilter
@@ -69,11 +68,6 @@ TESTING_MODE = False
 # Used to publish extra topics with 
 DEBUG_MODE = False
 TIMING_MODE = True
-
-AO_MODE = rospy.get_param("/qolo_control/ao_mode", False)
-AO_V = None
-AO_W = None
-timeAO_VW = None
 
 PORT = 8080
 control_type ='embodied'
@@ -138,11 +132,11 @@ tau = 2.5 # Tested:1.5 and 2.5(faster response)
 # Some reference for controlling the non-holonomic base
 control_point = 0.9 # Tested:0.9
 # Minimal distance to obstacles
-delta = 0.01 # Tested: 0.05
+delta = 0.08 # Tested: 0.05
 # Capsule size around each lidar real == 0.40
-capsule_radius = 0.32
+capsule_radius = 0.35
 # Capsule size around each lidar location
-capsule_center_front = 0.05  # Actual value: 0.051
+capsule_center_front = 0.15  # Actual value: 0.051
 capsule_center_rear = -0.51  # Actual value: -0.515
 
 max_linear = MAX_SPEED
@@ -150,7 +144,7 @@ min_linear = -MIN_SPEED
 absolute_angular_at_min_linear = 0.
 absolute_angular_at_max_linear = 0.
 absolute_angular_at_zero_linear = MAX_OMEGA/W_RATIO
-linear_acceleration_limit = 4.5 # Tested:1.5   # Real absolute 2.5
+linear_acceleration_limit = 1.5 # Tested:1.5   # Real absolute 2.5
 angular_acceleration_limit = 4.5 # Tested: 4.5
 
 #########################################################
@@ -172,9 +166,10 @@ svr_data =  np.zeros((3,))
 ######    Settings for Modulated Shared Control   #######
 #########################################################
 
-if MDS_SHARED_MODE:
-    pub_remote = rospy.Publisher('qolo/user_commands', Float32MultiArray, queue_size=1)
-    user_embodied = Float32MultiArray()
+# if MDS_SHARED_MODE:
+#     pub_remote = rospy.Publisher('qolo/user_commands', Float32MultiArray, queue_size=1)
+#     user_embodied = Float32MultiArray()
+
     # pub_remote = rospy.Publisher('qolo/user_commands', TwistStamped, queue_size=1)
     # user_embodied = TwistStamped()
 
@@ -568,14 +563,6 @@ def write_DA(Write_DAC0,Write_DAC1):
     conv.SetChannel(0, Send_DAC0)
     conv.SetChannel(1, Send_DAC1)
 
-def callbackAO(msg):
-    global AO_V
-    global AO_W
-    global timeAO_VW
-    AO_V = msg.linear
-    AO_W = msg.angular
-    timeAO_VW = time.time()
-
 def rds_service():
     global Output_V, Output_W, last_v, last_w, cycle, feasible, Corrected_V, Corrected_W
     # print "Waiting for RDS Service"
@@ -751,7 +738,7 @@ def control():
             else:
                 last_msg = time_msg
                 Count_msg_lost = 0
-            if Count_msg_lost <10:
+            if Count_msg_lost <20:
                 User_V = Remote_V
                 User_W = Remote_W
             else:
@@ -784,7 +771,7 @@ def control():
         Corrected_V = User_V
         Corrected_W = User_W
 
-    if SHARED_MODE and not AO_MODE:
+    if SHARED_MODE:
         rds_service()
         # Corrected_V = User_V
         # Corrected_W = User_W
@@ -794,11 +781,6 @@ def control():
 
     Output_V = Corrected_V
     Output_W = Corrected_W
-
-    if AO_MODE and not timeAO_VW is None and time.time() - timeAO_VW < 0.1:
-        Output_V = AO_V
-        Output_W = AO_W
-
 
     if TIMING_MODE:
         Compliance_time = round((time.clock() - t1),6)
@@ -885,7 +867,10 @@ def control_node():
     pub_twist = rospy.Publisher('qolo/twist', TwistStamped, queue_size=1)
     qolo_twist = TwistStamped()
 
+
     if MDS_SHARED_MODE:
+        pub_remote = rospy.Publisher('qolo/user_commands', Float32MultiArray, queue_size=1)
+        user_embodied = Float32MultiArray()
         user_embodied.layout.dim.append(MultiArrayDimension())
         user_embodied.layout.dim[0].label = 'User Command:[V, W]'
         user_embodied.layout.dim[0].size = 3
@@ -900,10 +885,6 @@ def control_node():
     # dat_vel.layout.dim[0].label = 'Velocities: last message, Input[2], Output[2]'
     # dat_vel.layout.dim[0].size = 5
     # dat_vel.data = [0]*4
-
-    if AO_MODE:
-        aoPublisher = rospy.Publisher("aoInput", VelocityCommand, queue_size=1)
-        aoSubscriber = rospy.Subscriber("aoOutput", VelocityCommand, callbackAO, queue_size=1)
 
     if DEBUG_MODE:
         pub_cor_vel = rospy.Publisher('qolo/corrected_velocity', Float32MultiArray, queue_size=1)
@@ -966,7 +947,7 @@ def control_node():
         print('Starting in Manual EMBODIED Mode')        
 
     if MDS_SHARED_MODE: 
-        # sub_remote = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
+        sub_remote = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
         control_type = 'embodied_mds'
         print('Starting in Modulated EMBODIED Mode')
     
@@ -983,10 +964,6 @@ def control_node():
         prevT = time.clock()
 
         control()   # Function of control for Qolo
-
-        if AO_MODE:
-            aoPublisher.publish(VelocityCommand(User_V, User_W))
-
 
         # # Checking emergency inputs
         RemoteE = conv.ReadChannel(7) # THRESHOLD_V - 1 # conv.ReadChannel(7)
