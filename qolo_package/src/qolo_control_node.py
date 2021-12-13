@@ -166,9 +166,10 @@ svr_data =  np.zeros((3,))
 ######    Settings for Modulated Shared Control   #######
 #########################################################
 
-if MDS_SHARED_MODE:
-    pub_remote = rospy.Publisher('qolo/user_commands', Float32MultiArray, queue_size=1)
-    user_embodied = Float32MultiArray()
+# if MDS_SHARED_MODE:
+#     pub_remote = rospy.Publisher('qolo/user_commands', Float32MultiArray, queue_size=1)
+#     user_embodied = Float32MultiArray()
+
     # pub_remote = rospy.Publisher('qolo/user_commands', TwistStamped, queue_size=1)
     # user_embodied = TwistStamped()
 
@@ -737,7 +738,7 @@ def control():
             else:
                 last_msg = time_msg
                 Count_msg_lost = 0
-            if Count_msg_lost <10:
+            if Count_msg_lost <20:
                 User_V = Remote_V
                 User_W = Remote_W
             else:
@@ -866,7 +867,10 @@ def control_node():
     pub_twist = rospy.Publisher('qolo/twist', TwistStamped, queue_size=1)
     qolo_twist = TwistStamped()
 
+
     if MDS_SHARED_MODE:
+        pub_remote = rospy.Publisher('qolo/user_commands', Float32MultiArray, queue_size=1)
+        user_embodied = Float32MultiArray()
         user_embodied.layout.dim.append(MultiArrayDimension())
         user_embodied.layout.dim[0].label = 'User Command:[V, W]'
         user_embodied.layout.dim[0].size = 3

@@ -18,6 +18,16 @@ trap _kill EXIT
 
 cd ~/catkin_ws/
     . devel/setup.bash
+
+
+# #----- Launch qolo's odometry -----
+# echo -e "${IMP_INFO}Launching QOLO Odometry Node...${NORMAL}"
+# # eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
+# # eval "rosrun qolo t265_pose_qolo.py "
+# eval ". devel/setup.bash"
+# eval "roslaunch qolo odometry_t265.launch"
+# PID_LIST+="$! "
+# sleep 5
     
 #----- Launch Rear Lidar  -----
 echo -e "${IMP_INFO}Launching REAR LIDAR...${NORMAL}"
@@ -32,6 +42,7 @@ echo -e "${IMP_INFO}Launching LIDAR-2-LRF Node...${NORMAL}"
 eval "roslaunch pointcloud_to_laserscan lidar2lrf_rear.launch"
 PID_LIST+="$! "
 sleep 3
+
 
 # Wait till all pids to be finished or killed
 echo -e "${IMP_GREEN}All PIDs : ${PID_LIST}${NORMAL}"

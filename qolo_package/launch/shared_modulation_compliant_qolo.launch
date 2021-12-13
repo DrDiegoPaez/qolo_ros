@@ -4,8 +4,8 @@
     <arg name="constant_mode" default="false" />
     <arg name="shared_mode" default="true" />
     <arg name="compliance_mode" default="true" />
-    <arg name="joystick_mode" default="true" />
-    <arg name="remote_mode" default="true" />
+    <arg name="joystick_mode" default="false" />
+    <arg name="remote_mode" default="false" />
     <arg name="odom_publisher" default="true" />
     <arg name="mds_shared_mode" default="true" />
     

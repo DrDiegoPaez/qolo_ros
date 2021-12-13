@@ -53,6 +53,15 @@ eval "roslaunch qolo sliding_qolo.launch log_folder:=${LOG_FOLDER} &"
 PID_LIST+="$! "
 sleep 15
 
+#----- Launch qolo's odometry -----
+echo -e "${IMP_INFO}Launching QOLO Odometry Node...${NORMAL}"
+# eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
+# eval "rosrun qolo t265_pose_qolo.py "
+eval ". devel/setup.bash"
+eval "roslaunch qolo odometry_t265.launch"
+PID_LIST+="$! "
+sleep 3
+
 # Wait till all pids to be finished or killed
 echo -e "${IMP_GREEN}All PIDs : ${PID_LIST}${NORMAL}"
 for PID in ${PID_LIST[@]};do
