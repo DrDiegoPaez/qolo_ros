@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-    <node name="ao" pkg="ao_ros" type="aonode.py"></node>
+    <node name="ao" pkg="ao" type="aonode.py" output="screen"></node>
 
     <include file="$(find qolo)/launch/joystick_qolo.launch"/>
     <include file="$(find qolo)/launch/tf_qolo.launch"/>
@@ -25,6 +25,9 @@
         <param name="shared_mode"
                type="bool"
                value="$(arg shared_mode)"/>
+        <param name="ao_mode"
+               type="bool"
+               value="$(arg ao_mode)"/>
         <param name="compliance_mode"
                type="bool"
                value="$(arg compliance_mode)"/>

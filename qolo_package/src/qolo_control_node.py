@@ -984,7 +984,7 @@ def control_node():
         control()   # Function of control for Qolo
 
         if AO_MODE:
-            aoPublisher.pub(VelocityCommand(User_V, User_W))
+            aoPublisher.publish(VelocityCommand(User_V, User_W))
 
         # # Checking emergency inputs
         RemoteE = conv.ReadChannel(7) # THRESHOLD_V - 1 # conv.ReadChannel(7)
