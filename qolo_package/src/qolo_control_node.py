@@ -947,7 +947,7 @@ def control_node():
         print('Starting in Manual EMBODIED Mode')        
 
     if MDS_SHARED_MODE: 
-        # sub_remote = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
+        sub_remote = rospy.Subscriber("qolo/remote_commands", Float32MultiArray, callback_remote, queue_size=1)
         control_type = 'embodied_mds'
         print('Starting in Modulated EMBODIED Mode')
     
