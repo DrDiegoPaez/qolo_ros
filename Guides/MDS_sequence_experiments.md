@@ -105,12 +105,3 @@ cd ~/qolo_ws/
 roslaunch qolo rviz.launch
 ```
 ### Current ERROR DEGUB ####
-```  bash
-[ERROR] [1639051809.935508]: bad callback: <bound method ObstacleAvoidanceQOLO.callback_remote of <__main__.ObstacleAvoidanceQOLO object at 0x7fcf6dacf590>>
-Traceback (most recent call last):
-  File "/opt/ros/kinetic/lib/python2.7/dist-packages/rospy/topics.py", line 750, in _invoke_callback
-    cb(msg)
-  File "src/qolo_modulation/scripts/qolo_modulation_ros_controller.py", line 703, in callback_remote
-    (msg_time, command_linear, command_angular) = msg
-TypeError: 'Float32MultiArray' object is not iterable
-```
