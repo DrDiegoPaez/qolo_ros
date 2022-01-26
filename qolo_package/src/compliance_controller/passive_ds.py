@@ -3,17 +3,19 @@
 import numpy as np
 import math
 
+MAX_SPEED_AT_CONTACT = 0.5
+
 class PassiveDSController:
     def __init__(
         self,
-        bumper_l=0.2425,    # [m] (210+32.5) mm
-        bumper_R=0.33,      # [m] 330 mm
-        Ts=1.0/50,          # [s] 50 Hz
-        robot_mass=2,       # [kg]
+        bumper_l=0.2425,    # Bumper location [m] (210+32.5) mm
+        bumper_R=0.33,      # Bumper size for contact location estiamtion [m] 330 mm
+        Ts=1.0/50,          # Integration time step [s] 50 Hz
+        robot_mass=2,       # Virtual Mass [kg]
         lambda_t=0.0,       # 
         lambda_n=0.5,       # 
-        Fd=45,              # [N]
-        activation_F=15,    # [N]
+        Fd=45,              # Desired Contact at the surface [N]
+        activation_F=15,    # Minimal Contact to Switch to Passive-DS Control [N]
         logger=None
     ):
         self.bumper_l = bumper_l
@@ -107,6 +109,11 @@ class PassiveDSController:
         # V = self.Ts / self.robot_mass * np.matmul(self.D, (Vd - V_prev))
 
         self.V_contact = np.matmul(n_hat.T, V)
+
+        # Limit max speed during collision
+        V_norm = np.linalg.norm(V, 2)
+        if V_norm > MAX_SPEED_AT_CONTACT:
+            V = V / V_norm * MAX_SPEED_AT_CONTACT
 
         return self.__cartesian_to_differential(V[0], V[1])
 

@@ -1,12 +1,13 @@
+<?xml version="1.0"?>
 <launch>
     <arg name="log_folder" default="$(env PWD)/csv_logs/test" />
     <arg name="constant_mode" default="false" />
-    <arg name="shared_mode" default="false" />
-    <arg name="compliance_mode" default="false" />
-    <arg name="joystick_mode" default="false" />
+    <arg name="shared_mode" default="true" />
+    <arg name="compliance_mode" default="true" />
+    <arg name="joystick_mode" default="true" />
     <arg name="remote_mode" default="true" />
-
-    <include file="$(find qolo)/launch/joystick_qolo.launch"/>
+    <arg name="odom_publisher" default="true" />
+    <arg name="mds_shared_mode" default="false" />
     
     <node name="qolo_control" pkg="qolo" type="qolo_control_node.py" output="screen">
         <param name="log_folder"
@@ -27,11 +28,21 @@
         <param name="remote_mode"
                type="bool"
                value="$(arg remote_mode)"/>
+        <param name="odom_publisher"
+               type="bool"
+               value="$(arg odom_publisher)"/>
+        <param name="mds_shared_mode"
+               type="bool"
+               value="$(arg mds_shared_mode)"/>
     </node>
 
-<!--  <include file="$(find qolo)/launch/rear_lidar-lrf.launch"/> 
-    <include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>
-        -->
+    <node name="bumper_prediction" pkg="qolo" type="bumper_prediction.py" output="screen">
+        <param name="log_folder"
+               type="str"
+               value="$(arg log_folder)"/>
+    </node>
+    
+    <node name="qolo_joystick" pkg="qolo" type="qolo_joystick.py" />
 
     <include file="$(find qolo)/launch/tf_qolo.launch"/>
 

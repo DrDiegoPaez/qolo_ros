@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+
+<launch>
+
+    <arg name="lidar" default="rear_lidar" />
+    <arg name="frame_id" default="tf_rear_lidar" />
+    <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
+
+    <!-- Create a manager becuase nodelets wont launch without one-->
+    <node pkg="nodelet" type="nodelet" name="pointcloud_to_laserscan_manager" output="screen" respawn="true" args="manager"/>
+
+    <!-- push pointcloud_to_laserscan nodelet into the dummny manager above-->
+    <node pkg="nodelet" type="nodelet" name="pointcloud_to_laserscan_worker" args="load pointcloud_to_laserscan/pointcloud_to_laserscan_nodelet pointcloud_to_laserscan_manager">
+
+        <remap from="cloud_in" to="$(arg lidar)/velodyne_points"/>
+        <remap from="scan" to="$(arg lidar)/scan_all"/>
+        <rosparam>
+            target_frame: tf_front_lidar
+            transform_tolerance: 0.01
+            min_height: -0.2
+            max_height: 2.0
+
+            angle_min: -2.14 # -M_PI
+            angle_max: 2.14 # M_PI
+            angle_increment: 0.0087 # M_PI/360.0
+            scan_time: 0.3333
+            range_min: 0.40
+            range_max: 10.0
+            use_inf: true
+
+            # Concurrency level, affects number of pointclouds queued for processing, thread number governed by nodelet manager
+            # 0 : Detect number of cores
+            # 1 : Single threaded
+            # 2->inf : Parallelism level
+            concurrency_level: 0
+        </rosparam>
+   </node>
+</launch>

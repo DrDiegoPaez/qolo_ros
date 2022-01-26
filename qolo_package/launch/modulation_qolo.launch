@@ -27,9 +27,11 @@
                value="$(arg remote_mode)"/>
     </node>
 
-<!--  <include file="$(find qolo)/launch/rear_lidar-lrf.launch"/> 
-    <include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>
-        -->
+    <node name="bumper_prediction" pkg="qolo" type="bumper_prediction.py" output="screen">
+        <param name="log_folder"
+               type="str"
+               value="$(arg log_folder)"/>
+    </node>
     
     <node name="qolo_joystick" pkg="qolo" type="modulation_joystick.py" />
 

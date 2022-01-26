@@ -34,6 +34,14 @@ list of kernels:
 	sudo nano /etc/default/grub
 		GRUB_DEFAULT=3
 
+Switch ubuntu to terminal mode only
+	GRUB_CMDLINE_LINUX_DEFAULT="text"
+	GRUB_TERMINAL=console
+After saving changes you need to run:
+	sudo update-grub
+	sudo systemctl enable multi-user.target --force
+	sudo systemctl set-default multi-user.target
+
 
 install pip
 	sudo apt install python-pip
@@ -66,7 +74,6 @@ PYYAML: For FT model
 		## Need Pyaml 5.1
 	python -m pip install --upgrade pyyaml
 
-
  ########################### RDS Compile and Install Instructions ###########################
 
 	rosrun rds_gui_ros rds_gui_ros_node
@@ -83,6 +90,10 @@ PYYAML: For FT model
 	Modify /usr/lib/x86_64-linux-gnu/cmake/SDL2/sdl2-config.cmake (White space at the end)
 		BEFORE:    set(SDL2_LIBRARIES "-L${SDL2_LIBDIR}  -lSDL2 ")
 		AFTER :    set(SDL2_LIBRARIES "-L${SDL2_LIBDIR}  -lSDL2")
+
+	References for switching ROS to Python3:
+	https://medium.com/@beta_b0t/how-to-setup-ros-with-python-3-44a69ca36674
+	tf2_ros for python has to be built from scratch for python 3
 
 
 ######################## New Install requirements ############################

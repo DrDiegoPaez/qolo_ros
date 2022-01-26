@@ -29,6 +29,7 @@ import os.path
 import tornado.httpserver
 import tornado.websocket
 import tornado.ioloop
+
 import tornado.web
 # FLAG for fully manual control (TRUE) or shared control (FALSE)
 #Tonado server port
@@ -44,8 +45,8 @@ data_remote = Float32MultiArray()
 
 ### ---------- GLOBAL VARIABLES ---------- ####
 PORT = 8080
-Max_V = 0.7
-Max_W = 0.7
+Max_V = 1.2
+Max_W = 2.0
 
 level_relations = {
         # 'debug':logging.DEBUG,

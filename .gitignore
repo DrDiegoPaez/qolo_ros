@@ -41,3 +41,6 @@ __pycache__/
 
 # VS Code
 .vscode
+
+# Vim
+*.swp

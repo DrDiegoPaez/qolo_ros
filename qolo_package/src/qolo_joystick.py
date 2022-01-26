@@ -39,13 +39,13 @@ except PermissionError:
     rospy.logerr("Cannot set niceness for the process...")
     rospy.logerr("Run the script as sudo...")
 
-pub_remote = rospy.Publisher('qolo/remote_commands', Float32MultiArray, queue_size=1)
+pub_remote = rospy.Publisher('qolo/user_commands', Float32MultiArray, queue_size=1)
 data_remote = Float32MultiArray()
 
 ### ---------- GLOBAL VARIABLES ---------- ####
 PORT = 8080
-Max_V = 0.7
-Max_W = 0.7
+Max_V = 0.4
+Max_W = 0.4
 
 level_relations = {
         # 'debug':logging.DEBUG,
@@ -114,8 +114,8 @@ def joystick_control():
         data_remote.layout.dim[0].size = 3
         data_remote.data = [0]*3
 
-        rospy.init_node('qolo_joystick', anonymous=True)
-        rate = rospy.Rate(50) #  50 hz
+        # rospy.init_node('qolo_joystick', anonymous=True)
+        # rate = rospy.Rate(50) #  50 hz
         print ("Tornado Server started")
         main_loop.start()
 
@@ -140,6 +140,8 @@ signal.signal(signal.SIGINT, exit)
 signal.signal(signal.SIGTERM, exit)
 
 if __name__ == '__main__':
+    rospy.init_node('qolo_joystick', anonymous=True)
+    rate = rospy.Rate(100) #  50 hz
     try:
         joystick_control()
     except rospy.ROSInterruptException:

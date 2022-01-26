@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<!-- -*- mode: XML -*- -->
 <!-- run velodyne_pointcloud/CloudNodelet in a nodelet manager for a VLP-16 -->
 
 <launch>
@@ -57,9 +57,9 @@
     </include>
     
     <!--  <node name="lidar_channels_to_lrf_node" pkg="rds_ros" type="lidar_channels_to_lrf_node" /> 
-
-    <include file="$(find hector_mapping)/launch/mapping_qolo_rear.launch"/>
     -->
+
+    <!-- <include file="$(find qolo)/launch/lidar2lrf_rear.launch"/> -->
     
   </group>
 

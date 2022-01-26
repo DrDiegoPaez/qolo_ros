@@ -17,23 +17,23 @@
       -->
   <!-- ######### Using Rear SLAM ######### -->
 
-<!--   <node pkg="tf" type="static_transform_publisher" name="tf_qolo_world" 
+  <!-- <node pkg="tf" type="static_transform_publisher" name="tf_qolo_world" 
       args="-0.516 0 -0.364 0 0 1 0 map tf_qolo_world 5 " /> -->
 
 <!--   <node pkg="tf" type="static_transform_publisher" name="tf_qolo_world" 
-      args="-0.516 0 -0.364 0 0 1 0 map tf_qolo_world 5 " />
- -->
+      args="-0.516 0 -0.364 0 0 1 0 map tf_qolo_world 5 " /> -->
+
    <!-- ######### Using Frontal SLAM ######### -->
 
-  <!-- <node pkg="tf" type="static_transform_publisher" name="tf_qolo_world" 
-      args="-0.035 0 -0.475 0 0 0 1 map tf_qolo_world 5 " /> -->
+  <node pkg="tf" type="static_transform_publisher" name="tf_qolo_world" 
+      args="-0.035 0 -0.475 0 0 0 1 map tf_qolo_world 5 " />
   
  <!-- ######### Using T265 @Front Camera location ######### -->
 
 <!--   <node pkg="tf" type="static_transform_publisher" name="tf_qolo_world" 
       args="-0.095 0.0 -0.430 0 0 0 1 t265_odom_frame tf_qolo_world 5" />
-
-  <node pkg="tf" type="static_transform_publisher" name="tf_qolo" 
+ -->
+  <!-- <node pkg="tf" type="static_transform_publisher" name="tf_qolo" 
       args="-0.095 0.0 -0.235 0 0 0 1 t265_pose_frame tf_qolo 5" /> -->
 
   <!-- Launching other transforms -->
