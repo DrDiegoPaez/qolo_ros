@@ -1,10 +1,34 @@
 #!/bin/bash
+help()
+{
+    # Display Help
+    echo "Run Modulated Dynamical System."
+    echo
+    echo "Syntax: rosrun qolo compliant_mds_shared_qolo.sh [-h|H]"
+    echo "options:"
+    echo "h     Print this help."
+    echo "H     Hands free mode (hip-control)."
+    echo
+}
 
 #----- Colored Terminal -----
 NORMAL="\e[0m"
 IMP_INFO="\e[34;1m"
 IMP_RED="\e[31;1m"
 IMP_GREEN="\e[32;1m"
+
+#----- Command Line Flag Argument
+handsfree_mode=false
+while getopts "Hh" option; do
+    case $option in
+        H) # -H flag for handsfree-mode
+            handsfree_mode=true
+            ;;
+        h) # -H flag for handsfree-mode
+            help
+            exit ;;
+    esac
+done
 
 #----- Ctrl-C stop -----
 _kill() {
@@ -16,15 +40,6 @@ _kill() {
 trap "exit" INT TERM ERR
 trap _kill EXIT
 
-#----- Command Line Flag Argument
-handsfree_mode=false
-while getopts "H" option; do
-   case $option in
-       H) # -H flag for handsfree-mode
-           handsfree_mode=true
-           ;; 
-   esac
-done
 
 #----- Get Test Number -----
 TEST_NO=0
