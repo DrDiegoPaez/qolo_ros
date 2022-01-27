@@ -1,4 +1,4 @@
-# ########### Launch Sequence for experiments in Qolo robot ######### #
+# Launch Sequence for experiments in Qolo robot #
 
 ssh -X qolo@192.168.13.110
 main UpBoard 110
@@ -7,7 +7,7 @@ Hasler 130
 Nvidia board 200
 	pass: ....
 
-# ============== Experiments for OA recordings - Including Collisions ========================== #
+# == Experiments for OA recordings - Including Collisions == #
 
 #### Establish 4 connetcions to main UpBoard 110
 #### Establish 1 connetcion to Frontal Upboard 120
@@ -62,3 +62,8 @@ Nvidia board 200
 	cd ~/catkin_ws/
 	. devel/setup.bash
 	rosrun qolo ds_trajectory.py
+	
+**8. Visualization:**
+	cd ~/qolo_ws/
+	. devel/setup.bash
+	roslaunch qolo rviz.launch
