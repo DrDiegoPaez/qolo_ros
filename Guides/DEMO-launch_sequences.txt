@@ -140,4 +140,3 @@ Configure remote master:
 
 Configure Local ROS IP:
 	export ROS_IP=192.168.13.XX --> (XX check local IP given by QoloNet)
-

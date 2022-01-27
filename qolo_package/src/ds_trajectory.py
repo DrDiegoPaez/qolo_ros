@@ -31,13 +31,13 @@ ref_vel = 1.1
 
 control_point = 0.9
 stop_distance = 0.05
-time_limit = 60*1
+time_limit = 90*1
 
 pose = [0., 0., 0.]
 # Attractor for Lausanne-city experiments:
 # Local_Attractor = np.array([[20.0+control_point], [0.0]])
 # Attractor for IRL experiments:
-Local_Attractor = np.array([[30.0], [0.0]])
+Local_Attractor = np.array([[20.0], [0.0]])
 
 # tf_listener = None
 command_publisher = None

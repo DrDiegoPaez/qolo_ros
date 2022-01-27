@@ -20,7 +20,7 @@ Nvidia board 200
 	sudo /etc/init.d/ntp restart
 	sudo ntpd -q 192.168.13.110
 
-1. 110 terminal:
+**1. 110 terminal:**
 	rosclean purge -y
 	roscore
 
@@ -28,7 +28,7 @@ Nvidia board 200
 	cd ~/catkin_ws/
 	. devel/setup.bash
 	rosrun qolo rear_lidar2lrf.sh
-	**Alternatevely:**
+	**Alternatively:**
 	roslaunch qolo rear_lidar-cloud.launch
 
 **3. 120 terminal: Launching Front Lidar and Low-level avoidance (RDS)**
