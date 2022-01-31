@@ -109,9 +109,9 @@ https://github.com/FabienGrzeskowiakInria/CrowdBot_robots
 ## References:
 _Qolo Design _(please cite the latest T-Mech paper):
 
-> [1] Paez-Granados, D., Hassan, M., Chen, Y., Kadone, H., & Suzuki, K. (2022). Personal Mobility with Synchronous Trunk-Knee Passive Exoskeleton: Optimizing Human-Robot Energy Transfer. IEEE/ASME Transactions on Mechatronics, 1(1), 1–12.
+> [1] Paez-Granados, D., Kadone, H., Hassan, M., Chen, Y., & Suzuki, K. (2022). Personal Mobility with Synchronous Trunk-Knee Passive Exoskeleton: Optimizing Human-Robot Energy Transfer. IEEE/ASME Transactions on Mechatronics, (1), 1–12. https://doi.org/10.1109/TMECH.2021.3135453
 
-> [1] Paez-Granados, D. F., Kadone, H., & Suzuki, K. (2018). Unpowered Lower-Body Exoskeleton with Torso Lifting Mechanism for Supporting Sit-to-Stand Transitions. IEEE International Conference on Intelligent Robots and Systems, 2755–2761. https://doi.org/10.1109/IROS.2018.8594199
+> [1] Paez-Granados, D., Kadone, H., & Suzuki, K. (2018). Unpowered Lower-Body Exoskeleton with Torso Lifting Mechanism for Supporting Sit-to-Stand Transitions. IEEE International Conference on Intelligent Robots and Systems, 2755–2761. https://doi.org/10.1109/IROS.2018.8594199
 
 Qolo Hands-free control:
 
