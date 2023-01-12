@@ -93,6 +93,11 @@ Nvidia board 200
 	. devel/setup.bash
 	rosrun qolo compliant_remote_shared_qolo.sh
 
+	###### MDS - with Compliance + Shared-control + Remote #######
+	cd ~/catkin_ws/
+	. devel/setup.bash
+	rosrun qolo compliant_mds_shared_qolo.sh
+
 	###### MDS with Compliance + Attractor-DS #######
 	cd ~/catkin_ws/
 	. devel/setup.bash

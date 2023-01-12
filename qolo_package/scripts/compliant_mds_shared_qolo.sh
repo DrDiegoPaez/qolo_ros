@@ -1,10 +1,34 @@
 #!/bin/bash
+help()
+{
+    # Display Help
+    echo "Run Modulated Dynamical System."
+    echo
+    echo "Syntax: rosrun qolo compliant_mds_shared_qolo.sh [-h|H]"
+    echo "options:"
+    echo "h     Print this help."
+    echo "H     Hands free mode (hip-control)."
+    echo
+}
 
 #----- Colored Terminal -----
 NORMAL="\e[0m"
 IMP_INFO="\e[34;1m"
 IMP_RED="\e[31;1m"
 IMP_GREEN="\e[32;1m"
+
+#----- Command Line Flag Argument
+handsfree_mode=false
+while getopts "Hh" option; do
+    case $option in
+        H) # -H flag for handsfree-mode
+            handsfree_mode=true
+            ;;
+        h) # -H flag for handsfree-mode
+            help
+            exit ;;
+    esac
+done
 
 #----- Ctrl-C stop -----
 _kill() {
@@ -15,6 +39,7 @@ _kill() {
 }
 trap "exit" INT TERM ERR
 trap _kill EXIT
+
 
 #----- Get Test Number -----
 TEST_NO=0
@@ -34,14 +59,14 @@ sleep 5
 
 # #----- Launch Rear Lidar  -----
 # echo -e "${IMP_INFO}Launching REAR LIDAR...${NORMAL}"
-# eval ". devel/setup.bash"
+# eval "source ~/catkin_ws/devel/setup.bash"
 # eval "roslaunch qolo rear_lidar-cloud.launch &"
 # PID_LIST+="$! "
 # sleep 5
 
 #----- Launch and record realsense camera -----
 # echo -e "Launching RealSense Camera..."
-# eval "source devel/setup.bash"
+# eval "source ~/catkin_ws/devel/setup.bash"
 # eval "roslaunch realsense2_camera rs_qolo_front_test.launch &"
 # PID_LIST+="$! "
 
@@ -58,8 +83,14 @@ sleep 5
 
 #----- Launch qolo control -----
 echo -e "${IMP_INFO}Launching QOLO Control Node...${NORMAL}"
-eval ". devel/setup.bash"
-eval "roslaunch qolo shared_modulation_compliant_qolo.launch log_folder:=${LOG_FOLDER} &"
+eval "source ~/catkin_ws/devel/setup.bash"
+if $handsfree_mode ; then
+    echo "[SHARED CONTROLLER MODE] Launching qolo with HANDS-FREE"
+    eval "roslaunch qolo shared_modulation_compliant_qolo.launch log_folder:=${LOG_FOLDER} remote_mode:='false' mds_shared_mode:='true' &"
+else
+    echo "[SHARED CONTROLLER MODE] Launching qolo with default-setting.."
+    eval "roslaunch qolo shared_modulation_compliant_qolo.launch log_folder:=${LOG_FOLDER} &"
+fi
 PID_LIST+="$! "
 sleep 15
 
@@ -67,14 +98,14 @@ sleep 15
 echo -e "${IMP_INFO}Launching QOLO Odometry Node...${NORMAL}"
 # eval "roslaunch qolo compliance_qolo.launch log_folder:=${LOG_FOLDER} &"
 # eval "rosrun qolo t265_pose_qolo.py "
-eval ". devel/setup.bash"
+eval "source  ~/catkin_ws/devel/setup.bash"
 eval "roslaunch qolo odometry_t265.launch"
 PID_LIST+="$! "
 sleep 3
 
 # # #----- Launch LIDAR 2 LRF -----
 # echo -e "${IMP_INFO}Launching Rear LIDAR-2-LRF Node...${NORMAL}"
-# eval ". devel/setup.bash"
+# eval "source ~/catkin_ws/devel/setup.bash"
 # eval "roslaunch pointcloud_to_laserscan lidar2lrf_rear.launch"
 # PID_LIST+="$! "
 # sleep 3

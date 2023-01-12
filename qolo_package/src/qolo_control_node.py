@@ -85,7 +85,7 @@ clipper = lambda x, l, u: l if x < l else u if x > u else x
 #########################################################
 
 # coefficient for vmax and wmax (out curve)
-forward_coefficient = 1.4/1.5
+forward_coefficient = 1.2/1.5
 left_turning_coefficient = 1
 right_turning_coefficient = 1
 backward_coefficient = 0.7/1.5
@@ -122,22 +122,22 @@ ANGULAR_ACC = LINEAR_ACC / DISTANCE_CW  # Maximum Robot's angular acceleration =
 #########################################################
 ############ Setting for the RDS service ################
 #########################################################
-LRF_points_Flag = True
-ORCA_Flag = False
+LRF_points_Flag = False
+ORCA_Flag = True
 # y_coordinate_of_reference_point_for_command_limits = 0.5
 # Gain to this point
 weight_scaling_of_reference_point_for_command_limits = 0.
 # Some gain for velocity after proximity reaches limits
-tau = 2.5 # Tested:1.5 and 2.5(faster response)
+tau = 2.5 # Tested:1.5 and 2.5(faster response) / 0.7
 # Some reference for controlling the non-holonomic base
-control_point = 0.9 # Tested:0.9
+control_point = 0.3 #0.9 # Tested:0.9 / 0.25
 # Minimal distance to obstacles
-delta = 0.08 # Tested: 0.05
+delta = 0.05 # Tested: 0.05 / 0.08
 # Capsule size around each lidar real == 0.40
 capsule_radius = 0.35
 # Capsule size around each lidar location
-capsule_center_front = 0.15  # Actual value: 0.051
-capsule_center_rear = -0.51  # Actual value: -0.515
+capsule_center_front = 0.15  # Actual value: 0.051  / 0.15
+capsule_center_rear = -0.51  # Actual value: -0.515 / -0.05
 
 max_linear = MAX_SPEED
 min_linear = -MIN_SPEED
