@@ -43,6 +43,7 @@ roslaunch qolo rear_lidar-cloud.launch
 
 **3. 120 terminal: Launching Front Lidar and Low-level avoidance (RDS)**
 ``` bash
+rosclean purge -y
 cd ~/autonomy_ws/
 . devel/setup.bash
 rosrun rds_ros rds_lidar2lrf.sh
@@ -88,7 +89,7 @@ roslaunch rwth_crowdbot_launch qolo_onboard.launch trt:=true
 **8. 200: Rosbag Recording**
 ``` bash
 cd /ssd_nvidia/data/airport/
-rosbag record --duration=2m /chatter /tf /tf_static qolo/odom /qolo/pose2D /qolo/twist /qolo/remote_commands /qolo/user_commands qolo/compliance/svr /qolo/emergency /front_lidar/velodyne_points /front_lidar/scan /front_lidar/scan_all /rear_lidar/velodyne_points /rear_lidar/scan /rear_lidar/scan_all /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /t265/odom/sample /rokubi_node_front/ft_sensor_measurements /t265/accel/imu_info /t265/accel/sample /t265/gyro/imu_info /t265/gyro/sample
+rosbag record --split --duration=3m /chatter /tf /tf_static qolo/odom /qolo/pose2D /qolo/twist /qolo/remote_commands /qolo/user_commands qolo/compliance/svr /qolo/emergency /front_lidar/velodyne_points /front_lidar/scan /front_lidar/scan_all /rear_lidar/velodyne_points /rear_lidar/scan /rear_lidar/scan_all /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /t265/odom/sample /rokubi_node_front/ft_sensor_measurements /t265/accel/imu_info /t265/accel/sample /t265/gyro/imu_info /t265/gyro/sample
 ```
 
 ``` bash
@@ -117,7 +118,7 @@ rosrun qolo_modulation qolo_modulation_ros_controller.py
 Choose a recording at the bottom of the document that suits the test (the following is the simplest LRF + tracker + qolo)
 ``` bash
 cd /ssd_nvidia/data/airport
-rosbag record --duration=3m /chatter /tf /tf_static qolo/odom /qolo/pose2D /qolo/twist /qolo/remote_commands /qolo/user_commands qolo/compliance/svr /qolo/emergency /front_lidar/velodyne_points /front_lidar/scan /front_lidar/scan_all /rear_lidar/velodyne_points /rear_lidar/scan /rear_lidar/scan_all /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /t265/odom/sample /rokubi_node_front/ft_sensor_measurements /t265/accel/imu_info /t265/accel/sample /t265/gyro/imu_info /t265/gyro/sample
+rosbag record --split --duration=3m /chatter /tf /tf_static qolo/odom /qolo/pose2D /qolo/twist /qolo/remote_commands /qolo/user_commands qolo/compliance/svr /qolo/emergency /front_lidar/velodyne_points /front_lidar/scan /front_lidar/scan_all /rear_lidar/velodyne_points /rear_lidar/scan /rear_lidar/scan_all /camera_left/color/image_raw /camera_left/color/camera_info /camera_left/depth/camera_info /camera_left/depth/image_rect_raw /camera_left/depth/color/points /camera_left/aligned_depth_to_color/camera_info /camera_left/aligned_depth_to_color/image_raw /ground_plane /ground_plane_visual_marker /image_with_bounding_boxes /darknet_ros/bounding_boxes /darknet_ros/detection_image /detected_persons/yolo /detected_persons_synchronized /diagnostics /drow_detected_persons_front /drow_detected_persons_rear /map /map_metadata /move_base_simple/goal /poseupdate /rwth_tracker/pedestrian_array /rwth_tracker/tracked_persons /rds_to_gui /t265/odom/sample /rokubi_node_front/ft_sensor_measurements /t265/accel/imu_info /t265/accel/sample /t265/gyro/imu_info /t265/gyro/sample
 
 or 
 

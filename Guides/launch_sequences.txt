@@ -128,10 +128,12 @@ Nvidia board 200
 	. devel/setup.bash
 	rosrun qolo compliant_remote_qolo.sh
 
-	###### Joystick Remote Control #######
+	###### Localization + Joystick Remote Control #######
 	cd ~/catkin_ws/
 	. devel/setup.bash
-	roslaunch qolo remote_qolo_laser.launch
+	rosrun qolo laser_remote_qolo.sh
+
+		# roslaunch qolo remote_qolo_laser.launch
 
 	## Launching with T265 Odometry
 	roslaunch qolo remote_qolo.launch
