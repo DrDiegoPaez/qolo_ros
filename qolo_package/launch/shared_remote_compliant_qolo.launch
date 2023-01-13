@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <launch>
-
     <include file="$(find qolo)/launch/joystick_qolo.launch"/>
     <include file="$(find qolo)/launch/tf_qolo.launch"/>
     
